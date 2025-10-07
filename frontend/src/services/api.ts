@@ -17,8 +17,39 @@ export const aiService = {
     return response.data;
   },
 
-  async generateText(level: ProficiencyLevel, apiToken: string) {
-    const response = await api.post('/ai/generate-text', { level, apiToken });
+  async generateText(
+    level: ProficiencyLevel, 
+    apiToken: string, 
+    provider?: string, 
+    model?: string,
+    customPrompt?: string
+  ) {
+    const response = await api.post('/ai/generate-text', { 
+      level, 
+      apiToken, 
+      provider: provider || 'openai',
+      model: model || 'gpt-3.5-turbo',
+      customPrompt
+    });
+    return response.data;
+  },
+
+  async translateWord(
+    word: string,
+    targetLanguage: string,
+    languageCode: string,
+    aiToken?: string,
+    provider?: string,
+    model?: string
+  ) {
+    const response = await api.post('/ai/translate-word', {
+      word,
+      targetLanguage,
+      languageCode,
+      aiToken,
+      provider,
+      model
+    });
     return response.data;
   },
 };

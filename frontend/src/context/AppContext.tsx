@@ -12,6 +12,8 @@ type ProficiencyLevel = 'Elementary' | 'Pre-Intermediate' | 'Intermediate' | 'Up
 
 interface AppState {
   aiToken: string | null;
+  aiProvider: 'openai' | 'claude' | 'gemini' | 'cohere' | null;
+  aiModel: string | null;
   isAiReady: boolean;
   selectedLevel: ProficiencyLevel | null;
   generatedText: string | null;
@@ -22,6 +24,8 @@ interface AppState {
 
 type AppAction =
   | { type: 'SET_AI_TOKEN'; payload: string }
+  | { type: 'SET_AI_PROVIDER'; payload: 'openai' | 'claude' | 'gemini' | 'cohere' }
+  | { type: 'SET_AI_MODEL'; payload: string }
   | { type: 'SET_AI_READY'; payload: boolean }
   | { type: 'SET_SELECTED_LEVEL'; payload: ProficiencyLevel }
   | { type: 'SET_GENERATED_TEXT'; payload: string | null }
@@ -34,6 +38,8 @@ type AppAction =
 // Initial state
 const initialState: AppState = {
   aiToken: localStorage.getItem('aiToken'),
+  aiProvider: (localStorage.getItem('aiProvider') as 'openai' | 'claude' | 'gemini' | 'cohere') || null,
+  aiModel: localStorage.getItem('aiModel'),
   isAiReady: false,
   selectedLevel: null,
   generatedText: null,
@@ -51,6 +57,18 @@ function appReducer(state: AppState, action: AppAction): AppState {
         ...state,
         aiToken: action.payload,
         error: null,
+      };
+    case 'SET_AI_PROVIDER':
+      localStorage.setItem('aiProvider', action.payload);
+      return {
+        ...state,
+        aiProvider: action.payload,
+      };
+    case 'SET_AI_MODEL':
+      localStorage.setItem('aiModel', action.payload);
+      return {
+        ...state,
+        aiModel: action.payload,
       };
     case 'SET_AI_READY':
       return {
@@ -134,6 +152,14 @@ export const actions = {
   setAiToken: (token: string): AppAction => ({
     type: 'SET_AI_TOKEN',
     payload: token,
+  }),
+  setAiProvider: (provider: 'openai' | 'claude' | 'gemini' | 'cohere'): AppAction => ({
+    type: 'SET_AI_PROVIDER',
+    payload: provider,
+  }),
+  setAiModel: (model: string): AppAction => ({
+    type: 'SET_AI_MODEL',
+    payload: model,
   }),
   setAiReady: (ready: boolean): AppAction => ({
     type: 'SET_AI_READY',

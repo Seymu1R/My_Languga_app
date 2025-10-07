@@ -7,11 +7,43 @@ interface AITokenModalProps {
   onClose: () => void;
 }
 
+const AIProviders = {
+  openai: {
+    name: 'OpenAI',
+    models: ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo'],
+    description: 'ChatGPT & GPT-4 models'
+  },
+  claude: {
+    name: 'Anthropic Claude',
+    models: ['claude-3-haiku-20240307', 'claude-3-sonnet-20240229'],
+    description: 'Claude 3 models'
+  },
+  gemini: {
+    name: 'Google Gemini',
+    models: ['gemini-2.5-flash'],
+    description: 'Google Gemini models'
+  },
+  cohere: {
+    name: 'Cohere',
+    models: ['command', 'command-light'],
+    description: 'Cohere models'
+  }
+};
+
 const AITokenModal: React.FC<AITokenModalProps> = ({ isOpen, onClose }) => {
   const { state, dispatch } = useApp();
+  console.log(state, "state");
+  
   const [tokenInput, setTokenInput] = useState(state.aiToken || '');
+  const [selectedProvider, setSelectedProvider] = useState<'openai' | 'claude' | 'gemini' | 'cohere'>(state.aiProvider || 'openai');
+  const [selectedModel, setSelectedModel] = useState(state.aiModel || AIProviders[state.aiProvider || 'openai'].models[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const handleProviderChange = (provider: 'openai' | 'claude' | 'gemini' | 'cohere') => {
+    setSelectedProvider(provider);
+    setSelectedModel(AIProviders[provider].models[0]);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,22 +53,33 @@ const AITokenModal: React.FC<AITokenModalProps> = ({ isOpen, onClose }) => {
     setError(null);
 
     try {
-      const response = await aiService.validateToken(tokenInput.trim());
-      
-      if (response.success) {
-        dispatch(actions.setAiToken(tokenInput.trim()));
+      // Save AI configuration
+      dispatch(actions.setAiToken(tokenInput.trim()));
+      dispatch(actions.setAiProvider(selectedProvider));
+      dispatch(actions.setAiModel(selectedModel));
+
+      console.log(`🔧 Using AI: ${selectedProvider} with model: ${selectedModel}`);
+
+      // Send greeting to AI
+      const greetingResponse = await aiService.generateText(
+        'Elementary',
+        tokenInput.trim(),
+        selectedProvider,
+        selectedModel,
+        'Salam! Mən sizin şagirdinizəm və ingilis dili öyrənmək istəyirəm. Özünüzü təqdim edə bilərsinizmi?'
+      );
+
+      if (greetingResponse.success) {
         dispatch(actions.setAiReady(true));
-        
-        // Show the welcome message
-        if (response.message) {
-          dispatch(actions.setError(null));
-          // You could show a toast/notification here with the welcome message
-          console.log('AI Welcome:', response.message);
+        dispatch(actions.setError(null));
+
+        if (greetingResponse.text) {
+          console.log('AI Greeting Response:', greetingResponse.text);
         }
-        
+
         onClose();
       } else {
-        setError(response.error || 'Failed to validate token');
+        setError(greetingResponse.error || 'AI ilə əlaqə qurula bilmədi. API açarınızı yoxlayın.');
       }
     } catch (err: any) {
       console.error('Token validation error:', err);
@@ -79,9 +122,52 @@ const AITokenModal: React.FC<AITokenModalProps> = ({ isOpen, onClose }) => {
         </div>
 
         <form onSubmit={handleSubmit}>
+          {/* AI Provider Selection */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              AI Provider
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              {Object.entries(AIProviders).map(([key, provider]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => handleProviderChange(key as 'openai' | 'claude' | 'gemini' | 'cohere')}
+                  className={`p-3 border rounded-lg text-left transition-all ${selectedProvider === key
+                    ? 'border-primary-500 bg-primary-50 text-primary-700'
+                    : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                >
+                  <div className="font-medium text-sm">{provider.name}</div>
+                  <div className="text-xs text-gray-500 mt-1">{provider.description}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Model Selection */}
+          <div className="mb-4">
+            <label htmlFor="model" className="block text-sm font-medium text-gray-700 mb-2">
+              Model
+            </label>
+            <select
+              id="model"
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value)}
+              className="input"
+            >
+              {AIProviders[selectedProvider].models.map((model) => (
+                <option key={model} value={model}>
+                  {model}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* API Token */}
           <div className="mb-4">
             <label htmlFor="token" className="block text-sm font-medium text-gray-700 mb-2">
-              AI API Token
+              {AIProviders[selectedProvider].name} API Token
             </label>
             <input
               id="token"
@@ -89,11 +175,11 @@ const AITokenModal: React.FC<AITokenModalProps> = ({ isOpen, onClose }) => {
               value={tokenInput}
               onChange={(e) => setTokenInput(e.target.value)}
               className="input"
-              placeholder="Enter your AI API token..."
+              placeholder={`Enter your ${AIProviders[selectedProvider].name} API token...`}
               required
             />
             <p className="mt-2 text-sm text-gray-500">
-              This token will be used to connect to the AI service for text generation.
+              Bu token {AIProviders[selectedProvider].name} ilə əlaqə qurmaq üçün istifadə olunacaq.
             </p>
           </div>
 
@@ -117,7 +203,7 @@ const AITokenModal: React.FC<AITokenModalProps> = ({ isOpen, onClose }) => {
               className="btn-primary"
               disabled={isSubmitting || !tokenInput.trim()}
             >
-              {isSubmitting ? 'Validating...' : 'Save Token'}
+              {isSubmitting ? 'Connecting to AI...' : 'Save & Test AI'}
             </button>
           </div>
         </form>

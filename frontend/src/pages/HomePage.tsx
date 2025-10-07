@@ -20,13 +20,18 @@ const HomePage: React.FC = () => {
   };
 
   const handleGenerateText = async () => {
-    if (!state.selectedLevel || !state.aiToken) return;
+    if (!state.selectedLevel || !state.aiToken || !state.aiProvider) return;
 
     dispatch(actions.setLoading(true));
     dispatch(actions.setError(null));
 
     try {
-      const response = await aiService.generateText(state.selectedLevel, state.aiToken);
+      const response = await aiService.generateText(
+        state.selectedLevel, 
+        state.aiToken, 
+        state.aiProvider, 
+        state.aiModel || undefined
+      );
       
       if (response.success && response.text) {
         dispatch(actions.setGeneratedText(response.text));

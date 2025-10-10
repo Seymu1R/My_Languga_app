@@ -15,6 +15,8 @@ interface AppState {
   aiProvider: 'openai' | 'claude' | 'gemini' | 'cohere' | null;
   aiModel: string | null;
   isAiReady: boolean;
+  nativeLanguage: string;
+  nativeLanguageCode: string;
   selectedLevel: ProficiencyLevel | null;
   generatedText: string | null;
   dictionary: Word[];
@@ -41,6 +43,8 @@ const initialState: AppState = {
   aiProvider: (localStorage.getItem('aiProvider') as 'openai' | 'claude' | 'gemini' | 'cohere') || null,
   aiModel: localStorage.getItem('aiModel'),
   isAiReady: false,
+  nativeLanguage: localStorage.getItem('nativeLanguage') || 'Azərbaycan dili',
+  nativeLanguageCode: localStorage.getItem('nativeLanguageCode') || 'az',
   selectedLevel: null,
   generatedText: null,
   dictionary: [],

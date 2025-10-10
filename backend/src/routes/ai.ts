@@ -163,3 +163,93 @@ Please generate a completely new and unique text now:`;
     });
   }
 });
+
+// Translate word endpoint
+interface TranslateWordRequest {
+  word: string;
+  targetLanguage: string;
+  languageCode: string;
+  aiToken?: string;
+  provider?: string;
+  model?: string;
+}
+
+interface TranslateResponse {
+  success: boolean;
+  translation?: string;
+  error?: string;
+}
+
+aiRouter.post('/translate-word', async (req: Request, res: Response<TranslateResponse>) => {
+  try {
+    console.log('📝 Translation request received:', req.body);
+    const { word, targetLanguage, languageCode, aiToken, provider, model }: TranslateWordRequest = req.body;
+    
+    if (!word || !targetLanguage || !languageCode) {
+      console.log('❌ Missing required fields');
+      return res.status(400).json({
+        success: false,
+        error: 'Word, target language, and language code are required'
+      });
+    }
+
+    console.log(`🔤 Translating "${word}" to ${targetLanguage} (${languageCode})`);
+
+    if (!aiToken || !provider) {
+      console.log(`⚠️ No AI token or provider provided for translation`);
+      return res.json({
+        success: false,
+        error: 'AI token and provider are required for translation'
+      });
+    }
+
+    // AI translation
+    try {
+      const aiService = new AIService({
+        provider: provider as 'openai' | 'claude' | 'gemini' | 'cohere',
+        apiKey: aiToken,
+        model: model
+      });
+
+      const translationPrompt = `Translate the English word "${word}" to ${targetLanguage}. 
+Provide only the direct translation without any additional text, explanation, or formatting.
+Just the single word translation in ${targetLanguage}.
+Word to translate: ${word}
+Target language: ${targetLanguage}`;
+
+      const aiResponse = await aiService.generateText({
+        level: 'Elementary',
+        prompt: translationPrompt,
+        maxTokens: 50
+      });
+
+      if (aiResponse.success && aiResponse.text) {
+        const translation = aiResponse.text.trim();
+        console.log(`✅ AI translation successful: "${word}" → "${translation}"`);
+        
+        return res.json({
+          success: true,
+          translation: translation
+        });
+      }
+
+      console.log(`⚠️ AI translation failed: ${aiResponse.error}`);
+      return res.json({
+        success: false,
+        error: `Unable to translate "${word}". ${aiResponse.error}`
+      });
+    } catch (aiError) {
+      console.log(`❌ AI translation error: ${aiError}`);
+      return res.json({
+        success: false,
+        error: `Translation error: ${aiError instanceof Error ? aiError.message : 'Unknown error'}`
+      });
+    }
+  } catch (error) {
+    console.error('Word translation error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to translate word'
+    });
+  }
+});

@@ -14,6 +14,29 @@ const HomePage: React.FC = () => {
     'Advanced'
   ];
 
+  const languages = [
+    { name: 'Azərbaycan dili', code: 'az' },
+    { name: 'Türkçe', code: 'tr' },
+    { name: 'Русский', code: 'ru' },
+    { name: 'Español', code: 'es' },
+    { name: 'Français', code: 'fr' },
+    { name: 'Deutsch', code: 'de' },
+    { name: '中文', code: 'zh' },
+    { name: '日本語', code: 'ja' },
+    { name: 'العربية', code: 'ar' },
+    { name: 'Polski', code: 'pl' },
+    { name: 'Українська', code: 'uk' },
+    { name: 'Italiano', code: 'it' },
+    { name: 'Português', code: 'pt' },
+  ];
+
+  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedLanguage = languages.find(lang => lang.code === e.target.value);
+    if (selectedLanguage) {
+      dispatch(actions.setNativeLanguage(selectedLanguage.name, selectedLanguage.code));
+    }
+  };
+
   const handleLevelSelect = (level: ProficiencyLevel) => {
     dispatch(actions.setSelectedLevel(level));
     dispatch(actions.setGeneratedText(null)); // Clear previous text
@@ -56,6 +79,34 @@ const HomePage: React.FC = () => {
         <p className="text-xl text-gray-600 max-w-2xl mx-auto">
           Improve your English reading comprehension and build your vocabulary with AI-generated texts tailored to your proficiency level.
         </p>
+      </div>
+
+      {/* Language Selector */}
+      <div className="card bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+              <span className="text-xl">🌍</span>
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900">Ana Diliniz / Your Native Language</h3>
+              <p className="text-sm text-gray-600">Tərcümələr bu dildə göstəriləcək</p>
+            </div>
+          </div>
+          <div className="flex-shrink-0 min-w-[200px]">
+            <select
+              value={state.nativeLanguageCode}
+              onChange={handleLanguageChange}
+              className="input w-full"
+            >
+              {languages.map((lang) => (
+                <option key={lang.code} value={lang.code}>
+                  {lang.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
       {/* AI Status Card */}

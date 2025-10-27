@@ -29,6 +29,7 @@ type AppAction =
   | { type: 'SET_AI_PROVIDER'; payload: 'openai' | 'claude' | 'gemini' | 'cohere' }
   | { type: 'SET_AI_MODEL'; payload: string }
   | { type: 'SET_AI_READY'; payload: boolean }
+  | { type: 'SET_NATIVE_LANGUAGE'; payload: { language: string; code: string } }
   | { type: 'SET_SELECTED_LEVEL'; payload: ProficiencyLevel }
   | { type: 'SET_GENERATED_TEXT'; payload: string | null }
   | { type: 'ADD_WORD'; payload: Word }
@@ -78,6 +79,14 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         isAiReady: action.payload,
+      };
+    case 'SET_NATIVE_LANGUAGE':
+      localStorage.setItem('nativeLanguage', action.payload.language);
+      localStorage.setItem('nativeLanguageCode', action.payload.code);
+      return {
+        ...state,
+        nativeLanguage: action.payload.language,
+        nativeLanguageCode: action.payload.code,
       };
     case 'SET_SELECTED_LEVEL':
       return {
@@ -168,6 +177,10 @@ export const actions = {
   setAiReady: (ready: boolean): AppAction => ({
     type: 'SET_AI_READY',
     payload: ready,
+  }),
+  setNativeLanguage: (language: string, code: string): AppAction => ({
+    type: 'SET_NATIVE_LANGUAGE',
+    payload: { language, code },
   }),
   setSelectedLevel: (level: ProficiencyLevel): AppAction => ({
     type: 'SET_SELECTED_LEVEL',

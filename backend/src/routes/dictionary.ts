@@ -1,16 +1,9 @@
 import express, { Request, Response } from 'express';
+import { Word } from '../models/Word';
 
 export const dictionaryRouter = express.Router();
 
 // Types
-interface Word {
-  id: string;
-  english: string;
-  translation: string;
-  pronunciation?: string;
-  dateAdded: string;
-}
-
 interface AddWordRequest {
   english: string;
   translation: string;
@@ -19,22 +12,19 @@ interface AddWordRequest {
 
 interface DictionaryResponse {
   success: boolean;
-  words?: Word[];
-  word?: Word;
+  words?: any[];
+  word?: any;
   message?: string;
   error?: string;
 }
 
-// In-memory storage (in production, use a database)
-let dictionary: Word[] = [];
-let nextId = 1;
-
 // Get all words in dictionary
-dictionaryRouter.get('/words', (req: Request, res: Response<DictionaryResponse>) => {
+dictionaryRouter.get('/words', async (req: Request, res: Response<DictionaryResponse>) => {
   try {
+    const words = await Word.find().sort({ dateAdded: -1 });
     return res.json({
       success: true,
-      words: dictionary
+      words: words
     });
   } catch (error) {
     console.error('Get words error:', error);
@@ -46,7 +36,7 @@ dictionaryRouter.get('/words', (req: Request, res: Response<DictionaryResponse>)
 });
 
 // Add a new word to dictionary
-dictionaryRouter.post('/words', (req: Request, res: Response<DictionaryResponse>) => {
+dictionaryRouter.post('/words', async (req: Request, res: Response<DictionaryResponse>) => {
   try {
     const { english, translation, pronunciation }: AddWordRequest = req.body;
     
@@ -58,9 +48,9 @@ dictionaryRouter.post('/words', (req: Request, res: Response<DictionaryResponse>
     }
 
     // Check if word already exists
-    const existingWord = dictionary.find(word => 
-      word.english.toLowerCase() === english.toLowerCase()
-    );
+    const existingWord = await Word.findOne({ 
+      english: { $regex: new RegExp(`^${english}$`, 'i') }
+    });
 
     if (existingWord) {
       return res.status(409).json({
@@ -69,20 +59,17 @@ dictionaryRouter.post('/words', (req: Request, res: Response<DictionaryResponse>
       });
     }
 
-    const newWord: Word = {
-      id: nextId.toString(),
+    const newWord = new Word({
       english: english.trim(),
       translation: translation.trim(),
-      pronunciation: pronunciation?.trim(),
-      dateAdded: new Date().toISOString()
-    };
+      pronunciation: pronunciation?.trim()
+    });
 
-    dictionary.push(newWord);
-    nextId++;
+    await newWord.save();
 
     return res.status(201).json({
       success: true,
-      word: newWord,
+      word: newWord.toJSON(),
       message: 'Word added successfully'
     });
   } catch (error) {
@@ -95,20 +82,18 @@ dictionaryRouter.post('/words', (req: Request, res: Response<DictionaryResponse>
 });
 
 // Delete a word from dictionary
-dictionaryRouter.delete('/words/:id', (req: Request, res: Response<DictionaryResponse>) => {
+dictionaryRouter.delete('/words/:id', async (req: Request, res: Response<DictionaryResponse>) => {
   try {
     const { id } = req.params;
     
-    const wordIndex = dictionary.findIndex(word => word.id === id);
+    const deletedWord = await Word.findByIdAndDelete(id);
     
-    if (wordIndex === -1) {
+    if (!deletedWord) {
       return res.status(404).json({
         success: false,
         error: 'Word not found'
       });
     }
-
-    dictionary.splice(wordIndex, 1);
 
     return res.json({
       success: true,
@@ -124,7 +109,7 @@ dictionaryRouter.delete('/words/:id', (req: Request, res: Response<DictionaryRes
 });
 
 // Update a word in dictionary
-dictionaryRouter.put('/words/:id', (req: Request, res: Response<DictionaryResponse>) => {
+dictionaryRouter.put('/words/:id', async (req: Request, res: Response<DictionaryResponse>) => {
   try {
     const { id } = req.params;
     const { english, translation, pronunciation }: AddWordRequest = req.body;
@@ -136,25 +121,26 @@ dictionaryRouter.put('/words/:id', (req: Request, res: Response<DictionaryRespon
       });
     }
 
-    const wordIndex = dictionary.findIndex(word => word.id === id);
+    const updatedWord = await Word.findByIdAndUpdate(
+      id,
+      {
+        english: english.trim(),
+        translation: translation.trim(),
+        pronunciation: pronunciation?.trim()
+      },
+      { new: true }
+    );
     
-    if (wordIndex === -1) {
+    if (!updatedWord) {
       return res.status(404).json({
         success: false,
         error: 'Word not found'
       });
     }
 
-    dictionary[wordIndex] = {
-      ...dictionary[wordIndex],
-      english: english.trim(),
-      translation: translation.trim(),
-      pronunciation: pronunciation?.trim()
-    };
-
     return res.json({
       success: true,
-      word: dictionary[wordIndex],
+      word: updatedWord.toJSON(),
       message: 'Word updated successfully'
     });
   } catch (error) {

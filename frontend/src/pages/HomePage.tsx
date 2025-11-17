@@ -214,7 +214,7 @@ const HomePage: React.FC = () => {
           <InteractiveText text={state.generatedText} />
           <div className="mt-6 p-4 bg-blue-50 rounded-lg">
             <p className="text-sm text-blue-700">
-              💡 <strong>Tip:</strong> Click on any word you don't know to add it to your personal dictionary with your own translation.
+               <strong>💡 Tip:</strong> Click on any word you don't know to add it to your personal dictionary with your own translation.
             </p>
           </div>
         </div>

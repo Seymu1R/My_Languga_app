@@ -5,6 +5,7 @@ interface Word {
   id: string;
   english: string;
   translation: string;
+  pronunciation?: string;
   dateAdded: string;
 }
 

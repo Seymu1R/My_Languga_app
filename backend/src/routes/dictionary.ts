@@ -7,12 +7,14 @@ interface Word {
   id: string;
   english: string;
   translation: string;
+  pronunciation?: string;
   dateAdded: string;
 }
 
 interface AddWordRequest {
   english: string;
   translation: string;
+  pronunciation?: string;
 }
 
 interface DictionaryResponse {
@@ -46,7 +48,7 @@ dictionaryRouter.get('/words', (req: Request, res: Response<DictionaryResponse>)
 // Add a new word to dictionary
 dictionaryRouter.post('/words', (req: Request, res: Response<DictionaryResponse>) => {
   try {
-    const { english, translation }: AddWordRequest = req.body;
+    const { english, translation, pronunciation }: AddWordRequest = req.body;
     
     if (!english || !translation) {
       return res.status(400).json({
@@ -71,6 +73,7 @@ dictionaryRouter.post('/words', (req: Request, res: Response<DictionaryResponse>
       id: nextId.toString(),
       english: english.trim(),
       translation: translation.trim(),
+      pronunciation: pronunciation?.trim(),
       dateAdded: new Date().toISOString()
     };
 
@@ -124,7 +127,7 @@ dictionaryRouter.delete('/words/:id', (req: Request, res: Response<DictionaryRes
 dictionaryRouter.put('/words/:id', (req: Request, res: Response<DictionaryResponse>) => {
   try {
     const { id } = req.params;
-    const { english, translation }: AddWordRequest = req.body;
+    const { english, translation, pronunciation }: AddWordRequest = req.body;
     
     if (!english || !translation) {
       return res.status(400).json({
@@ -145,7 +148,8 @@ dictionaryRouter.put('/words/:id', (req: Request, res: Response<DictionaryRespon
     dictionary[wordIndex] = {
       ...dictionary[wordIndex],
       english: english.trim(),
-      translation: translation.trim()
+      translation: translation.trim(),
+      pronunciation: pronunciation?.trim()
     };
 
     return res.json({

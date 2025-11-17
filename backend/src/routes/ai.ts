@@ -253,3 +253,92 @@ Target language: ${targetLanguage}`;
     });
   }
 });
+
+// Pronunciation endpoint
+interface PronunciationRequest {
+  word: string;
+  aiToken?: string;
+  provider?: string;
+  model?: string;
+}
+
+interface PronunciationResponse {
+  success: boolean;
+  pronunciation?: string;
+  error?: string;
+}
+
+aiRouter.post('/pronunciation', async (req: Request, res: Response<PronunciationResponse>) => {
+  try {
+    console.log('🔊 Pronunciation request received:', req.body);
+    const { word, aiToken, provider, model }: PronunciationRequest = req.body;
+    
+    if (!word) {
+      console.log('❌ Missing word');
+      return res.status(400).json({
+        success: false,
+        error: 'Word is required'
+      });
+    }
+
+    console.log(`🔊 Getting pronunciation for "${word}"`);
+
+    if (!aiToken || !provider) {
+      console.log(`⚠️ No AI token or provider provided for pronunciation`);
+      return res.json({
+        success: false,
+        error: 'AI token and provider are required for pronunciation'
+      });
+    }
+
+    // AI pronunciation
+    try {
+      const aiService = new AIService({
+        provider: provider as 'openai' | 'claude' | 'gemini' | 'cohere',
+        apiKey: aiToken,
+        model: model
+      });
+
+      const pronunciationPrompt = `Provide the phonetic pronunciation (IPA - International Phonetic Alphabet) for the English word "${word}".
+Provide ONLY the IPA pronunciation enclosed in forward slashes, nothing else.
+Format: /pronunciation/
+Example: for "cat" return /kæt/
+Example: for "bought" return /bɔːt/
+Word: ${word}`;
+
+      const aiResponse = await aiService.generateText({
+        level: 'Elementary',
+        prompt: pronunciationPrompt,
+        maxTokens: 50
+      });
+
+      if (aiResponse.success && aiResponse.text) {
+        const pronunciation = aiResponse.text.trim();
+        console.log(`✅ AI pronunciation successful: "${word}" → "${pronunciation}"`);
+        
+        return res.json({
+          success: true,
+          pronunciation: pronunciation
+        });
+      }
+
+      console.log(`⚠️ AI pronunciation failed: ${aiResponse.error}`);
+      return res.json({
+        success: false,
+        error: `Unable to get pronunciation for "${word}". ${aiResponse.error}`
+      });
+    } catch (aiError) {
+      console.log(`❌ AI pronunciation error: ${aiError}`);
+      return res.json({
+        success: false,
+        error: `Pronunciation error: ${aiError instanceof Error ? aiError.message : 'Unknown error'}`
+      });
+    }
+  } catch (error) {
+    console.error('Pronunciation error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to get pronunciation'
+    });
+  }
+});

@@ -123,6 +123,9 @@ const DictionaryPage: React.FC = () => {
                     English Word
                   </th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                    Pronunciation
+                  </th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">
                     Translation
                   </th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">
@@ -144,6 +147,11 @@ const DictionaryPage: React.FC = () => {
                     <td className="py-3 px-4">
                       <span className="font-medium text-gray-900">
                         {word.english}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-purple-700 font-mono text-sm">
+                        {word.pronunciation || '—'}
                       </span>
                     </td>
                     <td className="py-3 px-4">

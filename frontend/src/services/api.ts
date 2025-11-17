@@ -52,6 +52,21 @@ export const aiService = {
     });
     return response.data;
   },
+
+  async getPronunciation(
+    word: string,
+    aiToken?: string,
+    provider?: string,
+    model?: string
+  ) {
+    const response = await api.post('/ai/pronunciation', {
+      word,
+      aiToken,
+      provider,
+      model
+    });
+    return response.data;
+  },
 };
 
 // Dictionary Service
@@ -61,8 +76,8 @@ export const dictionaryService = {
     return response.data.words;
   },
 
-  async addWord(english: string, translation: string): Promise<Word> {
-    const response = await api.post('/dictionary/words', { english, translation });
+  async addWord(english: string, translation: string, pronunciation?: string): Promise<Word> {
+    const response = await api.post('/dictionary/words', { english, translation, pronunciation });
     return response.data.word;
   },
 
@@ -70,8 +85,8 @@ export const dictionaryService = {
     await api.delete(`/dictionary/words/${id}`);
   },
 
-  async updateWord(id: string, english: string, translation: string): Promise<Word> {
-    const response = await api.put(`/dictionary/words/${id}`, { english, translation });
+  async updateWord(id: string, english: string, translation: string, pronunciation?: string): Promise<Word> {
+    const response = await api.put(`/dictionary/words/${id}`, { english, translation, pronunciation });
     return response.data.word;
   },
 };

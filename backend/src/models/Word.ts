@@ -1,7 +1,8 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import { randomUUID } from 'crypto';
 
 export interface IWord extends Document {
-  id: string;
+  _id: string;
   english: string;
   translation: string;
   pronunciation?: string;
@@ -9,6 +10,10 @@ export interface IWord extends Document {
 }
 
 const wordSchema = new Schema<IWord>({
+  _id: {
+    type: String,
+    default: () => randomUUID()
+  },
   english: {
     type: String,
     required: true,
@@ -28,11 +33,12 @@ const wordSchema = new Schema<IWord>({
     default: Date.now
   }
 }, {
+  _id: false, // Disable auto ObjectId generation
   timestamps: true,
   toJSON: {
     virtuals: true,
     transform: function(doc, ret: any) {
-      ret.id = ret._id.toString();
+      ret.id = ret._id;
       delete ret._id;
       delete ret.__v;
       return ret;

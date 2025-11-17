@@ -1,7 +1,15 @@
 import express, { Request, Response } from 'express';
 import { Word } from '../models/Word';
+import mongoose from 'mongoose';
 
 export const dictionaryRouter = express.Router();
+
+// In-memory fallback storage
+let memoryDictionary: any[] = [];
+let memoryId = 1;
+
+// Helper to check if MongoDB is connected
+const isMongoConnected = () => mongoose.connection.readyState === 1;
 
 // Types
 interface AddWordRequest {
@@ -21,11 +29,21 @@ interface DictionaryResponse {
 // Get all words in dictionary
 dictionaryRouter.get('/words', async (req: Request, res: Response<DictionaryResponse>) => {
   try {
-    const words = await Word.find().sort({ dateAdded: -1 });
-    return res.json({
-      success: true,
-      words: words
-    });
+    if (isMongoConnected()) {
+      const words = await Word.find().sort({ dateAdded: -1 });
+      return res.json({
+        success: true,
+        words: words
+      });
+    } else {
+      // Use in-memory storage
+      return res.json({
+        success: true,
+        words: memoryDictionary.sort((a, b) => 
+          new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime()
+        )
+      });
+    }
   } catch (error) {
     console.error('Get words error:', error);
     return res.status(500).json({
@@ -47,31 +65,61 @@ dictionaryRouter.post('/words', async (req: Request, res: Response<DictionaryRes
       });
     }
 
-    // Check if word already exists
-    const existingWord = await Word.findOne({ 
-      english: { $regex: new RegExp(`^${english}$`, 'i') }
-    });
+    if (isMongoConnected()) {
+      // Use MongoDB
+      const existingWord = await Word.findOne({ 
+        english: { $regex: new RegExp(`^${english}$`, 'i') }
+      });
 
-    if (existingWord) {
-      return res.status(409).json({
-        success: false,
-        error: 'Word already exists in dictionary'
+      if (existingWord) {
+        return res.status(409).json({
+          success: false,
+          error: 'Word already exists in dictionary'
+        });
+      }
+
+      const newWord = new Word({
+        english: english.trim(),
+        translation: translation.trim(),
+        pronunciation: pronunciation?.trim()
+      });
+
+      await newWord.save();
+
+      return res.status(201).json({
+        success: true,
+        word: newWord.toJSON(),
+        message: 'Word added successfully'
+      });
+    } else {
+      // Use in-memory storage
+      const existingWord = memoryDictionary.find(w => 
+        w.english.toLowerCase() === english.toLowerCase()
+      );
+
+      if (existingWord) {
+        return res.status(409).json({
+          success: false,
+          error: 'Word already exists in dictionary'
+        });
+      }
+
+      const newWord = {
+        id: (memoryId++).toString(),
+        english: english.trim(),
+        translation: translation.trim(),
+        pronunciation: pronunciation?.trim(),
+        dateAdded: new Date().toISOString()
+      };
+
+      memoryDictionary.push(newWord);
+
+      return res.status(201).json({
+        success: true,
+        word: newWord,
+        message: 'Word added successfully (in-memory)'
       });
     }
-
-    const newWord = new Word({
-      english: english.trim(),
-      translation: translation.trim(),
-      pronunciation: pronunciation?.trim()
-    });
-
-    await newWord.save();
-
-    return res.status(201).json({
-      success: true,
-      word: newWord.toJSON(),
-      message: 'Word added successfully'
-    });
   } catch (error) {
     console.error('Add word error:', error);
     return res.status(500).json({
@@ -86,19 +134,38 @@ dictionaryRouter.delete('/words/:id', async (req: Request, res: Response<Diction
   try {
     const { id } = req.params;
     
-    const deletedWord = await Word.findByIdAndDelete(id);
-    
-    if (!deletedWord) {
-      return res.status(404).json({
-        success: false,
-        error: 'Word not found'
+    if (isMongoConnected()) {
+      const deletedWord = await Word.findByIdAndDelete(id);
+      
+      if (!deletedWord) {
+        return res.status(404).json({
+          success: false,
+          error: 'Word not found'
+        });
+      }
+
+      return res.json({
+        success: true,
+        message: 'Word deleted successfully'
+      });
+    } else {
+      // Use in-memory storage
+      const wordIndex = memoryDictionary.findIndex(w => w.id === id);
+      
+      if (wordIndex === -1) {
+        return res.status(404).json({
+          success: false,
+          error: 'Word not found'
+        });
+      }
+
+      memoryDictionary.splice(wordIndex, 1);
+
+      return res.json({
+        success: true,
+        message: 'Word deleted successfully (in-memory)'
       });
     }
-
-    return res.json({
-      success: true,
-      message: 'Word deleted successfully'
-    });
   } catch (error) {
     console.error('Delete word error:', error);
     return res.status(500).json({
@@ -121,28 +188,53 @@ dictionaryRouter.put('/words/:id', async (req: Request, res: Response<Dictionary
       });
     }
 
-    const updatedWord = await Word.findByIdAndUpdate(
-      id,
-      {
+    if (isMongoConnected()) {
+      const updatedWord = await Word.findByIdAndUpdate(
+        id,
+        {
+          english: english.trim(),
+          translation: translation.trim(),
+          pronunciation: pronunciation?.trim()
+        },
+        { new: true }
+      );
+      
+      if (!updatedWord) {
+        return res.status(404).json({
+          success: false,
+          error: 'Word not found'
+        });
+      }
+
+      return res.json({
+        success: true,
+        word: updatedWord.toJSON(),
+        message: 'Word updated successfully'
+      });
+    } else {
+      // Use in-memory storage
+      const wordIndex = memoryDictionary.findIndex(w => w.id === id);
+      
+      if (wordIndex === -1) {
+        return res.status(404).json({
+          success: false,
+          error: 'Word not found'
+        });
+      }
+
+      memoryDictionary[wordIndex] = {
+        ...memoryDictionary[wordIndex],
         english: english.trim(),
         translation: translation.trim(),
         pronunciation: pronunciation?.trim()
-      },
-      { new: true }
-    );
-    
-    if (!updatedWord) {
-      return res.status(404).json({
-        success: false,
-        error: 'Word not found'
+      };
+
+      return res.json({
+        success: true,
+        word: memoryDictionary[wordIndex],
+        message: 'Word updated successfully (in-memory)'
       });
     }
-
-    return res.json({
-      success: true,
-      word: updatedWord.toJSON(),
-      message: 'Word updated successfully'
-    });
   } catch (error) {
     console.error('Update word error:', error);
     return res.status(500).json({

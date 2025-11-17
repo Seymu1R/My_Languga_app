@@ -10,7 +10,9 @@ const connectDB = async () => {
     console.log(`📊 Database: ${mongoose.connection.name}`);
   } catch (error) {
     console.error('❌ MongoDB connection error:', error);
-    process.exit(1);
+    console.log('⚠️  Server will continue without MongoDB (in-memory storage)');
+    console.log('💡 To enable MongoDB, run: mongod --port 27018 --dbpath ~/mongodb_data --fork --logpath ~/mongodb.log');
+    // Don't exit - allow server to continue without MongoDB
   }
 };
 

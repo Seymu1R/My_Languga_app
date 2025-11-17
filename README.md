@@ -1,21 +1,50 @@
-# Language Learning Application
+# Language Learning Application 🎓
 
-A full-stack web application for learning English with interactive reading comprehension and vocabulary building features.
+AI-powered English learning application with translation, pronunciation, and vocabulary building features.
 
-## Features
+## 🚀 Quick Start
 
-- AI-powered text generation based on proficiency levels
-- Interactive word selection and dictionary building
-- Clean, minimalist design
-- Personal vocabulary management
+### Start the application (Recommended - with MongoDB)
+```bash
+./start.sh
+```
+This will automatically:
+- Start MongoDB on port 27018
+- Start backend server on port 7000
+- Start frontend on port 5173
+- All vocabulary data will be saved permanently
 
-## Technology Stack
+### Stop the application
+```bash
+./stop.sh
+```
+This will stop both the app and MongoDB cleanly.
 
-- **Frontend**: React with TypeScript, Tailwind CSS
+### Alternative: Run without MongoDB
+```bash
+npm run dev
+```
+App will work with in-memory storage (data lost on restart).
+
+## ✨ Features
+
+✅ **AI Provider Selection**: OpenAI, Claude, Gemini, Cohere  
+✅ **13 Language Support**: Azerbaijani, Turkish, Russian, Spanish, French, German, Chinese, Japanese, Arabic, Polish, Ukrainian, Italian, Portuguese  
+✅ **AI Translation**: Click any word → get instant translation in your native language  
+✅ **AI Pronunciation**: IPA format pronunciation (e.g., /əˈpɑːrt/ for "apart")  
+✅ **Persistent Storage**: MongoDB integration for permanent vocabulary storage  
+✅ **In-Memory Fallback**: Works without MongoDB if needed  
+✅ **Interactive Reading**: Click words in AI-generated texts to add to dictionary  
+✅ **5 Proficiency Levels**: Elementary to Advanced
+
+## 📋 Technology Stack
+
+- **Frontend**: React with TypeScript, Vite, Tailwind CSS
 - **Backend**: Node.js with Express.js and TypeScript
-- **Styling**: Tailwind CSS
+- **Database**: MongoDB (with in-memory fallback)
+- **AI Integration**: OpenAI, Anthropic Claude, Google Gemini, Cohere
 
-## Getting Started
+## 🎯 Getting Started
 
 ### Prerequisites
 

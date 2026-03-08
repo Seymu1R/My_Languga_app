@@ -4,7 +4,10 @@ const connectDB = async () => {
   try {
     const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27018/language_learning';
     
-    await mongoose.connect(mongoURI);
+    // Extract DB name from URI or use default
+    await mongoose.connect(mongoURI, {
+       dbName: 'language_learning'
+    });
     
     console.log('✅ MongoDB connected successfully');
     console.log(`📊 Database: ${mongoose.connection.name}`);

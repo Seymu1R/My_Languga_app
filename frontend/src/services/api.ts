@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Word, ProficiencyLevel } from '../context/AppContext';
 
-const API_BASE_URL = 'http://localhost:7000/api';
+const API_BASE_URL = 'http://localhost:7001/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,

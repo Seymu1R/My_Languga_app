@@ -20,7 +20,7 @@ const AIProviders = {
   },
   gemini: {
     name: 'Google Gemini',
-    models: ['gemini-2.5-flash'],
+    models: ['gemini-3.1-flash', 'gemini-3.1-pro', 'gemini-3.0-flash', 'gemini-3.0-pro', 'gemini-2.5-flash', 'gemini-2.5-pro'],
     description: 'Google Gemini models'
   },
   cohere: {
@@ -88,7 +88,7 @@ const AITokenModal: React.FC<AITokenModalProps> = ({ isOpen, onClose }) => {
         setError(err.response.data?.error || `Server error: ${err.response.status}`);
       } else if (err.request) {
         // Request was made but no response received
-        setError('Cannot connect to server. Please check if the backend server is running on http://localhost:7000');
+        setError('Cannot connect to server. Please check if the backend server is running on http://localhost:7001');
       } else {
         // Something else happened
         setError('Network error. Please check your connection and try again.');

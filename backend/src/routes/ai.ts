@@ -84,8 +84,7 @@ Please generate a completely new and unique text now:`;
     if (provider === 'gemini') {
       // ** START: Transformed Gemini Logic **
       try {
-        // 1. Correctly construct the v1 API URL
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiToken}`;
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiToken}`;
 
         // 2. Format the request body specifically for the Gemini API
         const requestBody = {

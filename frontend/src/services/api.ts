@@ -67,6 +67,23 @@ export const aiService = {
     });
     return response.data;
   },
+
+  async generateExampleSentences(
+    word: string,
+    level?: string,
+    aiToken?: string,
+    provider?: string,
+    model?: string
+  ) {
+    const response = await api.post('/ai/example-sentences', {
+      word,
+      level,
+      aiToken,
+      provider,
+      model
+    });
+    return response.data;
+  },
 };
 
 // Dictionary Service
@@ -76,8 +93,8 @@ export const dictionaryService = {
     return response.data.words;
   },
 
-  async addWord(english: string, translation: string, pronunciation?: string): Promise<Word> {
-    const response = await api.post('/dictionary/words', { english, translation, pronunciation });
+  async addWord(english: string, translation: string, pronunciation?: string, referenceSentence?: string): Promise<Word> {
+    const response = await api.post('/dictionary/words', { english, translation, pronunciation, referenceSentence });
     return response.data.word;
   },
 
@@ -85,8 +102,8 @@ export const dictionaryService = {
     await api.delete(`/dictionary/words/${id}`);
   },
 
-  async updateWord(id: string, english: string, translation: string, pronunciation?: string): Promise<Word> {
-    const response = await api.put(`/dictionary/words/${id}`, { english, translation, pronunciation });
+  async updateWord(id: string, english: string, translation: string, pronunciation?: string, referenceSentence?: string): Promise<Word> {
+    const response = await api.put(`/dictionary/words/${id}`, { english, translation, pronunciation, referenceSentence });
     return response.data.word;
   },
 };

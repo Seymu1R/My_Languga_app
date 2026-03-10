@@ -27,10 +27,10 @@ const InteractiveText: React.FC<InteractiveTextProps> = ({ text }) => {
   };
 
   // Function to save word to dictionary
-  const handleSaveWord = async (english: string, translation: string, pronunciation?: string) => {
+  const handleSaveWord = async (english: string, translation: string, pronunciation?: string, referenceSentence?: string) => {
     try {
       dispatch(actions.setLoading(true));
-      const newWord = await dictionaryService.addWord(english, translation, pronunciation);
+      const newWord = await dictionaryService.addWord(english, translation, pronunciation, referenceSentence);
       dispatch(actions.addWord(newWord));
       setIsModalOpen(false);
       setSelectedWord(null);

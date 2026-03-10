@@ -341,3 +341,110 @@ Word: ${word}`;
     });
   }
 });
+
+// Example sentences endpoint
+interface ExampleSentencesRequest {
+  word: string;
+  level?: string;
+  aiToken?: string;
+  provider?: string;
+  model?: string;
+}
+
+interface ExampleSentencesResponse {
+  success: boolean;
+  sentences?: string[];
+  error?: string;
+}
+
+aiRouter.post('/example-sentences', async (req: Request, res: Response<ExampleSentencesResponse>) => {
+  try {
+    console.log('📝 Example sentences request received:', req.body);
+    const { word, level, aiToken, provider, model }: ExampleSentencesRequest = req.body;
+
+    if (!word) {
+      return res.status(400).json({
+        success: false,
+        error: 'Word is required'
+      });
+    }
+
+    if (!aiToken || !provider) {
+      return res.json({
+        success: false,
+        error: 'AI token and provider are required for generating example sentences'
+      });
+    }
+
+    console.log(`📖 Generating example sentences for "${word}" at ${level || 'Intermediate'} level`);
+
+    try {
+      const aiService = new AIService({
+        provider: provider as 'openai' | 'claude' | 'gemini' | 'cohere',
+        apiKey: aiToken,
+        model: model
+      });
+
+      const sentencePrompt = `Generate exactly 3 short, natural example sentences using the English word "${word}".
+The sentences should be appropriate for ${level || 'Intermediate'} level English learners.
+Each sentence should be on a new line.
+Do NOT number the sentences.
+Do NOT add any extra text, explanation, or formatting.
+Just 3 plain sentences, one per line.
+Word: ${word}`;
+
+      const aiResponse = await aiService.generateText({
+        level: level || 'Intermediate',
+        prompt: sentencePrompt,
+        maxTokens: 200
+      });
+
+      if (aiResponse.success && aiResponse.text) {
+        const sentences = aiResponse.text
+          .split('\n')
+          .map(s => s.trim())
+          .filter(s => s.length > 0 && s.toLowerCase().includes(word.toLowerCase()))
+          .slice(0, 3);
+
+        if (sentences.length === 0) {
+          // Fallback: split by any line and take non-empty ones
+          const fallbackSentences = aiResponse.text
+            .split('\n')
+            .map(s => s.replace(/^\d+[\.\)\-]\s*/, '').trim())
+            .filter(s => s.length > 5)
+            .slice(0, 3);
+
+          console.log(`✅ Example sentences generated (fallback): ${fallbackSentences.length}`);
+          return res.json({
+            success: true,
+            sentences: fallbackSentences
+          });
+        }
+
+        console.log(`✅ Example sentences generated: ${sentences.length}`);
+        return res.json({
+          success: true,
+          sentences
+        });
+      }
+
+      console.log(`⚠️ Example sentences generation failed: ${aiResponse.error}`);
+      return res.json({
+        success: false,
+        error: `Unable to generate example sentences for "${word}". ${aiResponse.error}`
+      });
+    } catch (aiError) {
+      console.log(`❌ Example sentences error: ${aiError}`);
+      return res.json({
+        success: false,
+        error: `Example sentences error: ${aiError instanceof Error ? aiError.message : 'Unknown error'}`
+      });
+    }
+  } catch (error) {
+    console.error('Example sentences error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to generate example sentences'
+    });
+  }
+});

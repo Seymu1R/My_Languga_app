@@ -6,6 +6,7 @@ export interface IWord extends Document {
   english: string;
   translation: string;
   pronunciation?: string;
+  referenceSentence?: string;
   dateAdded: Date;
 }
 
@@ -25,6 +26,10 @@ const wordSchema = new Schema<IWord>({
     trim: true
   },
   pronunciation: {
+    type: String,
+    trim: true
+  },
+  referenceSentence: {
     type: String,
     trim: true
   },

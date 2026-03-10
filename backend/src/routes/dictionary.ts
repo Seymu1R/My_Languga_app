@@ -16,6 +16,7 @@ interface AddWordRequest {
   english: string;
   translation: string;
   pronunciation?: string;
+  referenceSentence?: string;
 }
 
 interface DictionaryResponse {
@@ -56,7 +57,7 @@ dictionaryRouter.get('/words', async (req: Request, res: Response<DictionaryResp
 // Add a new word to dictionary
 dictionaryRouter.post('/words', async (req: Request, res: Response<DictionaryResponse>) => {
   try {
-    const { english, translation, pronunciation }: AddWordRequest = req.body;
+    const { english, translation, pronunciation, referenceSentence }: AddWordRequest = req.body;
     
     if (!english || !translation) {
       return res.status(400).json({
@@ -81,7 +82,8 @@ dictionaryRouter.post('/words', async (req: Request, res: Response<DictionaryRes
       const newWord = new Word({
         english: english.trim(),
         translation: translation.trim(),
-        pronunciation: pronunciation?.trim()
+        pronunciation: pronunciation?.trim(),
+        referenceSentence: referenceSentence?.trim()
       });
 
       await newWord.save();
@@ -109,6 +111,7 @@ dictionaryRouter.post('/words', async (req: Request, res: Response<DictionaryRes
         english: english.trim(),
         translation: translation.trim(),
         pronunciation: pronunciation?.trim(),
+        referenceSentence: referenceSentence?.trim(),
         dateAdded: new Date().toISOString()
       };
 
@@ -179,7 +182,7 @@ dictionaryRouter.delete('/words/:id', async (req: Request, res: Response<Diction
 dictionaryRouter.put('/words/:id', async (req: Request, res: Response<DictionaryResponse>) => {
   try {
     const { id } = req.params;
-    const { english, translation, pronunciation }: AddWordRequest = req.body;
+    const { english, translation, pronunciation, referenceSentence }: AddWordRequest = req.body;
     
     if (!english || !translation) {
       return res.status(400).json({
@@ -194,7 +197,8 @@ dictionaryRouter.put('/words/:id', async (req: Request, res: Response<Dictionary
         {
           english: english.trim(),
           translation: translation.trim(),
-          pronunciation: pronunciation?.trim()
+          pronunciation: pronunciation?.trim(),
+          referenceSentence: referenceSentence?.trim()
         },
         { new: true }
       );
@@ -226,7 +230,8 @@ dictionaryRouter.put('/words/:id', async (req: Request, res: Response<Dictionary
         ...memoryDictionary[wordIndex],
         english: english.trim(),
         translation: translation.trim(),
-        pronunciation: pronunciation?.trim()
+        pronunciation: pronunciation?.trim(),
+        referenceSentence: referenceSentence?.trim()
       };
 
       return res.json({

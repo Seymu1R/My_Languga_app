@@ -6,7 +6,7 @@ interface WordDefinitionModalProps {
   isOpen: boolean;
   word: string;
   onClose: () => void;
-  onSave: (english: string, translation: string, pronunciation?: string) => void;
+  onSave: (english: string, translation: string, pronunciation?: string, referenceSentence?: string) => void;
 }
 
 const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
@@ -22,6 +22,9 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
   const [aiPronunciation, setAiPronunciation] = useState('');
   const [isLoadingTranslation, setIsLoadingTranslation] = useState(false);
   const [isLoadingPronunciation, setIsLoadingPronunciation] = useState(false);
+  const [isLoadingSentences, setIsLoadingSentences] = useState(false);
+  const [exampleSentences, setExampleSentences] = useState<string[]>([]);
+  const [selectedSentenceIndex, setSelectedSentenceIndex] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Reset form when modal opens/closes or word changes
@@ -31,11 +34,14 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
       setAiTranslation('');
       setPronunciation('');
       setAiPronunciation('');
+      setExampleSentences([]);
+      setSelectedSentenceIndex(null);
       
-      // Fetch AI translation and pronunciation when word changes and AI is ready
+      // Fetch AI translation, pronunciation, and example sentences when word changes and AI is ready
       if (word && state.isAiReady && state.aiToken && state.aiProvider) {
         fetchAITranslation();
         fetchAIPronunciation();
+        fetchExampleSentences();
       }
     }
   }, [isOpen, word]);
@@ -94,6 +100,34 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
     }
   };
 
+  const fetchExampleSentences = async () => {
+    if (!word || !state.aiToken || !state.aiProvider) return;
+    
+    setIsLoadingSentences(true);
+    try {
+      const response = await aiService.generateExampleSentences(
+        word,
+        state.selectedLevel || 'Intermediate',
+        state.aiToken,
+        state.aiProvider,
+        state.aiModel || undefined
+      );
+      
+      if (response.success && response.sentences && response.sentences.length > 0) {
+        setExampleSentences(response.sentences);
+        setSelectedSentenceIndex(0); // Auto-select the first sentence
+      } else {
+        console.error('Example sentences failed:', response.error);
+        setExampleSentences([]);
+      }
+    } catch (error) {
+      console.error('Error fetching example sentences:', error);
+      setExampleSentences([]);
+    } finally {
+      setIsLoadingSentences(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -108,13 +142,20 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
     // Use user pronunciation if provided, otherwise use AI pronunciation (optional)
     const finalPronunciation = pronunciation.trim() || aiPronunciation.trim() || undefined;
 
+    // Get selected reference sentence
+    const finalReferenceSentence = selectedSentenceIndex !== null && exampleSentences[selectedSentenceIndex]
+      ? exampleSentences[selectedSentenceIndex]
+      : undefined;
+
     setIsSubmitting(true);
     try {
-      await onSave(word, finalTranslation, finalPronunciation);
+      await onSave(word, finalTranslation, finalPronunciation, finalReferenceSentence);
       setTranslation('');
       setAiTranslation('');
       setPronunciation('');
       setAiPronunciation('');
+      setExampleSentences([]);
+      setSelectedSentenceIndex(null);
     } catch (error) {
       console.error('Error saving word:', error);
     } finally {
@@ -127,6 +168,8 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
     setAiTranslation('');
     setPronunciation('');
     setAiPronunciation('');
+    setExampleSentences([]);
+    setSelectedSentenceIndex(null);
     onClose();
   };
 
@@ -212,6 +255,56 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
             <p className="mt-1 text-xs text-purple-600">
               🔊 AI suggested pronunciation (e.g., /bɔːt/ for "bought"). Edit if needed.
             </p>
+          </div>
+
+          {/* Example Sentences - Radio Buttons */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              📖 Reference Sentence
+            </label>
+            {isLoadingSentences ? (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                <div className="flex items-center space-x-3">
+                  <svg className="animate-spin h-5 w-5 text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span className="text-sm text-emerald-700">Generating example sentences...</span>
+                </div>
+              </div>
+            ) : exampleSentences.length > 0 ? (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 space-y-3">
+                <p className="text-xs text-emerald-600 mb-2">
+                  ✨ Select a reference sentence to save with this word:
+                </p>
+                {exampleSentences.map((sentence, index) => (
+                  <label
+                    key={index}
+                    className={`flex items-start space-x-3 p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                      selectedSentenceIndex === index
+                        ? 'bg-emerald-100 border-2 border-emerald-400'
+                        : 'bg-white border-2 border-transparent hover:bg-emerald-50'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="referenceSentence"
+                      value={index}
+                      checked={selectedSentenceIndex === index}
+                      onChange={() => setSelectedSentenceIndex(index)}
+                      className="mt-1 text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <span className="text-sm text-gray-800 leading-relaxed">{sentence}</span>
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <p className="text-sm text-gray-500">
+                  {state.isAiReady ? 'No example sentences available' : 'Add AI token to generate example sentences'}
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="mb-6">

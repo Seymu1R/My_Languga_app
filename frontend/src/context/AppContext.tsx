@@ -6,6 +6,7 @@ interface Word {
   english: string;
   translation: string;
   pronunciation?: string;
+  referenceSentence?: string;
   dateAdded: string;
 }
 
@@ -47,8 +48,8 @@ const initialState: AppState = {
   isAiReady: false,
   nativeLanguage: localStorage.getItem('nativeLanguage') || 'Azərbaycan dili',
   nativeLanguageCode: localStorage.getItem('nativeLanguageCode') || 'az',
-  selectedLevel: null,
-  generatedText: null,
+  selectedLevel: (localStorage.getItem('selectedLevel') as ProficiencyLevel) || null,
+  generatedText: localStorage.getItem('generatedText') || null,
   dictionary: [],
   isLoading: false,
   error: null,
@@ -90,11 +91,21 @@ function appReducer(state: AppState, action: AppAction): AppState {
         nativeLanguageCode: action.payload.code,
       };
     case 'SET_SELECTED_LEVEL':
+      if (action.payload) {
+        localStorage.setItem('selectedLevel', action.payload);
+      } else {
+        localStorage.removeItem('selectedLevel');
+      }
       return {
         ...state,
         selectedLevel: action.payload,
       };
     case 'SET_GENERATED_TEXT':
+      if (action.payload) {
+        localStorage.setItem('generatedText', action.payload);
+      } else {
+        localStorage.removeItem('generatedText');
+      }
       return {
         ...state,
         generatedText: action.payload,

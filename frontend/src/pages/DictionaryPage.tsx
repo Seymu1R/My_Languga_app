@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useApp, actions, Word } from '../context/AppContext';
 import { dictionaryService } from '../services/api';
 
@@ -103,12 +104,12 @@ const DictionaryPage: React.FC = () => {
           <p className="text-gray-600 mb-6">
             Start adding words by clicking on them in the generated texts on the home page.
           </p>
-          <a
-            href="/"
+          <Link
+            to="/"
             className="btn-primary"
           >
             Go to Home Page
-          </a>
+          </Link>
         </div>
       )}
 
@@ -127,6 +128,9 @@ const DictionaryPage: React.FC = () => {
                   </th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">
                     Translation
+                  </th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                    Reference Sentence
                   </th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">
                     Date Added
@@ -156,6 +160,11 @@ const DictionaryPage: React.FC = () => {
                     </td>
                     <td className="py-3 px-4">
                       <span className="text-gray-700">{word.translation}</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-sm text-emerald-700 italic">
+                        {word.referenceSentence || '—'}
+                      </span>
                     </td>
                     <td className="py-3 px-4">
                       <span className="text-sm text-gray-500">

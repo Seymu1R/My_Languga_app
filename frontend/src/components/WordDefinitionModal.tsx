@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { aiService } from '../services/api';
+import { aiService, dictionaryService } from '../services/api';
 
 interface WordDefinitionModalProps {
   isOpen: boolean;
   word: string;
   onClose: () => void;
-  onSave: (english: string, translation: string, pronunciation?: string, referenceSentence?: string) => void;
+  onSave: (english: string, translation: string, pronunciation?: string, referenceSentence?: string, imageUrl?: string) => void;
 }
 
 const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
@@ -26,6 +26,9 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
   const [exampleSentences, setExampleSentences] = useState<string[]>([]);
   const [selectedSentenceIndex, setSelectedSentenceIndex] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
 
   // Reset form when modal opens/closes or word changes
   useEffect(() => {
@@ -36,6 +39,10 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
       setAiPronunciation('');
       setExampleSentences([]);
       setSelectedSentenceIndex(null);
+      setSelectedSentenceIndex(null);
+      setImageUrl(null);
+      setSelectedImageFile(null);
+      setImageError(null);
       
       // Fetch AI translation, pronunciation, and example sentences when word changes and AI is ready
       if (word && state.isAiReady && state.aiToken && state.aiProvider) {
@@ -128,6 +135,20 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
     }
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setImageError('Image size must be less than 5MB');
+      return;
+    }
+
+    setImageError(null);
+    setSelectedImageFile(file);
+    setImageUrl(URL.createObjectURL(file));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -147,15 +168,38 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
       ? exampleSentences[selectedSentenceIndex]
       : undefined;
 
+    let finalImageUrl = imageUrl || undefined;
+
     setIsSubmitting(true);
+    
+    // Upload image if a new local file is selected
+    if (selectedImageFile) {
+      try {
+        finalImageUrl = await dictionaryService.uploadImage(selectedImageFile);
+      } catch (error: any) {
+        console.error('Error uploading image:', error);
+        setImageError('Failed to upload image. Please try again without it or choose another one.');
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
     try {
-      await onSave(word, finalTranslation, finalPronunciation, finalReferenceSentence);
+      await onSave(word, finalTranslation, finalPronunciation, finalReferenceSentence, finalImageUrl);
+      
+      // Cleanup Object URL to prevent memory leaks
+      if (imageUrl && imageUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(imageUrl);
+      }
+      
       setTranslation('');
       setAiTranslation('');
       setPronunciation('');
       setAiPronunciation('');
       setExampleSentences([]);
       setSelectedSentenceIndex(null);
+      setImageUrl(null);
+      setSelectedImageFile(null);
     } catch (error) {
       console.error('Error saving word:', error);
     } finally {
@@ -164,12 +208,18 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
   };
 
   const handleClose = () => {
+    if (imageUrl && imageUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(imageUrl);
+    }
     setTranslation('');
     setAiTranslation('');
     setPronunciation('');
     setAiPronunciation('');
     setExampleSentences([]);
     setSelectedSentenceIndex(null);
+    setImageUrl(null);
+    setSelectedImageFile(null);
+    setImageError(null);
     onClose();
   };
 
@@ -177,7 +227,7 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
 
   return (
     <div className="modal" onClick={handleClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-gray-800">
             Add Word to Dictionary
@@ -323,6 +373,53 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
             <p className="mt-2 text-sm text-gray-500">
               You can use AI suggestion or add your own translation of "{word}".
             </p>
+          </div>
+
+          <div className="mb-6">
+             <label className="block text-sm font-medium text-gray-700 mb-2">
+              Image associated with this word (Optional)
+            </label>
+            <div className="flex items-center space-x-4">
+               {imageUrl ? (
+                 <div className="relative">
+                   <img 
+                     src={imageUrl.startsWith('blob:') ? imageUrl : `http://localhost:7001${imageUrl}`} 
+                     alt="Word preview" 
+                     className="w-24 h-24 object-cover rounded shadow-sm border border-gray-200" 
+                   />
+                   <button 
+                     type="button"
+                     onClick={() => {
+                        if (imageUrl.startsWith('blob:')) URL.revokeObjectURL(imageUrl);
+                        setImageUrl(null);
+                        setSelectedImageFile(null);
+                     }}
+                     className="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-200"
+                   >
+                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                   </button>
+                 </div>
+               ) : (
+                 <div className="flex-1">
+                   <label className={`flex justify-center px-4 py-3 border border-gray-300 border-dashed rounded-md cursor-pointer hover:bg-gray-50 transition-colors`}>
+                     <span className="text-sm text-gray-600">
+                       Choose an image from your computer
+                     </span>
+                     <input 
+                       type="file" 
+                       accept="image/*" 
+                       className="hidden" 
+                       onChange={handleImageUpload}
+                     />
+                   </label>
+                   {imageError && (
+                     <p className="mt-1 text-sm text-red-600">{imageError}</p>
+                   )}
+                 </div>
+               )}
+            </div>
           </div>
 
           <div className="flex justify-end space-x-3">

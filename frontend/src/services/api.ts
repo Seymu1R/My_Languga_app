@@ -93,8 +93,8 @@ export const dictionaryService = {
     return response.data.words;
   },
 
-  async addWord(english: string, translation: string, pronunciation?: string, referenceSentence?: string): Promise<Word> {
-    const response = await api.post('/dictionary/words', { english, translation, pronunciation, referenceSentence });
+  async addWord(english: string, translation: string, pronunciation?: string, referenceSentence?: string, imageUrl?: string): Promise<Word> {
+    const response = await api.post('/dictionary/words', { english, translation, pronunciation, referenceSentence, imageUrl });
     return response.data.word;
   },
 
@@ -102,9 +102,22 @@ export const dictionaryService = {
     await api.delete(`/dictionary/words/${id}`);
   },
 
-  async updateWord(id: string, english: string, translation: string, pronunciation?: string, referenceSentence?: string): Promise<Word> {
-    const response = await api.put(`/dictionary/words/${id}`, { english, translation, pronunciation, referenceSentence });
+  async updateWord(id: string, english: string, translation: string, pronunciation?: string, referenceSentence?: string, imageUrl?: string): Promise<Word> {
+    const response = await api.put(`/dictionary/words/${id}`, { english, translation, pronunciation, referenceSentence, imageUrl });
     return response.data.word;
+  },
+
+  async uploadImage(file: File): Promise<string> {
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    // Use the base api instance but override headers for multipart form data
+    const response = await api.post('/dictionary/upload-image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data.imageUrl;
   },
 };
 

@@ -121,6 +121,9 @@ const DictionaryPage: React.FC = () => {
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                    Image
+                  </th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">
                     English Word
                   </th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">
@@ -148,6 +151,19 @@ const DictionaryPage: React.FC = () => {
                       index % 2 === 0 ? 'bg-white' : 'bg-gray-25'
                     }`}
                   >
+                    <td className="py-3 px-4">
+                      {word.imageUrl ? (
+                        <img 
+                          src={`http://localhost:7001${word.imageUrl}`} 
+                          alt={word.english} 
+                          className="w-12 h-12 object-cover rounded shadow-sm border border-gray-200"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs border border-gray-200">
+                          No img
+                        </div>
+                      )}
+                    </td>
                     <td className="py-3 px-4">
                       <span className="font-medium text-gray-900">
                         {word.english}

@@ -7,6 +7,7 @@ interface Word {
   translation: string;
   pronunciation?: string;
   referenceSentence?: string;
+  imageUrl?: string;
   dateAdded: string;
 }
 

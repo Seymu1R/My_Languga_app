@@ -15,7 +15,9 @@ const app = express();
 const PORT = process.env.PORT || 7001;
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: false, // Required to serve images
+}));
 app.use(cors({
   origin: [
     'http://localhost:5173',
@@ -25,6 +27,9 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+
+// Serve uploaded images statically
+app.use('/uploads', express.static('uploads'));
 
 // Routes
 app.use('/api/ai', aiRouter);

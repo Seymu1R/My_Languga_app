@@ -45,6 +45,19 @@ const Navbar = () => {
               >
                 My Dictionary
               </Link>
+              <Link
+                to="/learnings"
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-1 ${
+                  location.pathname === '/learnings'
+                    ? 'text-primary-700 bg-primary-50'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <span>My Learnings</span>
+                <span className="text-xs bg-primary-100 text-primary-700 px-1.5 py-0.5 rounded-full font-bold ml-1">
+                  Card
+                </span>
+              </Link>
 
               {/* AI Status & Token Button */}
               <div className="flex items-center space-x-3">

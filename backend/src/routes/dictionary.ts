@@ -184,6 +184,18 @@ dictionaryRouter.delete('/words/:id', async (req: Request, res: Response<Diction
         });
       }
 
+      // Delete associated image file if it exists and is local
+      if (deletedWord.imageUrl && deletedWord.imageUrl.startsWith('/uploads/')) {
+        const imagePath = path.join(__dirname, '../..', deletedWord.imageUrl);
+        if (fs.existsSync(imagePath)) {
+          try {
+            fs.unlinkSync(imagePath);
+          } catch (err) {
+            console.error('Failed to delete image file:', err);
+          }
+        }
+      }
+
       return res.json({
         success: true,
         message: 'Word deleted successfully'
@@ -199,7 +211,20 @@ dictionaryRouter.delete('/words/:id', async (req: Request, res: Response<Diction
         });
       }
 
+      const wordToDelete = memoryDictionary[wordIndex];
       memoryDictionary.splice(wordIndex, 1);
+
+      // Delete associated image file if it exists and is local
+      if (wordToDelete.imageUrl && wordToDelete.imageUrl.startsWith('/uploads/')) {
+        const imagePath = path.join(__dirname, '../..', wordToDelete.imageUrl);
+        if (fs.existsSync(imagePath)) {
+          try {
+            fs.unlinkSync(imagePath);
+          } catch (err) {
+            console.error('Failed to delete image file (in-memory path):', err);
+          }
+        }
+      }
 
       return res.json({
         success: true,

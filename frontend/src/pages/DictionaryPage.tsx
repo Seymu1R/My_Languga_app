@@ -116,29 +116,29 @@ const DictionaryPage: React.FC = () => {
       {/* Dictionary List */}
       {state.dictionary.length > 0 && (
         <div className="card">
-          <div className="overflow-hidden">
-            <table className="w-full">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 whitespace-nowrap text-sm">
                     Image
                   </th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 whitespace-nowrap text-sm">
                     English Word
                   </th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 whitespace-nowrap text-sm">
                     Pronunciation
                   </th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 whitespace-nowrap text-sm">
                     Translation
                   </th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 whitespace-nowrap text-sm">
                     Reference Sentence
                   </th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 whitespace-nowrap text-sm">
                     Date Added
                   </th>
-                  <th className="text-right py-3 px-4 font-semibold text-gray-700">
+                  <th className="text-right py-3 px-4 font-semibold text-gray-700 whitespace-nowrap text-sm">
                     Actions
                   </th>
                 </tr>
@@ -154,7 +154,7 @@ const DictionaryPage: React.FC = () => {
                     <td className="py-3 px-4">
                       {word.imageUrl ? (
                         <img 
-                          src={`http://localhost:7001${word.imageUrl}`} 
+                          src={word.imageUrl.startsWith('http') || word.imageUrl.startsWith('blob:') ? word.imageUrl : `http://localhost:7001${word.imageUrl.startsWith('/') ? '' : '/'}${word.imageUrl}`} 
                           alt={word.english} 
                           className="w-12 h-12 object-cover rounded shadow-sm border border-gray-200"
                         />

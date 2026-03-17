@@ -3,6 +3,7 @@ import { AppProvider } from './context/AppContext';
 import Navbar from './components/Navbar';
 import HomePage from './pages/HomePage';
 import DictionaryPage from './pages/DictionaryPage';
+import LearningsPage from './pages/LearningsPage';
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/dictionary" element={<DictionaryPage />} />
+              <Route path="/learnings" element={<LearningsPage />} />
             </Routes>
           </main>
         </div>

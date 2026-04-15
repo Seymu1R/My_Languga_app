@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp, actions, Word } from '../context/AppContext';
-import { dictionaryService } from '../services/api';
+import { dictionaryService, resolveAssetUrl } from '../services/api';
 
 const DictionaryPage: React.FC = () => {
   const { state, dispatch } = useApp();
@@ -154,7 +154,7 @@ const DictionaryPage: React.FC = () => {
                     <td className="py-3 px-4">
                       {word.imageUrl ? (
                         <img 
-                          src={word.imageUrl.startsWith('http') || word.imageUrl.startsWith('blob:') ? word.imageUrl : `http://localhost:7001${word.imageUrl.startsWith('/') ? '' : '/'}${word.imageUrl}`} 
+                          src={resolveAssetUrl(word.imageUrl)} 
                           alt={word.english} 
                           className="w-12 h-12 object-cover rounded shadow-sm border border-gray-200"
                         />

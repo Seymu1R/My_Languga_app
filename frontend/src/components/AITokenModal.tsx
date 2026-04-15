@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp, actions } from '../context/AppContext';
-import { aiService } from '../services/api';
+import { aiService, API_ORIGIN } from '../services/api';
 
 interface AITokenModalProps {
   isOpen: boolean;
@@ -88,7 +88,7 @@ const AITokenModal: React.FC<AITokenModalProps> = ({ isOpen, onClose }) => {
         setError(err.response.data?.error || `Server error: ${err.response.status}`);
       } else if (err.request) {
         // Request was made but no response received
-        setError('Cannot connect to server. Please check if the backend server is running on http://localhost:7001');
+        setError(`Cannot connect to server. Please check if the backend server is running on ${API_ORIGIN}`);
       } else {
         // Something else happened
         setError('Network error. Please check your connection and try again.');

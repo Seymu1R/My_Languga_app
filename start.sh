@@ -18,7 +18,7 @@ if [ ! -d "$MONGO_DATA_DIR" ]; then
     echo -e "${YELLOW}📁 Creating MongoDB data directory...${NC}"
     mkdir -p "$MONGO_DATA_DIR"
 fi
-
+MONGODB_URI
 # Start MongoDB
 echo -e "${GREEN}🍃 Starting MongoDB on port $MONGO_PORT...${NC}"
 mongod --port $MONGO_PORT --dbpath "$MONGO_DATA_DIR" --fork --logpath "$MONGO_LOG"

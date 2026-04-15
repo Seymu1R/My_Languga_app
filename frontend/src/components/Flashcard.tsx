@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import { Word } from '../context/AppContext';
+import { resolveAssetUrl } from '../services/api';
 
 interface FlashcardProps {
   word: Word;
@@ -99,7 +100,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ word, onSwipeResult }) => {
           {word.imageUrl && (
             <div className="mb-6 w-32 h-32 rounded-full overflow-hidden border-4 border-primary-100 shadow-md">
               <img 
-                src={word.imageUrl.startsWith('http') || word.imageUrl.startsWith('blob:') ? word.imageUrl : `http://localhost:7001${word.imageUrl.startsWith('/') ? '' : '/'}${word.imageUrl}`} 
+                src={resolveAssetUrl(word.imageUrl)} 
                 alt={word.english} 
                 className="w-full h-full object-cover"
                 draggable={false}

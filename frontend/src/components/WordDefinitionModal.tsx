@@ -1,12 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { useApp } from '../context/AppContext';
-import { aiService, dictionaryService } from '../services/api';
+import React, { useState, useEffect } from "react";
+import { useApp } from "../context/AppContext";
+import { aiService, dictionaryService, resolveAssetUrl } from "../services/api";
 
 interface WordDefinitionModalProps {
   isOpen: boolean;
   word: string;
   onClose: () => void;
-  onSave: (english: string, translation: string, pronunciation?: string, referenceSentence?: string, imageUrl?: string) => void;
+  onSave: (
+    english: string,
+    translation: string,
+    pronunciation?: string,
+    referenceSentence?: string,
+    imageUrl?: string,
+  ) => void;
 }
 
 const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
@@ -16,15 +22,17 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
   onSave,
 }) => {
   const { state } = useApp();
-  const [translation, setTranslation] = useState('');
-  const [aiTranslation, setAiTranslation] = useState('');
-  const [pronunciation, setPronunciation] = useState('');
-  const [aiPronunciation, setAiPronunciation] = useState('');
+  const [translation, setTranslation] = useState("");
+  const [aiTranslation, setAiTranslation] = useState("");
+  const [pronunciation, setPronunciation] = useState("");
+  const [aiPronunciation, setAiPronunciation] = useState("");
   const [isLoadingTranslation, setIsLoadingTranslation] = useState(false);
   const [isLoadingPronunciation, setIsLoadingPronunciation] = useState(false);
   const [isLoadingSentences, setIsLoadingSentences] = useState(false);
   const [exampleSentences, setExampleSentences] = useState<string[]>([]);
-  const [selectedSentenceIndex, setSelectedSentenceIndex] = useState<number | null>(null);
+  const [selectedSentenceIndex, setSelectedSentenceIndex] = useState<
+    number | null
+  >(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
@@ -33,17 +41,17 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
   // Reset form when modal opens/closes or word changes
   useEffect(() => {
     if (isOpen) {
-      setTranslation('');
-      setAiTranslation('');
-      setPronunciation('');
-      setAiPronunciation('');
+      setTranslation("");
+      setAiTranslation("");
+      setPronunciation("");
+      setAiPronunciation("");
       setExampleSentences([]);
       setSelectedSentenceIndex(null);
       setSelectedSentenceIndex(null);
       setImageUrl(null);
       setSelectedImageFile(null);
       setImageError(null);
-      
+
       // Fetch AI translation, pronunciation, and example sentences when word changes and AI is ready
       if (word && state.isAiReady && state.aiToken && state.aiProvider) {
         fetchAITranslation();
@@ -55,7 +63,7 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
 
   const fetchAITranslation = async () => {
     if (!word || !state.aiToken || !state.aiProvider) return;
-    
+
     setIsLoadingTranslation(true);
     try {
       const response = await aiService.translateWord(
@@ -64,18 +72,18 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
         state.nativeLanguageCode,
         state.aiToken,
         state.aiProvider,
-        state.aiModel || undefined
+        state.aiModel || undefined,
       );
-      
+
       if (response.success && response.translation) {
         setAiTranslation(response.translation);
       } else {
-        console.error('Translation failed:', response.error);
-        setAiTranslation('Translation not available');
+        console.error("Translation failed:", response.error);
+        setAiTranslation("Translation not available");
       }
     } catch (error) {
-      console.error('Error fetching translation:', error);
-      setAiTranslation('Translation error');
+      console.error("Error fetching translation:", error);
+      setAiTranslation("Translation error");
     } finally {
       setIsLoadingTranslation(false);
     }
@@ -83,25 +91,25 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
 
   const fetchAIPronunciation = async () => {
     if (!word || !state.aiToken || !state.aiProvider) return;
-    
+
     setIsLoadingPronunciation(true);
     try {
       const response = await aiService.getPronunciation(
         word,
         state.aiToken,
         state.aiProvider,
-        state.aiModel || undefined
+        state.aiModel || undefined,
       );
-      
+
       if (response.success && response.pronunciation) {
         setAiPronunciation(response.pronunciation);
       } else {
-        console.error('Pronunciation failed:', response.error);
-        setAiPronunciation('');
+        console.error("Pronunciation failed:", response.error);
+        setAiPronunciation("");
       }
     } catch (error) {
-      console.error('Error fetching pronunciation:', error);
-      setAiPronunciation('');
+      console.error("Error fetching pronunciation:", error);
+      setAiPronunciation("");
     } finally {
       setIsLoadingPronunciation(false);
     }
@@ -109,26 +117,30 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
 
   const fetchExampleSentences = async () => {
     if (!word || !state.aiToken || !state.aiProvider) return;
-    
+
     setIsLoadingSentences(true);
     try {
       const response = await aiService.generateExampleSentences(
         word,
-        state.selectedLevel || 'Intermediate',
+        state.selectedLevel || "Intermediate",
         state.aiToken,
         state.aiProvider,
-        state.aiModel || undefined
+        state.aiModel || undefined,
       );
-      
-      if (response.success && response.sentences && response.sentences.length > 0) {
+
+      if (
+        response.success &&
+        response.sentences &&
+        response.sentences.length > 0
+      ) {
         setExampleSentences(response.sentences);
         setSelectedSentenceIndex(0); // Auto-select the first sentence
       } else {
-        console.error('Example sentences failed:', response.error);
+        console.error("Example sentences failed:", response.error);
         setExampleSentences([]);
       }
     } catch (error) {
-      console.error('Error fetching example sentences:', error);
+      console.error("Error fetching example sentences:", error);
       setExampleSentences([]);
     } finally {
       setIsLoadingSentences(false);
@@ -140,7 +152,7 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      setImageError('Image size must be less than 5MB');
+      setImageError("Image size must be less than 5MB");
       return;
     }
 
@@ -151,70 +163,80 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Use user translation if provided, otherwise use AI translation
     const finalTranslation = translation.trim() || aiTranslation;
-    
+
     if (!finalTranslation) {
-      alert('Please wait for AI translation or enter your own translation');
+      alert("Please wait for AI translation or enter your own translation");
       return;
     }
 
     // Use user pronunciation if provided, otherwise use AI pronunciation (optional)
-    const finalPronunciation = pronunciation.trim() || aiPronunciation.trim() || undefined;
+    const finalPronunciation =
+      pronunciation.trim() || aiPronunciation.trim() || undefined;
 
     // Get selected reference sentence
-    const finalReferenceSentence = selectedSentenceIndex !== null && exampleSentences[selectedSentenceIndex]
-      ? exampleSentences[selectedSentenceIndex]
-      : undefined;
+    const finalReferenceSentence =
+      selectedSentenceIndex !== null && exampleSentences[selectedSentenceIndex]
+        ? exampleSentences[selectedSentenceIndex]
+        : undefined;
 
     let finalImageUrl = imageUrl || undefined;
 
     setIsSubmitting(true);
-    
+
     // Upload image if a new local file is selected
     if (selectedImageFile) {
       try {
         finalImageUrl = await dictionaryService.uploadImage(selectedImageFile);
       } catch (error: any) {
-        console.error('Error uploading image:', error);
-        setImageError('Failed to upload image. Please try again without it or choose another one.');
+        console.error("Error uploading image:", error);
+        setImageError(
+          "Failed to upload image. Please try again without it or choose another one.",
+        );
         setIsSubmitting(false);
         return;
       }
     }
 
     try {
-      await onSave(word, finalTranslation, finalPronunciation, finalReferenceSentence, finalImageUrl);
-      
+      await onSave(
+        word,
+        finalTranslation,
+        finalPronunciation,
+        finalReferenceSentence,
+        finalImageUrl,
+      );
+
       // Cleanup Object URL to prevent memory leaks
-      if (imageUrl && imageUrl.startsWith('blob:')) {
+      if (imageUrl && imageUrl.startsWith("blob:")) {
         URL.revokeObjectURL(imageUrl);
       }
-      
-      setTranslation('');
-      setAiTranslation('');
-      setPronunciation('');
-      setAiPronunciation('');
+
+      setTranslation("");
+      setAiTranslation("");
+      setPronunciation("");
+      setAiPronunciation("");
       setExampleSentences([]);
       setSelectedSentenceIndex(null);
       setImageUrl(null);
       setSelectedImageFile(null);
     } catch (error) {
-      console.error('Error saving word:', error);
+      console.error("Error saving word:", error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleClose = () => {
-    if (imageUrl && imageUrl.startsWith('blob:')) {
+    if (imageUrl && imageUrl.startsWith("blob:")) {
       URL.revokeObjectURL(imageUrl);
     }
-    setTranslation('');
-    setAiTranslation('');
-    setPronunciation('');
-    setAiPronunciation('');
+    setTranslation("");
+    setAiTranslation("");
+    setPronunciation("");
+    setAiPronunciation("");
     setExampleSentences([]);
     setSelectedSentenceIndex(null);
     setImageUrl(null);
@@ -227,7 +249,10 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
 
   return (
     <div className="modal" onClick={handleClose}>
-      <div className="modal-content max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="modal-content max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-gray-800">
             Add Word to Dictionary
@@ -236,8 +261,18 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
             onClick={handleClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -260,16 +295,40 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
             <div className="relative">
               <input
                 type="text"
-                value={isLoadingTranslation ? 'Loading translation...' : aiTranslation}
+                value={
+                  isLoadingTranslation
+                    ? "Loading translation..."
+                    : aiTranslation
+                }
                 disabled
                 className="input bg-blue-50 text-blue-900 font-medium cursor-not-allowed"
-                placeholder={state.isAiReady ? 'AI will suggest translation here...' : 'Add AI token to enable translation'}
+                placeholder={
+                  state.isAiReady
+                    ? "AI will suggest translation here..."
+                    : "Add AI token to enable translation"
+                }
               />
               {isLoadingTranslation && (
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin h-5 w-5 text-blue-600"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                 </div>
               )}
@@ -281,7 +340,10 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
 
           {/* AI Pronunciation - Optional Editable Input */}
           <div className="mb-4">
-            <label htmlFor="pronunciation" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="pronunciation"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Pronunciation (IPA) - Optional
             </label>
             <div className="relative">
@@ -291,19 +353,42 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
                 value={pronunciation || aiPronunciation}
                 onChange={(e) => setPronunciation(e.target.value)}
                 className="input bg-purple-50 text-purple-900 focus:ring-purple-500 focus:border-purple-500"
-                placeholder={state.isAiReady ? (isLoadingPronunciation ? 'Loading pronunciation...' : 'AI will suggest pronunciation...') : 'Add AI token to enable'}
+                placeholder={
+                  state.isAiReady
+                    ? isLoadingPronunciation
+                      ? "Loading pronunciation..."
+                      : "AI will suggest pronunciation..."
+                    : "Add AI token to enable"
+                }
               />
               {isLoadingPronunciation && (
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <svg className="animate-spin h-5 w-5 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin h-5 w-5 text-purple-600"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                 </div>
               )}
             </div>
             <p className="mt-1 text-xs text-purple-600">
-              🔊 AI suggested pronunciation (e.g., /bɔːt/ for "bought"). Edit if needed.
+              🔊 AI suggested pronunciation (e.g., /bɔːt/ for "bought"). Edit if
+              needed.
             </p>
           </div>
 
@@ -315,11 +400,29 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
             {isLoadingSentences ? (
               <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
                 <div className="flex items-center space-x-3">
-                  <svg className="animate-spin h-5 w-5 text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin h-5 w-5 text-emerald-600"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
-                  <span className="text-sm text-emerald-700">Generating example sentences...</span>
+                  <span className="text-sm text-emerald-700">
+                    Generating example sentences...
+                  </span>
                 </div>
               </div>
             ) : exampleSentences.length > 0 ? (
@@ -332,8 +435,8 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
                     key={index}
                     className={`flex items-start space-x-3 p-3 rounded-lg cursor-pointer transition-all duration-200 ${
                       selectedSentenceIndex === index
-                        ? 'bg-emerald-100 border-2 border-emerald-400'
-                        : 'bg-white border-2 border-transparent hover:bg-emerald-50'
+                        ? "bg-emerald-100 border-2 border-emerald-400"
+                        : "bg-white border-2 border-transparent hover:bg-emerald-50"
                     }`}
                   >
                     <input
@@ -344,21 +447,28 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
                       onChange={() => setSelectedSentenceIndex(index)}
                       className="mt-1 text-emerald-600 focus:ring-emerald-500"
                     />
-                    <span className="text-sm text-gray-800 leading-relaxed">{sentence}</span>
+                    <span className="text-sm text-gray-800 leading-relaxed">
+                      {sentence}
+                    </span>
                   </label>
                 ))}
               </div>
             ) : (
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <p className="text-sm text-gray-500">
-                  {state.isAiReady ? 'No example sentences available' : 'Add AI token to generate example sentences'}
+                  {state.isAiReady
+                    ? "No example sentences available"
+                    : "Add AI token to generate example sentences"}
                 </p>
               </div>
             )}
           </div>
 
           <div className="mb-6">
-            <label htmlFor="translation" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="translation"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Your Translation (optional if you want to edit AI suggestion)
             </label>
             <input
@@ -367,7 +477,11 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
               value={translation}
               onChange={(e) => setTranslation(e.target.value)}
               className="input"
-              placeholder={aiTranslation ? `Default: ${aiTranslation}` : "Enter your own translation..."}
+              placeholder={
+                aiTranslation
+                  ? `Default: ${aiTranslation}`
+                  : "Enter your own translation..."
+              }
               autoFocus
             />
             <p className="mt-2 text-sm text-gray-500">
@@ -376,49 +490,62 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
           </div>
 
           <div className="mb-6">
-             <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Image associated with this word (Optional)
             </label>
             <div className="flex items-center space-x-4">
-               {imageUrl ? (
-                 <div className="relative">
-                   <img 
-                     src={imageUrl.startsWith('blob:') ? imageUrl : `http://localhost:7001${imageUrl}`} 
-                     alt="Word preview" 
-                     className="w-24 h-24 object-cover rounded shadow-sm border border-gray-200" 
-                   />
-                   <button 
-                     type="button"
-                     onClick={() => {
-                        if (imageUrl.startsWith('blob:')) URL.revokeObjectURL(imageUrl);
-                        setImageUrl(null);
-                        setSelectedImageFile(null);
-                     }}
-                     className="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-200"
-                   >
-                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                   </button>
-                 </div>
-               ) : (
-                 <div className="flex-1">
-                   <label className={`flex justify-center px-4 py-3 border border-gray-300 border-dashed rounded-md cursor-pointer hover:bg-gray-50 transition-colors`}>
-                     <span className="text-sm text-gray-600">
-                       Choose an image from your computer
-                     </span>
-                     <input 
-                       type="file" 
-                       accept="image/*" 
-                       className="hidden" 
-                       onChange={handleImageUpload}
-                     />
-                   </label>
-                   {imageError && (
-                     <p className="mt-1 text-sm text-red-600">{imageError}</p>
-                   )}
-                 </div>
-               )}
+              {imageUrl ? (
+                <div className="relative">
+                  <img
+                    src={resolveAssetUrl(imageUrl)}
+                    alt="Word preview"
+                    className="w-24 h-24 object-cover rounded shadow-sm border border-gray-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (imageUrl.startsWith("blob:"))
+                        URL.revokeObjectURL(imageUrl);
+                      setImageUrl(null);
+                      setSelectedImageFile(null);
+                    }}
+                    className="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-200"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              ) : (
+                <div className="flex-1">
+                  <label
+                    className={`flex justify-center px-4 py-3 border border-gray-300 border-dashed rounded-md cursor-pointer hover:bg-gray-50 transition-colors`}
+                  >
+                    <span className="text-sm text-gray-600">
+                      Choose an image from your computer
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                    />
+                  </label>
+                  {imageError && (
+                    <p className="mt-1 text-sm text-red-600">{imageError}</p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -436,7 +563,7 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
               className="btn-primary"
               disabled={isSubmitting || (!translation.trim() && !aiTranslation)}
             >
-              {isSubmitting ? 'Adding...' : 'Add to Dictionary'}
+              {isSubmitting ? "Adding..." : "Add to Dictionary"}
             </button>
           </div>
         </form>

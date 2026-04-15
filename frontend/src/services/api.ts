@@ -1,7 +1,17 @@
 import axios from 'axios';
 import { Word, ProficiencyLevel } from '../context/AppContext';
 
-const API_BASE_URL = 'http://localhost:7001/api';
+export const API_ORIGIN = import.meta.env.VITE_API_ORIGIN || 'http://localhost:7000';
+
+const API_BASE_URL = `${API_ORIGIN}/api`;
+
+export const resolveAssetUrl = (assetPath: string) => {
+  if (assetPath.startsWith('http') || assetPath.startsWith('blob:')) {
+    return assetPath;
+  }
+
+  return `${API_ORIGIN}${assetPath.startsWith('/') ? '' : '/'}${assetPath}`;
+};
 
 const api = axios.create({
   baseURL: API_BASE_URL,

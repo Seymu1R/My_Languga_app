@@ -12,7 +12,7 @@ dotenv.config();
 connectDB();
 
 const app = express();
-const PORT = process.env.PORT || 7001;
+const PORT = process.env.PORT || 7000;
 
 // Middleware
 app.use(helmet({

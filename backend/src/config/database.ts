@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const connectDB = async () => {
   try {
-    const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27018/language_learning';
+    const mongoURI = process.env.MONGODB_URI || 'mongodb+srv://seymu1r:n0gHwrweGYdHz1fi@cluster0.b4icad3.mongodb.net/';
     
     // Extract DB name from URI or use default
     await mongoose.connect(mongoURI, {

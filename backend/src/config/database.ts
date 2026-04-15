@@ -1,9 +1,14 @@
 import mongoose from 'mongoose';
 
 const connectDB = async () => {
+  const mongoURI = process.env.MONGODB_URI;
+
+  if (!mongoURI) {
+    console.log('⚠️ MONGODB_URI is not set. Server will continue without MongoDB (in-memory storage)');
+    console.log('💡 Add MONGODB_URI to backend/.env to enable MongoDB');
+    return;
+  }
   try {
-    const mongoURI = process.env.MONGODB_URI || 'mongodb+srv://seymu1r:n0gHwrweGYdHz1fi@cluster0.b4icad3.mongodb.net/';
-    
     // Extract DB name from URI or use default
     await mongoose.connect(mongoURI, {
        dbName: 'language_learning'

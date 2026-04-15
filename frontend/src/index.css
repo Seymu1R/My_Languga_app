@@ -43,6 +43,15 @@
   }
   
   .text-clickable {
-    @apply cursor-pointer hover:bg-primary-50 hover:text-primary-700 rounded px-1 transition-colors duration-150;
+    @apply cursor-pointer rounded px-0.5 transition-colors duration-150 underline decoration-transparent underline-offset-4 hover:text-primary-700 hover:decoration-primary-300;
+  }
+
+  .reading-panel {
+    @apply rounded-2xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white p-5 sm:p-8 shadow-sm;
+  }
+
+  .reading-text {
+    @apply mx-auto max-w-[72ch] whitespace-pre-wrap text-[1.12rem] sm:text-[1.18rem] leading-9 text-slate-700 font-serif antialiased;
+    text-wrap: pretty;
   }
 }

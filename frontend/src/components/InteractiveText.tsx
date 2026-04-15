@@ -100,8 +100,13 @@ const InteractiveText: React.FC<InteractiveTextProps> = ({ text }) => {
 
   return (
     <>
-      <div className="text-lg leading-relaxed text-gray-800 select-none">
-        {renderInteractiveText()}
+      <div className="reading-panel select-none">
+        <p className="text-sm sm:text-base text-slate-500 mb-4">
+          Click any word for context-based translation and quick save.
+        </p>
+        <div className="reading-text">
+          {renderInteractiveText()}
+        </div>
       </div>
 
       <WordDefinitionModal

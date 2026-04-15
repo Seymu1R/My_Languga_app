@@ -62,6 +62,12 @@ interface DictionaryResponse {
   imageUrl?: string;
 }
 
+interface LearningStatusRequest {
+  known: boolean;
+}
+
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
 // Get all words in dictionary
 dictionaryRouter.get('/words', async (req: Request, res: Response<DictionaryResponse>) => {
   try {
@@ -85,6 +91,53 @@ dictionaryRouter.get('/words', async (req: Request, res: Response<DictionaryResp
     return res.status(500).json({
       success: false,
       error: 'Failed to retrieve words'
+    });
+  }
+});
+
+// Get words for learnings queue (learning words + due known words)
+dictionaryRouter.get('/words/learnings', async (req: Request, res: Response<DictionaryResponse>) => {
+  try {
+    const now = new Date();
+
+    if (isMongoConnected()) {
+      const words = await Word.find({
+        $or: [
+          { status: 'learning' },
+          { status: { $exists: false } },
+          { status: 'known', nextReviewDate: { $lte: now } }
+        ]
+      }).sort({ dateAdded: -1 });
+
+      return res.json({
+        success: true,
+        words
+      });
+    }
+
+    const words = memoryDictionary
+      .filter((word) => {
+        if (word.status !== 'known') {
+          return true;
+        }
+
+        if (!word.nextReviewDate) {
+          return true;
+        }
+
+        return new Date(word.nextReviewDate).getTime() <= now.getTime();
+      })
+      .sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime());
+
+    return res.json({
+      success: true,
+      words
+    });
+  } catch (error) {
+    console.error('Get learning words error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve learning words'
     });
   }
 });
@@ -149,6 +202,9 @@ dictionaryRouter.post('/words', async (req: Request, res: Response<DictionaryRes
         pronunciation: pronunciation?.trim(),
         referenceSentence: referenceSentence?.trim(),
         imageUrl: imageUrl?.trim(),
+        status: 'learning',
+        nextReviewDate: null,
+        reviewIntervalDays: 7,
         dateAdded: new Date().toISOString()
       };
 
@@ -165,6 +221,102 @@ dictionaryRouter.post('/words', async (req: Request, res: Response<DictionaryRes
     return res.status(500).json({
       success: false,
       error: 'Failed to add word'
+    });
+  }
+});
+
+// Update learning status based on flashcard result
+dictionaryRouter.patch('/words/:id/learning-status', async (req: Request, res: Response<DictionaryResponse>) => {
+  try {
+    const { id } = req.params;
+    const { known }: LearningStatusRequest = req.body;
+
+    if (typeof known !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        error: 'known must be a boolean value'
+      });
+    }
+
+    if (isMongoConnected()) {
+      const existingWord = await Word.findById(id);
+
+      if (!existingWord) {
+        return res.status(404).json({
+          success: false,
+          error: 'Word not found'
+        });
+      }
+
+      let nextStatus = 'learning';
+      let nextReviewDate: Date | null = null;
+      let nextIntervalDays = 7;
+
+      if (known) {
+        const currentInterval = existingWord.reviewIntervalDays || 7;
+        // If word was already known and shown again, expand interval for future reviews.
+        nextIntervalDays = existingWord.status === 'known'
+          ? Math.min(currentInterval * 4, 30)
+          : currentInterval;
+        nextStatus = 'known';
+        nextReviewDate = new Date(Date.now() + (nextIntervalDays * 24 * 60 * 60 * 1000));
+      }
+
+      const updatedWord = await Word.findByIdAndUpdate(
+        id,
+        {
+          status: nextStatus,
+          nextReviewDate,
+          reviewIntervalDays: nextIntervalDays
+        },
+        { new: true }
+      );
+
+      return res.json({
+        success: true,
+        word: updatedWord?.toJSON(),
+        message: known ? 'Word marked as known' : 'Word moved back to learning'
+      });
+    }
+
+    const wordIndex = memoryDictionary.findIndex(w => w.id === id);
+
+    if (wordIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        error: 'Word not found'
+      });
+    }
+
+    const currentWord = memoryDictionary[wordIndex];
+    let nextIntervalDays = 7;
+
+    if (known) {
+      const currentInterval = currentWord.reviewIntervalDays || 7;
+      nextIntervalDays = currentWord.status === 'known'
+        ? Math.min(currentInterval * 4, 30)
+        : currentInterval;
+      currentWord.status = 'known';
+      currentWord.nextReviewDate = new Date(Date.now() + nextIntervalDays * DAY_IN_MS).toISOString();
+      currentWord.reviewIntervalDays = nextIntervalDays;
+    } else {
+      currentWord.status = 'learning';
+      currentWord.nextReviewDate = null;
+      currentWord.reviewIntervalDays = 7;
+    }
+
+    memoryDictionary[wordIndex] = currentWord;
+
+    return res.json({
+      success: true,
+      word: currentWord,
+      message: known ? 'Word marked as known' : 'Word moved back to learning'
+    });
+  } catch (error) {
+    console.error('Update learning status error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to update learning status'
     });
   }
 });

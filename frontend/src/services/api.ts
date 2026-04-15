@@ -20,6 +20,14 @@ const api = axios.create({
   },
 });
 
+const DEFAULT_MODELS = {
+  openai: 'gpt-4o-mini',
+  grok: 'grok-3-mini',
+  gemini: 'gemini-2.5-flash',
+  deepseek: 'deepseek-chat',
+  mistral: 'mistral-small-latest',
+} as const;
+
 // AI Service
 export const aiService = {
   async validateToken(apiToken: string) {
@@ -34,11 +42,13 @@ export const aiService = {
     model?: string,
     customPrompt?: string
   ) {
+    const resolvedProvider = (provider || 'openai') as keyof typeof DEFAULT_MODELS;
+
     const response = await api.post('/ai/generate-text', { 
       level, 
       apiToken, 
-      provider: provider || 'openai',
-      model: model || 'gpt-3.5-turbo',
+      provider: resolvedProvider,
+      model: model || DEFAULT_MODELS[resolvedProvider],
       customPrompt
     });
     return response.data;
@@ -103,6 +113,11 @@ export const dictionaryService = {
     return response.data.words;
   },
 
+  async getLearningWords(): Promise<Word[]> {
+    const response = await api.get('/dictionary/words/learnings');
+    return response.data.words;
+  },
+
   async addWord(english: string, translation: string, pronunciation?: string, referenceSentence?: string, imageUrl?: string): Promise<Word> {
     const response = await api.post('/dictionary/words', { english, translation, pronunciation, referenceSentence, imageUrl });
     return response.data.word;
@@ -114,6 +129,11 @@ export const dictionaryService = {
 
   async updateWord(id: string, english: string, translation: string, pronunciation?: string, referenceSentence?: string, imageUrl?: string): Promise<Word> {
     const response = await api.put(`/dictionary/words/${id}`, { english, translation, pronunciation, referenceSentence, imageUrl });
+    return response.data.word;
+  },
+
+  async updateLearningStatus(id: string, known: boolean): Promise<Word> {
+    const response = await api.patch(`/dictionary/words/${id}/learning-status`, { known });
     return response.data.word;
   },
 

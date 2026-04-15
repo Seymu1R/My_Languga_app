@@ -1,38 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { useApp, Word } from '../context/AppContext';
+import { Word } from '../context/AppContext';
 import { dictionaryService } from '../services/api';
 import Flashcard from '../components/Flashcard';
 import { Link } from 'react-router-dom';
 
 const LearningsPage: React.FC = () => {
-  const { state, dispatch } = useApp();
   const [queue, setQueue] = useState<Word[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [learnedCount, setLearnedCount] = useState(0);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   useEffect(() => {
-    // If dictionary isn't loaded in context, load it from API
-    // Actually this mirrors DictionaryPage logic
-    const loadDictionary = async () => {
+    const loadLearningWords = async () => {
       setIsLoading(true);
       try {
-        if (state.dictionary.length === 0) {
-          const words = await dictionaryService.getWords();
-          dispatch({ type: 'SET_DICTIONARY', payload: words });
-          initQueue(words);
-        } else {
-          initQueue(state.dictionary);
-        }
+        const words = await dictionaryService.getLearningWords();
+        initQueue(words);
       } catch (error) {
-        console.error('Failed to load dictionary:', error);
+        console.error('Failed to load learning words:', error);
       } finally {
         setIsLoading(false);
       }
     };
     
-    loadDictionary();
-  }, [dispatch, state.dictionary.length]);
+    loadLearningWords();
+  }, []);
 
   const initQueue = (words: Word[]) => {
     // Shuffle the loaded words array
@@ -44,7 +37,21 @@ const LearningsPage: React.FC = () => {
 
   const currentWord = queue[currentIndex];
 
-  const handleSwipeResult = (known: boolean) => {
+  const handleSwipeResult = async (known: boolean) => {
+    if (!currentWord || isUpdatingStatus) {
+      return;
+    }
+
+    setIsUpdatingStatus(true);
+
+    try {
+      await dictionaryService.updateLearningStatus(currentWord.id, known);
+    } catch (error) {
+      console.error('Failed to update learning status:', error);
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+
     if (known) {
       // Swiped Right -> User knows it
       setLearnedCount(prev => prev + 1);
@@ -75,7 +82,7 @@ const LearningsPage: React.FC = () => {
   }
 
   // If no words in dictionary at all
-  if (state.dictionary.length === 0) {
+  if (queue.length === 0) {
     return (
       <div className="text-center py-16 px-4">
         <div className="w-24 h-24 bg-primary-50 rounded-full flex flex-col items-center justify-center mx-auto mb-6">
@@ -104,7 +111,7 @@ const LearningsPage: React.FC = () => {
           You reviewed {learnedCount} words successfully. Keep up the great work!
         </p>
         <div className="flex justify-center gap-4">
-          <button onClick={() => initQueue(state.dictionary)} className="btn-primary">
+          <button onClick={() => initQueue(queue)} className="btn-primary">
             Review Again
           </button>
           <Link to="/dictionary" className="btn-secondary">
@@ -165,6 +172,7 @@ const LearningsPage: React.FC = () => {
       <div className="text-center mt-12 grid grid-cols-2 gap-4 max-w-sm mx-auto w-full">
         <button 
           onClick={() => handleSwipeResult(false)}
+          disabled={isUpdatingStatus}
           className="flex items-center justify-center space-x-2 text-red-500 border border-red-200 bg-red-50 rounded-xl p-3 hover:bg-red-100 transition-colors"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
@@ -172,6 +180,7 @@ const LearningsPage: React.FC = () => {
         </button>
         <button 
           onClick={() => handleSwipeResult(true)}
+          disabled={isUpdatingStatus}
           className="flex items-center justify-center space-x-2 text-green-500 border border-green-200 bg-green-50 rounded-xl p-3 hover:bg-green-100 transition-colors"
         >
           <span className="font-semibold text-sm">Know</span>

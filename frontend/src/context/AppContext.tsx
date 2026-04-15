@@ -9,13 +9,16 @@ interface Word {
   referenceSentence?: string;
   imageUrl?: string;
   dateAdded: string;
+  status?: 'learning' | 'known';
+  nextReviewDate?: string | null;
+  reviewIntervalDays?: number;
 }
 
 type ProficiencyLevel = 'Elementary' | 'Pre-Intermediate' | 'Intermediate' | 'Upper-Intermediate' | 'Advanced';
 
 interface AppState {
   aiToken: string | null;
-  aiProvider: 'openai' | 'claude' | 'gemini' | 'cohere' | null;
+  aiProvider: 'openai' | 'grok' | 'gemini' | 'deepseek' | 'mistral' | null;
   aiModel: string | null;
   isAiReady: boolean;
   nativeLanguage: string;
@@ -29,7 +32,7 @@ interface AppState {
 
 type AppAction =
   | { type: 'SET_AI_TOKEN'; payload: string }
-  | { type: 'SET_AI_PROVIDER'; payload: 'openai' | 'claude' | 'gemini' | 'cohere' }
+  | { type: 'SET_AI_PROVIDER'; payload: 'openai' | 'grok' | 'gemini' | 'deepseek' | 'mistral' }
   | { type: 'SET_AI_MODEL'; payload: string }
   | { type: 'SET_AI_READY'; payload: boolean }
   | { type: 'SET_NATIVE_LANGUAGE'; payload: { language: string; code: string } }
@@ -44,7 +47,7 @@ type AppAction =
 // Initial state
 const initialState: AppState = {
   aiToken: localStorage.getItem('aiToken'),
-  aiProvider: (localStorage.getItem('aiProvider') as 'openai' | 'claude' | 'gemini' | 'cohere') || null,
+  aiProvider: (localStorage.getItem('aiProvider') as 'openai' | 'grok' | 'gemini' | 'deepseek' | 'mistral') || null,
   aiModel: localStorage.getItem('aiModel'),
   isAiReady: false,
   nativeLanguage: localStorage.getItem('nativeLanguage') || 'Azərbaycan dili',
@@ -179,7 +182,7 @@ export const actions = {
     type: 'SET_AI_TOKEN',
     payload: token,
   }),
-  setAiProvider: (provider: 'openai' | 'claude' | 'gemini' | 'cohere'): AppAction => ({
+  setAiProvider: (provider: 'openai' | 'grok' | 'gemini' | 'deepseek' | 'mistral'): AppAction => ({
     type: 'SET_AI_PROVIDER',
     payload: provider,
   }),

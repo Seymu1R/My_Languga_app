@@ -9,6 +9,9 @@ export interface IWord extends Document {
   referenceSentence?: string;
   imageUrl?: string;
   dateAdded: Date;
+  status: 'learning' | 'known';
+  nextReviewDate: Date | null;
+  reviewIntervalDays: number;
 }
 
 const wordSchema = new Schema<IWord>({
@@ -37,6 +40,20 @@ const wordSchema = new Schema<IWord>({
   imageUrl: {
     type: String,
     trim: true
+  },
+  status: {
+    type: String,
+    enum: ['learning', 'known'],
+    default: 'learning'
+  },
+  nextReviewDate: {
+    type: Date,
+    default: null
+  },
+  reviewIntervalDays: {
+    type: Number,
+    default: 7,
+    min: 1
   },
   dateAdded: {
     type: Date,

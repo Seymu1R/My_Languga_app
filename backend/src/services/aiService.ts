@@ -11,6 +11,7 @@ export interface TextGenerationParams {
   level: string;
   prompt: string;
   maxTokens?: number;
+  temperature?: number;
 }
 
 export interface AIServiceResponse {
@@ -290,7 +291,7 @@ export class AIService {
           { role: 'user', content: params.prompt }
         ],
         max_tokens: params.maxTokens || 500,
-        temperature: 0.7,
+        temperature: params.temperature ?? 0.6,
       });
 
       const text = response.choices[0]?.message?.content;
@@ -368,7 +369,7 @@ export class AIService {
           { role: 'user', content: params.prompt }
         ],
         max_tokens: params.maxTokens || 500,
-        temperature: 0.7,
+        temperature: params.temperature ?? 0.6,
       });
 
       const text = response.choices[0]?.message?.content;
@@ -433,7 +434,13 @@ export class AIService {
       console.log(`🔍 Gemini using model: ${modelName}`);
       
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: modelName });
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        generationConfig: {
+          temperature: params.temperature ?? 0.6,
+          maxOutputTokens: params.maxTokens || 500,
+        },
+      });
 
       const systemPrompt = this.getSystemPrompt(params.level);
       const fullPrompt = `${systemPrompt}\n\n${params.prompt}`;
@@ -516,7 +523,7 @@ export class AIService {
           { role: 'user', content: params.prompt }
         ],
         max_tokens: params.maxTokens || 500,
-        temperature: 0.7,
+        temperature: params.temperature ?? 0.6,
       });
 
       const text = response.choices[0]?.message?.content;
@@ -592,7 +599,7 @@ export class AIService {
           { role: 'user', content: params.prompt }
         ],
         max_tokens: params.maxTokens || 500,
-        temperature: 0.7,
+        temperature: params.temperature ?? 0.6,
       });
 
       const text = response.choices[0]?.message?.content;
@@ -643,11 +650,11 @@ export class AIService {
 
   private getSystemPrompt(level: string): string {
     const prompts = {
-      'Elementary': 'You are an English teacher creating simple, engaging content for elementary level students. Use basic vocabulary and simple sentence structures.',
-      'Pre-Intermediate': 'You are an English teacher creating content for pre-intermediate students. Use moderately complex vocabulary and varied sentence structures.',
-      'Intermediate': 'You are an English teacher creating content for intermediate level students. Use a good variety of vocabulary and complex sentence structures.',
-      'Upper-Intermediate': 'You are an English teacher creating advanced content for upper-intermediate students. Use sophisticated vocabulary and complex grammatical structures.',
-      'Advanced': 'You are an English teacher creating challenging content for advanced students. Use complex vocabulary, idiomatic expressions, and sophisticated grammatical structures.'
+      'Elementary': 'You are an English teacher. Keep language simple for Elementary learners. Return only final text without extra notes.',
+      'Pre-Intermediate': 'You are an English teacher. Keep language clear for Pre-Intermediate learners. Return only final text without extra notes.',
+      'Intermediate': 'You are an English teacher. Use balanced vocabulary for Intermediate learners. Return only final text without extra notes.',
+      'Upper-Intermediate': 'You are an English teacher. Use richer language for Upper-Intermediate learners. Return only final text without extra notes.',
+      'Advanced': 'You are an English teacher. Use advanced natural language for Advanced learners. Return only final text without extra notes.'
     };
 
     return prompts[level as keyof typeof prompts] || prompts['Intermediate'];

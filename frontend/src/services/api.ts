@@ -60,7 +60,8 @@ export const aiService = {
     languageCode: string,
     aiToken?: string,
     provider?: string,
-    model?: string
+    model?: string,
+    contextSentence?: string
   ) {
     const response = await api.post('/ai/translate-word', {
       word,
@@ -68,7 +69,8 @@ export const aiService = {
       languageCode,
       aiToken,
       provider,
-      model
+      model,
+      contextSentence,
     });
     return response.data;
   },

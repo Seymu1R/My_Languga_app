@@ -10,6 +10,7 @@ interface InteractiveTextProps {
 const InteractiveText: React.FC<InteractiveTextProps> = ({ text }) => {
   const { dispatch } = useApp();
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
+  const [selectedSentence, setSelectedSentence] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Function to clean word of punctuation for dictionary lookup
@@ -17,11 +18,32 @@ const InteractiveText: React.FC<InteractiveTextProps> = ({ text }) => {
     return word.replace(/[.,!?;:"'()[\]{}\-]/g, '').toLowerCase();
   };
 
+  const getSentenceForIndex = (charIndex: number): string => {
+    const boundaryRegex = /[.!?\n]/;
+    let start = charIndex;
+    let end = charIndex;
+
+    while (start > 0 && !boundaryRegex.test(text[start - 1])) {
+      start -= 1;
+    }
+
+    while (end < text.length && !boundaryRegex.test(text[end])) {
+      end += 1;
+    }
+
+    if (end < text.length) {
+      end += 1;
+    }
+
+    return text.slice(start, end).trim();
+  };
+
   // Function to handle word click
-  const handleWordClick = (word: string) => {
+  const handleWordClick = (word: string, charIndex: number) => {
     const cleanedWord = cleanWord(word);
     if (cleanedWord.length > 0) {
       setSelectedWord(cleanedWord);
+      setSelectedSentence(getSentenceForIndex(charIndex));
       setIsModalOpen(true);
     }
   };
@@ -46,8 +68,12 @@ const InteractiveText: React.FC<InteractiveTextProps> = ({ text }) => {
   const renderInteractiveText = () => {
     // Split by spaces but preserve the spaces and punctuation
     const words = text.split(/(\s+)/);
+    let currentOffset = 0;
     
     return words.map((segment, index) => {
+      const segmentStart = currentOffset;
+      currentOffset += segment.length;
+
       // If it's just whitespace, render as is
       if (/^\s+$/.test(segment)) {
         return <span key={index}>{segment}</span>;
@@ -59,7 +85,7 @@ const InteractiveText: React.FC<InteractiveTextProps> = ({ text }) => {
           <span
             key={index}
             className="text-clickable inline-block"
-            onClick={() => handleWordClick(segment)}
+            onClick={() => handleWordClick(segment, segmentStart)}
             title={`Click to add "${cleanWord(segment)}" to your dictionary`}
           >
             {segment}
@@ -81,9 +107,11 @@ const InteractiveText: React.FC<InteractiveTextProps> = ({ text }) => {
       <WordDefinitionModal
         isOpen={isModalOpen}
         word={selectedWord || ''}
+        contextSentence={selectedSentence}
         onClose={() => {
           setIsModalOpen(false);
           setSelectedWord(null);
+          setSelectedSentence('');
         }}
         onSave={handleSaveWord}
       />

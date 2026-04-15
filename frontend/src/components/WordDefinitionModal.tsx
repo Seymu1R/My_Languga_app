@@ -5,6 +5,7 @@ import { aiService, dictionaryService, resolveAssetUrl } from "../services/api";
 interface WordDefinitionModalProps {
   isOpen: boolean;
   word: string;
+  contextSentence?: string;
   onClose: () => void;
   onSave: (
     english: string,
@@ -18,6 +19,7 @@ interface WordDefinitionModalProps {
 const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
   isOpen,
   word,
+  contextSentence,
   onClose,
   onSave,
 }) => {
@@ -73,6 +75,7 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
         state.aiToken,
         state.aiProvider,
         state.aiModel || undefined,
+        contextSentence,
       );
 
       if (response.success && response.translation) {
@@ -286,6 +289,17 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
               {word}
             </div>
           </div>
+
+          {contextSentence && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Context Sentence
+              </label>
+              <div className="input bg-amber-50 text-amber-900 border border-amber-200 text-sm leading-relaxed">
+                {contextSentence}
+              </div>
+            </div>
+          )}
 
           {/* AI Translation - Disabled Input */}
           <div className="mb-4">

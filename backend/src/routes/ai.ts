@@ -3,6 +3,40 @@ import { AIService } from '../services/aiService';
 
 export const aiRouter = express.Router();
 
+const LEVEL_GENERATION_CONFIG: Record<
+  TextGenerationRequest['level'],
+  { minWords: number; maxWords: number; maxTokens: number }
+> = {
+  Elementary: { minWords: 170, maxWords: 190, maxTokens: 280 },
+  'Pre-Intermediate': { minWords: 210, maxWords: 230, maxTokens: 340 },
+  Intermediate: { minWords: 250, maxWords: 270, maxTokens: 400 },
+  'Upper-Intermediate': { minWords: 310, maxWords: 330, maxTokens: 490 },
+  Advanced: { minWords: 420, maxWords: 440, maxTokens: 620 },
+};
+
+const buildReadingPrompt = (
+  level: TextGenerationRequest['level'],
+  customPrompt?: string
+) => {
+  const cfg = LEVEL_GENERATION_CONFIG[level];
+
+  if (customPrompt?.trim()) {
+    return [
+      `Task: ${customPrompt.trim()}`,
+      `Audience: ${level} English learner.`,
+      `Length: ${cfg.minWords}-${cfg.maxWords} words.`,
+      'Output: one continuous passage only, no title, no list, no markdown, no extra notes.'
+    ].join('\n');
+  }
+
+  return [
+    `Write one original reading passage for ${level} English learners.`,
+    `Length: ${cfg.minWords}-${cfg.maxWords} words.`,
+    'Use level-appropriate grammar and vocabulary.',
+    'Output only the passage text (single block), no title or extra formatting.'
+  ].join('\n');
+};
+
 // Types
 interface TextGenerationRequest {
   level: 'Elementary' | 'Pre-Intermediate' | 'Intermediate' | 'Upper-Intermediate' | 'Advanced';
@@ -62,22 +96,8 @@ aiRouter.post('/generate-text', async (req: Request, res: Response<AIResponse>) 
 
     console.log(`🤖 Generating text with ${provider} (model: ${model}) for ${level} level`);
 
-    // --- Prompt Generation Logic (Unchanged) ---
-    let prompt: string;
-    if (customPrompt) {
-      prompt = customPrompt;
-      console.log(`💬 Using custom greeting prompt`);
-    } else {
-      prompt = `Generate a high-quality, engaging reading comprehension text for ${level} level English learners.
-
-Requirements:
-- Text should be approximately ${level === 'Elementary' ? '150-200' : level === 'Pre-Intermediate' ? '200-250' : level === 'Intermediate' ? '250-300' : level === 'Upper-Intermediate' ? '300-400' : '400-500'} words.
-- Use appropriate vocabulary and grammar complexity for the specified level.
-- Ensure the text is engaging, educational, coherent, and flows naturally.
-
-Level: ${level}
-Please generate a completely new and unique text now:`;
-    }
+    const prompt = buildReadingPrompt(level, customPrompt);
+    const levelConfig = LEVEL_GENERATION_CONFIG[level];
 
     // Use the unified AI service logic for all providers (OpenAI, Grok, Gemini, DeepSeek, Mistral).
     try {
@@ -86,7 +106,8 @@ Please generate a completely new and unique text now:`;
       const aiResponse = await aiService.generateText({
         level,
         prompt,
-        maxTokens: customPrompt ? 200 : (level === 'Advanced' ? 700 : 500)
+        maxTokens: levelConfig.maxTokens,
+        temperature: 0.55,
       });
 
       if (aiResponse.success && aiResponse.text) {
@@ -120,6 +141,7 @@ interface TranslateWordRequest {
   word: string;
   targetLanguage: string;
   languageCode: string;
+  contextSentence?: string;
   aiToken?: string;
   provider?: string;
   model?: string;
@@ -134,7 +156,7 @@ interface TranslateResponse {
 aiRouter.post('/translate-word', async (req: Request, res: Response<TranslateResponse>) => {
   try {
     console.log('📝 Translation request received:', req.body);
-    const { word, targetLanguage, languageCode, aiToken, provider, model }: TranslateWordRequest = req.body;
+    const { word, targetLanguage, languageCode, contextSentence, aiToken, provider, model }: TranslateWordRequest = req.body;
     
     if (!word || !targetLanguage || !languageCode) {
       console.log('❌ Missing required fields');
@@ -162,20 +184,28 @@ aiRouter.post('/translate-word', async (req: Request, res: Response<TranslateRes
         model: model
       });
 
-      const translationPrompt = `Translate the English word "${word}" to ${targetLanguage}. 
-Provide only the direct translation without any additional text, explanation, or formatting.
-Just the single word translation in ${targetLanguage}.
-Word to translate: ${word}
-Target language: ${targetLanguage}`;
+      const translationPrompt = contextSentence?.trim()
+        ? [
+            `Translate the English word "${word}" to ${targetLanguage} based on its meaning in this sentence.`,
+            `Sentence: "${contextSentence.trim()}"`,
+            'Return only the translated word or very short phrase (max 3 words), no explanation.'
+          ].join('\n')
+        : `Translate "${word}" from English to ${targetLanguage}. Return only the translation, no explanation.`;
 
       const aiResponse = await aiService.generateText({
         level: 'Elementary',
         prompt: translationPrompt,
-        maxTokens: 50
+        maxTokens: 24,
+        temperature: 0.1,
       });
 
       if (aiResponse.success && aiResponse.text) {
-        const translation = aiResponse.text.trim();
+        const translation = aiResponse.text
+          .trim()
+          .replace(/^['"\s]+|['"\s]+$/g, '')
+          .split(/\r?\n/)[0]
+          .replace(/[.。!?]+$/g, '')
+          .trim();
         console.log(`✅ AI translation successful: "${word}" → "${translation}"`);
         
         return res.json({
@@ -250,17 +280,13 @@ aiRouter.post('/pronunciation', async (req: Request, res: Response<Pronunciation
         model: model
       });
 
-      const pronunciationPrompt = `Provide the phonetic pronunciation (IPA - International Phonetic Alphabet) for the English word "${word}".
-Provide ONLY the IPA pronunciation enclosed in forward slashes, nothing else.
-Format: /pronunciation/
-Example: for "cat" return /kæt/
-Example: for "bought" return /bɔːt/
-Word: ${word}`;
+      const pronunciationPrompt = `Give IPA for "${word}". Return only one value in /slashes/.`;
 
       const aiResponse = await aiService.generateText({
         level: 'Elementary',
         prompt: pronunciationPrompt,
-        maxTokens: 50
+        maxTokens: 24,
+        temperature: 0.1,
       });
 
       if (aiResponse.success && aiResponse.text) {
@@ -337,18 +363,17 @@ aiRouter.post('/example-sentences', async (req: Request, res: Response<ExampleSe
         model: model
       });
 
-      const sentencePrompt = `Generate exactly 3 short, natural example sentences using the English word "${word}".
-The sentences should be appropriate for ${level || 'Intermediate'} level English learners.
-Each sentence should be on a new line.
-Do NOT number the sentences.
-Do NOT add any extra text, explanation, or formatting.
-Just 3 plain sentences, one per line.
-Word: ${word}`;
+      const sentencePrompt = [
+        `Write exactly 3 short natural sentences using "${word}".`,
+        `Level: ${level || 'Intermediate'}.`,
+        'Output rules: one sentence per line, no numbering, no explanation.'
+      ].join('\n');
 
       const aiResponse = await aiService.generateText({
         level: level || 'Intermediate',
         prompt: sentencePrompt,
-        maxTokens: 200
+        maxTokens: 110,
+        temperature: 0.35,
       });
 
       if (aiResponse.success && aiResponse.text) {

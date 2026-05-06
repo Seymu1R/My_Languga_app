@@ -11,10 +11,17 @@
     "build": "cd frontend && npm run build",
     "start": "cd backend && npm start"
   },
-  "keywords": ["react", "nodejs", "typescript", "language-learning", "english"],
+  "keywords": [
+    "react",
+    "nodejs",
+    "typescript",
+    "language-learning",
+    "english"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@biomejs/biome": "2.4.14",
     "concurrently": "^8.2.2"
   }
 }

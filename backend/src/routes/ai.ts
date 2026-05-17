@@ -1,5 +1,7 @@
 import express, { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import { AIService } from '../services/aiService';
+import { Word } from '../models/Word';
 
 export const aiRouter = express.Router();
 
@@ -176,6 +178,43 @@ aiRouter.post('/translate-word', async (req: Request, res: Response<TranslateRes
       });
     }
 
+    // RAG step: query MongoDB for previously saved translations of this word
+    let mongoSenses: string[] = [];
+    try {
+      if (mongoose.connection.readyState === 1) {
+        const safeWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const savedEntries = await Word.find({
+          english: { $regex: new RegExp(`^${safeWord}$`, 'i') }
+        }).select('translation').lean();
+        const unique = [...new Set(savedEntries.map((e: any) => e.translation).filter(Boolean))];
+        mongoSenses = unique;
+        if (mongoSenses.length > 0) {
+          console.log(`📚 MongoDB senses for "${word}":`, mongoSenses);
+        }
+      }
+    } catch (dbErr) {
+      console.warn('⚠️ MongoDB sense lookup failed, proceeding without RAG:', dbErr);
+    }
+
+    // Layer 2: Free Dictionary API (only if MongoDB had no results)
+    let dictDefinitions: string[] = [];
+    if (mongoSenses.length === 0) {
+      try {
+        const dictRes = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+        if (dictRes.ok) {
+          const dictData = await dictRes.json() as any[];
+          dictDefinitions = (dictData[0]?.meanings ?? [])
+            .flatMap((m: any) => m.definitions.map((d: any) => `(${m.partOfSpeech}) ${d.definition}`))
+            .slice(0, 3);
+          if (dictDefinitions.length > 0) {
+            console.log(`📖 Free Dictionary definitions for "${word}":`, dictDefinitions);
+          }
+        }
+      } catch (dictErr) {
+        console.warn('⚠️ Free Dictionary API lookup failed:', dictErr);
+      }
+    }
+
     // AI translation
     try {
       const aiService = new AIService({
@@ -184,13 +223,48 @@ aiRouter.post('/translate-word', async (req: Request, res: Response<TranslateRes
         model: model
       });
 
-      const translationPrompt = contextSentence?.trim()
-        ? [
-            `Translate the English word "${word}" to ${targetLanguage} based on its meaning in this sentence.`,
-            `Sentence: "${contextSentence.trim()}"`,
-            'Return only the translated word or very short phrase (max 3 words), no explanation.'
-          ].join('\n')
-        : `Translate "${word}" from English to ${targetLanguage}. Return only the translation, no explanation.`;
+      let translationPrompt: string;
+      if (contextSentence?.trim() && mongoSenses.length > 0) {
+        // Layer 1 hit: user's own dictionary + context
+        const senseList = mongoSenses.map((s, i) => `${i + 1}. ${s}`).join(', ');
+        translationPrompt = [
+          `You are an English-${targetLanguage} language teacher helping a student understand word meanings.`,
+          `Sentence: "${contextSentence.trim()}"`,
+          `The student clicked on the word "${word}" in this sentence.`,
+          `Known ${targetLanguage} translations from the student's dictionary: ${senseList}.`,
+          `Select the translation that matches how "${word}" is used in this sentence. If none fit, provide the correct one.`,
+          'Return ONLY the translation (max 3 words), no explanation, no punctuation.'
+        ].join('\n');
+      } else if (contextSentence?.trim() && dictDefinitions.length > 0) {
+        // Layer 2 hit: Free Dictionary API definitions + context
+        const defList = dictDefinitions.map((d, i) => `${i + 1}. ${d}`).join('\n');
+        translationPrompt = [
+          `You are an English-${targetLanguage} language teacher.`,
+          `Sentence: "${contextSentence.trim()}"`,
+          `The student clicked on the word "${word}" in this sentence.`,
+          `English dictionary definitions of "${word}":\n${defList}`,
+          `Using the definition that matches the sentence, translate "${word}" to ${targetLanguage}.`,
+          'Return ONLY the translation (max 3 words), no explanation, no punctuation.'
+        ].join('\n');
+      } else if (dictDefinitions.length > 0) {
+        // Layer 2 hit: Free Dictionary API definitions, no context
+        const defList = dictDefinitions.map((d, i) => `${i + 1}. ${d}`).join('\n');
+        translationPrompt = [
+          `Translate the English word "${word}" to ${targetLanguage}.`,
+          `English dictionary definitions:\n${defList}`,
+          'Return only the most common translation (max 3 words), no explanation.'
+        ].join('\n');
+      } else if (contextSentence?.trim()) {
+        // Layer 3: context only, no dictionary data
+        translationPrompt = [
+          `Translate the English word "${word}" to ${targetLanguage} based on its meaning in this sentence.`,
+          `Sentence: "${contextSentence.trim()}"`,
+          'Return only the translated word or very short phrase (max 3 words), no explanation.'
+        ].join('\n');
+      } else {
+        // Layer 3: AI on its own
+        translationPrompt = `Translate "${word}" from English to ${targetLanguage}. Return only the translation, no explanation.`;
+      }
 
       const aiResponse = await aiService.generateText({
         level: 'Elementary',

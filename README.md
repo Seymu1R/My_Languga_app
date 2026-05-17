@@ -10,7 +10,7 @@ AI-powered English learning application with translation, pronunciation, and voc
 ```
 This will automatically:
 - Start MongoDB on port 27018
-- Start backend server on port 7000
+- Start backend server on port 7001
 - Start frontend on port 5173
 - All vocabulary data will be saved permanently
 

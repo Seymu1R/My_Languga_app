@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Word, ProficiencyLevel } from '../context/AppContext';
 
-export const API_ORIGIN = import.meta.env.VITE_API_ORIGIN || 'http://localhost:7000';
+export const API_ORIGIN = import.meta.env.VITE_API_ORIGIN || 'http://localhost:7001';
 
 const API_BASE_URL = `${API_ORIGIN}/api`;
 

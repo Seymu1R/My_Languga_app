@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { AIService } from '../services/aiService';
 import { Word } from '../models/Word';
+import { log } from 'node:console';
 
 export const aiRouter = express.Router();
 
@@ -9,11 +10,11 @@ const LEVEL_GENERATION_CONFIG: Record<
   TextGenerationRequest['level'],
   { minWords: number; maxWords: number; maxTokens: number }
 > = {
-  Elementary: { minWords: 170, maxWords: 190, maxTokens: 280 },
-  'Pre-Intermediate': { minWords: 210, maxWords: 230, maxTokens: 340 },
-  Intermediate: { minWords: 250, maxWords: 270, maxTokens: 400 },
-  'Upper-Intermediate': { minWords: 310, maxWords: 330, maxTokens: 490 },
-  Advanced: { minWords: 420, maxWords: 440, maxTokens: 620 },
+  Elementary: { minWords: 170, maxWords: 190, maxTokens: 500 },
+  'Pre-Intermediate': { minWords: 210, maxWords: 230, maxTokens: 600 },
+  Intermediate: { minWords: 250, maxWords: 270, maxTokens: 700 },
+  'Upper-Intermediate': { minWords: 310, maxWords: 330, maxTokens: 880 },
+  Advanced: { minWords: 420, maxWords: 440, maxTokens: 1200 },
 };
 
 const buildReadingPrompt = (
@@ -26,14 +27,14 @@ const buildReadingPrompt = (
     return [
       `Task: ${customPrompt.trim()}`,
       `Audience: ${level} English learner.`,
-      `Length: ${cfg.minWords}-${cfg.maxWords} words.`,
+      `You MUST write between ${cfg.minWords} and ${cfg.maxWords} words. Do NOT stop early. Minimum 10 sentences.`,
       'Output: one continuous passage only, no title, no list, no markdown, no extra notes.'
     ].join('\n');
   }
 
   return [
     `Write one original reading passage for ${level} English learners.`,
-    `Length: ${cfg.minWords}-${cfg.maxWords} words.`,
+    `You MUST write between ${cfg.minWords} and ${cfg.maxWords} words. Do NOT stop early. Minimum 10 sentences.`,
     'Use level-appropriate grammar and vocabulary.',
     'Output only the passage text (single block), no title or extra formatting.'
   ].join('\n');
@@ -203,6 +204,7 @@ aiRouter.post('/translate-word', async (req: Request, res: Response<TranslateRes
         const dictRes = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
         if (dictRes.ok) {
           const dictData = await dictRes.json() as any[];
+          console.log(`📖 Free Dictionary API response for "${word}":`, dictData);
           dictDefinitions = (dictData[0]?.meanings ?? [])
             .flatMap((m: any) => m.definitions.map((d: any) => `(${m.partOfSpeech}) ${d.definition}`))
             .slice(0, 3);

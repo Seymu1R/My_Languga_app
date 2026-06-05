@@ -46,7 +46,7 @@ type AppAction =
 
 // Initial state
 const initialState: AppState = {
-  aiToken: localStorage.getItem('aiToken'),
+  aiToken: sessionStorage.getItem('aiToken'),
   aiProvider: (localStorage.getItem('aiProvider') as 'openai' | 'grok' | 'gemini' | 'deepseek' | 'mistral') || null,
   aiModel: localStorage.getItem('aiModel'),
   isAiReady: false,
@@ -63,7 +63,7 @@ const initialState: AppState = {
 function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
     case 'SET_AI_TOKEN':
-      localStorage.setItem('aiToken', action.payload);
+      sessionStorage.setItem('aiToken', action.payload);
       return {
         ...state,
         aiToken: action.payload,

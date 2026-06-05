@@ -94,7 +94,6 @@ const getStoredTokenValue = (provider: AIProviderKey, token?: string | null) => 
 
 const AITokenModal: React.FC<AITokenModalProps> = ({ isOpen, onClose }) => {
   const { state, dispatch } = useApp();
-  console.log(state, "state");
 
   const initialProvider = state.aiProvider || 'openai';
   
@@ -137,8 +136,6 @@ const AITokenModal: React.FC<AITokenModalProps> = ({ isOpen, onClose }) => {
     setError(null);
 
     try {
-      console.log(`🔧 Using AI: ${selectedProvider} with model: ${selectedModel}`);
-
       // Send greeting to AI
       const greetingResponse = await aiService.generateText(
         'Elementary',
@@ -154,10 +151,6 @@ const AITokenModal: React.FC<AITokenModalProps> = ({ isOpen, onClose }) => {
         dispatch(actions.setAiModel(selectedModel));
         dispatch(actions.setAiReady(true));
         dispatch(actions.setError(null));
-
-        if (greetingResponse.text) {
-          console.log('AI Greeting Response:', greetingResponse.text);
-        }
 
         onClose();
       } else {

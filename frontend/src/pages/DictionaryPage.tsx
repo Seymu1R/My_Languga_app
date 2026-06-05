@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp, actions, Word } from '../context/AppContext';
 import { dictionaryService, resolveAssetUrl } from '../services/api';
+import ConfirmModal from '../components/ConfirmModal';
 
 const DictionaryPage: React.FC = () => {
   const { state, dispatch } = useApp();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [wordToDelete, setWordToDelete] = useState<string | null>(null);
 
   // Load dictionary on component mount
   useEffect(() => {
@@ -27,17 +29,16 @@ const DictionaryPage: React.FC = () => {
     loadDictionary();
   }, [dispatch]);
 
-  const handleDeleteWord = async (wordId: string) => {
-    if (!confirm('Are you sure you want to delete this word from your dictionary?')) {
-      return;
-    }
-
+  const handleDeleteConfirm = async () => {
+    if (!wordToDelete) return;
     try {
-      await dictionaryService.deleteWord(wordId);
-      dispatch(actions.removeWord(wordId));
+      await dictionaryService.deleteWord(wordToDelete);
+      dispatch(actions.removeWord(wordToDelete));
     } catch (err) {
       setError('Failed to delete word');
       console.error('Delete word error:', err);
+    } finally {
+      setWordToDelete(null);
     }
   };
 
@@ -189,7 +190,7 @@ const DictionaryPage: React.FC = () => {
                     </td>
                     <td className="py-3 px-4 text-right">
                       <button
-                        onClick={() => handleDeleteWord(word.id)}
+                        onClick={() => setWordToDelete(word.id)}
                         className="text-red-600 hover:text-red-800 text-sm font-medium transition-colors"
                         title="Delete word"
                       >
@@ -203,6 +204,16 @@ const DictionaryPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={wordToDelete !== null}
+        title="Delete Word"
+        message="Are you sure you want to delete this word from your dictionary?"
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setWordToDelete(null)}
+      />
 
       {/* Help Text */}
       {state.dictionary.length > 0 && (

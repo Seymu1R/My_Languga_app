@@ -42,113 +42,92 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
 
   // Reset form when modal opens/closes or word changes
   useEffect(() => {
-    if (isOpen) {
-      setTranslation("");
-      setAiTranslation("");
-      setPronunciation("");
-      setAiPronunciation("");
-      setExampleSentences([]);
-      setSelectedSentenceIndex(null);
-      setSelectedSentenceIndex(null);
-      setImageUrl(null);
-      setSelectedImageFile(null);
-      setImageError(null);
+    if (!isOpen) return;
 
-      // Fetch AI translation, pronunciation, and example sentences when word changes and AI is ready
-      if (word && state.isAiReady && state.aiToken && state.aiProvider) {
-        fetchAITranslation();
-        fetchAIPronunciation();
-        fetchExampleSentences();
+    setTranslation("");
+    setAiTranslation("");
+    setPronunciation("");
+    setAiPronunciation("");
+    setExampleSentences([]);
+    setSelectedSentenceIndex(null);
+    setImageUrl(null);
+    setSelectedImageFile(null);
+    setImageError(null);
+
+    if (!word || !state.isAiReady || !state.aiToken || !state.aiProvider) return;
+
+    const aiToken = state.aiToken;
+    const aiProvider = state.aiProvider;
+    const aiModel = state.aiModel || undefined;
+    const nativeLanguage = state.nativeLanguage;
+    const nativeLanguageCode = state.nativeLanguageCode;
+    const selectedLevel = state.selectedLevel;
+
+    const fetchTranslation = async () => {
+      setIsLoadingTranslation(true);
+      try {
+        const response = await aiService.translateWord(
+          word,
+          nativeLanguage,
+          nativeLanguageCode,
+          aiToken,
+          aiProvider,
+          aiModel,
+          contextSentence,
+        );
+        setAiTranslation(
+          response.success && response.translation
+            ? response.translation
+            : "Translation not available",
+        );
+      } catch {
+        setAiTranslation("Translation error");
+      } finally {
+        setIsLoadingTranslation(false);
       }
-    }
-  }, [isOpen, word]);
+    };
 
-  const fetchAITranslation = async () => {
-    if (!word || !state.aiToken || !state.aiProvider) return;
-
-    setIsLoadingTranslation(true);
-    try {
-      const response = await aiService.translateWord(
-        word,
-        state.nativeLanguage,
-        state.nativeLanguageCode,
-        state.aiToken,
-        state.aiProvider,
-        state.aiModel || undefined,
-        contextSentence,
-      );
-
-      if (response.success && response.translation) {
-        setAiTranslation(response.translation);
-      } else {
-        console.error("Translation failed:", response.error);
-        setAiTranslation("Translation not available");
-      }
-    } catch (error) {
-      console.error("Error fetching translation:", error);
-      setAiTranslation("Translation error");
-    } finally {
-      setIsLoadingTranslation(false);
-    }
-  };
-
-  const fetchAIPronunciation = async () => {
-    if (!word || !state.aiToken || !state.aiProvider) return;
-
-    setIsLoadingPronunciation(true);
-    try {
-      const response = await aiService.getPronunciation(
-        word,
-        state.aiToken,
-        state.aiProvider,
-        state.aiModel || undefined,
-      );
-
-      if (response.success && response.pronunciation) {
-        setAiPronunciation(response.pronunciation);
-      } else {
-        console.error("Pronunciation failed:", response.error);
+    const fetchPronunciation = async () => {
+      setIsLoadingPronunciation(true);
+      try {
+        const response = await aiService.getPronunciation(word, aiToken, aiProvider, aiModel);
+        setAiPronunciation(
+          response.success && response.pronunciation ? response.pronunciation : "",
+        );
+      } catch {
         setAiPronunciation("");
+      } finally {
+        setIsLoadingPronunciation(false);
       }
-    } catch (error) {
-      console.error("Error fetching pronunciation:", error);
-      setAiPronunciation("");
-    } finally {
-      setIsLoadingPronunciation(false);
-    }
-  };
+    };
 
-  const fetchExampleSentences = async () => {
-    if (!word || !state.aiToken || !state.aiProvider) return;
-
-    setIsLoadingSentences(true);
-    try {
-      const response = await aiService.generateExampleSentences(
-        word,
-        state.selectedLevel || "Intermediate",
-        state.aiToken,
-        state.aiProvider,
-        state.aiModel || undefined,
-      );
-
-      if (
-        response.success &&
-        response.sentences &&
-        response.sentences.length > 0
-      ) {
-        setExampleSentences(response.sentences);
-        setSelectedSentenceIndex(0); // Auto-select the first sentence
-      } else {
-        console.error("Example sentences failed:", response.error);
+    const fetchExampleSentences = async () => {
+      setIsLoadingSentences(true);
+      try {
+        const response = await aiService.generateExampleSentences(
+          word,
+          selectedLevel || "Intermediate",
+          aiToken,
+          aiProvider,
+          aiModel,
+        );
+        if (response.success && response.sentences?.length > 0) {
+          setExampleSentences(response.sentences);
+          setSelectedSentenceIndex(0);
+        } else {
+          setExampleSentences([]);
+        }
+      } catch {
         setExampleSentences([]);
+      } finally {
+        setIsLoadingSentences(false);
       }
-    } catch (error) {
-      console.error("Error fetching example sentences:", error);
-      setExampleSentences([]);
-    } finally {
-      setIsLoadingSentences(false);
-    }
-  };
+    };
+
+    fetchTranslation();
+    fetchPronunciation();
+    fetchExampleSentences();
+  }, [isOpen, word, contextSentence, state.isAiReady, state.aiToken, state.aiProvider, state.aiModel, state.nativeLanguage, state.nativeLanguageCode, state.selectedLevel]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

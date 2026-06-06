@@ -13,12 +13,61 @@ export const resolveAssetUrl = (assetPath: string) => {
   return `${API_ORIGIN}${assetPath.startsWith('/') ? '' : '/'}${assetPath}`;
 };
 
+// Custom error class — bütün API xətaları bu formada gəlir
+export class ApiError extends Error {
+  constructor(
+    public readonly message: string,
+    public readonly status?: number,
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
 const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 30000, // 30 saniyə gözlə, sonra xəta ver
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+// Response interceptor — bütün xətaları mərkəzi yerdə idarə edir
+api.interceptors.response.use(
+  (response) => response, // Uğurlu cavab — olduğu kimi ötür
+  (error) => {
+    if (!error.response) {
+      // Server işləmir və ya internet yoxdur
+      throw new ApiError(
+        `Cannot connect to server. Please check if the backend is running on ${API_ORIGIN}`,
+      );
+    }
+
+    const { status, data } = error.response;
+    const serverMessage = data?.error || data?.message;
+
+    switch (status) {
+      case 400:
+        throw new ApiError(serverMessage || 'Invalid request. Please check your input.', 400);
+      case 401:
+        throw new ApiError(serverMessage || 'Unauthorized. Please check your API token.', 401);
+      case 403:
+        throw new ApiError(serverMessage || 'Access denied.', 403);
+      case 404:
+        throw new ApiError(serverMessage || 'Resource not found.', 404);
+      case 413:
+        throw new ApiError('File is too large. Maximum size is 5MB.', 413);
+      case 422:
+        throw new ApiError(serverMessage || 'Validation error. Please check your input.', 422);
+      case 429:
+        throw new ApiError('Too many requests. Please wait a moment and try again.', 429);
+      case 500:
+        throw new ApiError(serverMessage || 'Server error. Please try again later.', 500);
+      default:
+        throw new ApiError(serverMessage || `Unexpected error (${status}).`, status);
+    }
+  },
+);
 
 const DEFAULT_MODELS = {
   openai: 'gpt-4o-mini',

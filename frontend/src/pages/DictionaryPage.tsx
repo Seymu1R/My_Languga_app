@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useApp, actions, Word } from '../context/AppContext';
+import { useApp, actions } from '../context/AppContext';
+import type { Word } from '../types';
 import { dictionaryService, resolveAssetUrl } from '../services/api';
 import ConfirmModal from '../components/ConfirmModal';
 

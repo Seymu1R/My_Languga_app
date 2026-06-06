@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
-import { Word } from '../context/AppContext';
+import type { Word } from '../types';
 import { resolveAssetUrl } from '../services/api';
 
 interface FlashcardProps {

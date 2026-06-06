@@ -1,5 +1,6 @@
 import React from 'react';
-import { useApp, actions, ProficiencyLevel } from '../context/AppContext';
+import { useApp, actions } from '../context/AppContext';
+import type { ProficiencyLevel } from '../types';
 import { aiService } from '../services/api';
 import InteractiveText from '../components/InteractiveText';
 

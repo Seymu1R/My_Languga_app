@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Word } from '../context/AppContext';
+import type { Word } from '../types';
 import { dictionaryService } from '../services/api';
 import Flashcard from '../components/Flashcard';
 import { Link } from 'react-router-dom';

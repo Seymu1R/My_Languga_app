@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Word, ProficiencyLevel } from '../context/AppContext';
+import type { Word, ProficiencyLevel } from '../types';
 
 export const API_ORIGIN = import.meta.env.VITE_API_ORIGIN || 'http://localhost:7001';
 

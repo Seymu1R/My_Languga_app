@@ -1,38 +1,9 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
-
-// Types
-interface Word {
-  id: string;
-  english: string;
-  translation: string;
-  pronunciation?: string;
-  referenceSentence?: string;
-  imageUrl?: string;
-  dateAdded: string;
-  status?: 'learning' | 'known';
-  nextReviewDate?: string | null;
-  reviewIntervalDays?: number;
-}
-
-type ProficiencyLevel = 'Elementary' | 'Pre-Intermediate' | 'Intermediate' | 'Upper-Intermediate' | 'Advanced';
-
-interface AppState {
-  aiToken: string | null;
-  aiProvider: 'openai' | 'grok' | 'gemini' | 'deepseek' | 'mistral' | null;
-  aiModel: string | null;
-  isAiReady: boolean;
-  nativeLanguage: string;
-  nativeLanguageCode: string;
-  selectedLevel: ProficiencyLevel | null;
-  generatedText: string | null;
-  dictionary: Word[];
-  isLoading: boolean;
-  error: string | null;
-}
+import type { Word, ProficiencyLevel, AppState, AIProvider } from '../types';
 
 type AppAction =
   | { type: 'SET_AI_TOKEN'; payload: string }
-  | { type: 'SET_AI_PROVIDER'; payload: 'openai' | 'grok' | 'gemini' | 'deepseek' | 'mistral' }
+  | { type: 'SET_AI_PROVIDER'; payload: AIProvider }
   | { type: 'SET_AI_MODEL'; payload: string }
   | { type: 'SET_AI_READY'; payload: boolean }
   | { type: 'SET_NATIVE_LANGUAGE'; payload: { language: string; code: string } }
@@ -47,7 +18,7 @@ type AppAction =
 // Initial state
 const initialState: AppState = {
   aiToken: sessionStorage.getItem('aiToken'),
-  aiProvider: (localStorage.getItem('aiProvider') as 'openai' | 'grok' | 'gemini' | 'deepseek' | 'mistral') || null,
+  aiProvider: (localStorage.getItem('aiProvider') as AIProvider) || null,
   aiModel: localStorage.getItem('aiModel'),
   isAiReady: false,
   nativeLanguage: localStorage.getItem('nativeLanguage') || 'Azərbaycan dili',
@@ -182,7 +153,7 @@ export const actions = {
     type: 'SET_AI_TOKEN',
     payload: token,
   }),
-  setAiProvider: (provider: 'openai' | 'grok' | 'gemini' | 'deepseek' | 'mistral'): AppAction => ({
+  setAiProvider: (provider: AIProvider): AppAction => ({
     type: 'SET_AI_PROVIDER',
     payload: provider,
   }),
@@ -228,5 +199,5 @@ export const actions = {
   }),
 };
 
-// Export types for use in other components
-export type { Word, ProficiencyLevel, AppState };
+// Re-export types for backwards compatibility
+export type { Word, ProficiencyLevel, AppState, AIProvider } from '../types';

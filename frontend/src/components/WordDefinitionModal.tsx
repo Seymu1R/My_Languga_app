@@ -26,6 +26,7 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
   const { state } = useApp();
   const [translation, setTranslation] = useState("");
   const [aiTranslation, setAiTranslation] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
   const [pronunciation, setPronunciation] = useState("");
   const [aiPronunciation, setAiPronunciation] = useState("");
   const [isLoadingTranslation, setIsLoadingTranslation] = useState(false);
@@ -41,10 +42,21 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
   const [imageError, setImageError] = useState<string | null>(null);
 
   // Reset form when modal opens/closes or word changes
+  // Escape key ilə modalı bağla
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   useEffect(() => {
     if (!isOpen) return;
 
     setTranslation("");
+    setFormError(null);
     setAiTranslation("");
     setPronunciation("");
     setAiPronunciation("");
@@ -150,9 +162,10 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
     const finalTranslation = translation.trim() || aiTranslation;
 
     if (!finalTranslation) {
-      alert("Please wait for AI translation or enter your own translation");
+      setFormError("Please wait for AI translation or enter your own translation.");
       return;
     }
+    setFormError(null);
 
     // Use user pronunciation if provided, otherwise use AI pronunciation (optional)
     const finalPronunciation =
@@ -230,13 +243,19 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="modal" onClick={handleClose}>
+    <div
+      className="modal"
+      onClick={handleClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="word-modal-title"
+    >
       <div
         className="modal-content max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold text-gray-800">
+          <h2 id="word-modal-title" className="text-xl font-semibold text-gray-800">
             Add Word to Dictionary
           </h2>
           <button
@@ -541,6 +560,12 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
               )}
             </div>
           </div>
+
+          {formError && (
+            <div role="alert" className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-700">{formError}</p>
+            </div>
+          )}
 
           <div className="flex justify-end space-x-3">
             <button

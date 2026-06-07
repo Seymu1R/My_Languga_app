@@ -84,9 +84,17 @@ const InteractiveText: React.FC<InteractiveTextProps> = ({ text }) => {
         return (
           <span
             key={index}
+            role="button"
+            tabIndex={0}
             className="text-clickable inline-block"
             onClick={() => handleWordClick(segment, segmentStart)}
-            title={`Click to add "${cleanWord(segment)}" to your dictionary`}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleWordClick(segment, segmentStart);
+              }
+            }}
+            aria-label={`Add "${cleanWord(segment)}" to dictionary`}
           >
             {segment}
           </span>

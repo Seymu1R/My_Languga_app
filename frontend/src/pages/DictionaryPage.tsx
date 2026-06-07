@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp, actions } from '../context/AppContext';
 import type { Word } from '../types';
 import { dictionaryService, resolveAssetUrl } from '../services/api';
 import ConfirmModal from '../components/ConfirmModal';
 
-const DictionaryPage: React.FC = () => {
+const DictionaryPage = () => {
   const { state, dispatch } = useApp();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

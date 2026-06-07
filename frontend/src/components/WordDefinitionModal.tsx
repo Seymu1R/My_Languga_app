@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, type ChangeEvent, type FormEvent } from "react";
 import { useApp } from "../context/AppContext";
 import { aiService, dictionaryService, resolveAssetUrl } from "../services/api";
 
@@ -16,13 +16,13 @@ interface WordDefinitionModalProps {
   ) => void;
 }
 
-const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
+const WordDefinitionModal = ({
   isOpen,
   word,
   contextSentence,
   onClose,
   onSave,
-}) => {
+}: WordDefinitionModalProps) => {
   const { state } = useApp();
   const [translation, setTranslation] = useState("");
   const [aiTranslation, setAiTranslation] = useState("");
@@ -141,7 +141,7 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
     fetchExampleSentences();
   }, [isOpen, word, contextSentence, state.isAiReady, state.aiToken, state.aiProvider, state.aiModel, state.nativeLanguage, state.nativeLanguageCode, state.selectedLevel]);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -155,7 +155,7 @@ const WordDefinitionModal: React.FC<WordDefinitionModalProps> = ({
     setImageUrl(URL.createObjectURL(file));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     // Use user translation if provided, otherwise use AI translation

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useApp, actions } from '../context/AppContext';
 import { aiService, API_ORIGIN } from '../services/api';
 
@@ -92,7 +92,7 @@ const getStoredTokenValue = (provider: AIProviderKey, token?: string | null) => 
   return getTokenValidationError(provider, normalizedToken) ? '' : normalizedToken;
 };
 
-const AITokenModal: React.FC<AITokenModalProps> = ({ isOpen, onClose }) => {
+const AITokenModal = ({ isOpen, onClose }: AITokenModalProps) => {
   const { state, dispatch } = useApp();
 
   const initialProvider = state.aiProvider || 'openai';
@@ -121,7 +121,7 @@ const AITokenModal: React.FC<AITokenModalProps> = ({ isOpen, onClose }) => {
     setSelectedModel(getPreferredModel(provider));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const normalizedToken = normalizeTokenInput(selectedProvider, tokenInput);

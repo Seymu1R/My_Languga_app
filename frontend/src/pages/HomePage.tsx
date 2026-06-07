@@ -1,10 +1,10 @@
-import React from 'react';
+import { type ChangeEvent } from 'react';
 import { useApp, actions } from '../context/AppContext';
 import type { ProficiencyLevel } from '../types';
 import { aiService } from '../services/api';
 import InteractiveText from '../components/InteractiveText';
 
-const HomePage: React.FC = () => {
+const HomePage = () => {
   const { state, dispatch } = useApp();
 
   const proficiencyLevels: ProficiencyLevel[] = [
@@ -31,7 +31,7 @@ const HomePage: React.FC = () => {
     { name: 'Português', code: 'pt' },
   ];
 
-  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleLanguageChange = (e: ChangeEvent<HTMLSelectElement>) => {
     const selectedLanguage = languages.find(lang => lang.code === e.target.value);
     if (selectedLanguage) {
       dispatch(actions.setNativeLanguage(selectedLanguage.name, selectedLanguage.code));

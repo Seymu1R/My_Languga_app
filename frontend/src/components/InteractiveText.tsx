@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useApp, actions } from '../context/AppContext';
 import { dictionaryService } from '../services/api';
 import WordDefinitionModal from './WordDefinitionModal';
@@ -7,7 +7,7 @@ interface InteractiveTextProps {
   text: string;
 }
 
-const InteractiveText: React.FC<InteractiveTextProps> = ({ text }) => {
+const InteractiveText = ({ text }: InteractiveTextProps) => {
   const { dispatch } = useApp();
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [selectedSentence, setSelectedSentence] = useState<string>('');

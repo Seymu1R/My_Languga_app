@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import type { Word } from '../types';
 import { resolveAssetUrl } from '../services/api';
@@ -8,7 +8,7 @@ interface FlashcardProps {
   onSwipeResult: (known: boolean) => void;
 }
 
-const Flashcard: React.FC<FlashcardProps> = ({ word, onSwipeResult }) => {
+const Flashcard = ({ word, onSwipeResult }: FlashcardProps) => {
   const [isFlipped, setIsFlipped] = useState(false);
   
   // Motion values for swiping
@@ -39,7 +39,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ word, onSwipeResult }) => {
     setIsFlipped(!isFlipped);
   };
 
-  const playAudio = (e: React.MouseEvent) => {
+  const playAudio = (e: { stopPropagation(): void }) => {
     e.stopPropagation(); // don't flip card    
     if (word.pronunciation) {
       // In a real app we'd use SpeechSynthesis or audio file, here just alerting or ignoring

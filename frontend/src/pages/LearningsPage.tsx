@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import type { Word } from '../types';
 import { dictionaryService } from '../services/api';
 import Flashcard from '../components/Flashcard';
 import { Link } from 'react-router-dom';
 
-const LearningsPage: React.FC = () => {
+const LearningsPage = () => {
   const [queue, setQueue] = useState<Word[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);

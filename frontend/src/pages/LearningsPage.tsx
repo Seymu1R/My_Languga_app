@@ -8,24 +8,27 @@ const LearningsPage = () => {
   const [queue, setQueue] = useState<Word[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const [learnedCount, setLearnedCount] = useState(0);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   useEffect(() => {
     const loadLearningWords = async () => {
       setIsLoading(true);
+      setError(null);
       try {
         const words = await dictionaryService.getLearningWords();
         initQueue(words);
-      } catch (error) {
-        console.error('Failed to load learning words:', error);
+      } catch {
+        setError('Failed to load words. Please check your connection and try again.');
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     loadLearningWords();
-  }, []);
+  }, [retryCount]);
 
   const initQueue = (words: Word[]) => {
     // Shuffle the loaded words array
@@ -77,6 +80,24 @@ const LearningsPage = () => {
     return (
       <div className="flex justify-center items-center py-20">
         <div className="animate-spin w-10 h-10 border-4 border-primary-600 border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-16 px-4">
+        <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+          <span className="text-4xl">⚠️</span>
+        </div>
+        <h2 className="text-xl font-semibold text-red-900 mb-2">Something went wrong</h2>
+        <p className="text-red-700 mb-6">{error}</p>
+        <button
+          onClick={() => setRetryCount(c => c + 1)}
+          className="btn-primary"
+        >
+          Try Again
+        </button>
       </div>
     );
   }

@@ -4,35 +4,37 @@ import type { ProficiencyLevel } from '../types';
 import { aiService } from '../services/api';
 import InteractiveText from '../components/InteractiveText';
 
+// Statik sabitlər komponent xaricinə çıxarıldı —
+// hər render-də yenidən yaradılmasın
+const PROFICIENCY_LEVELS: ProficiencyLevel[] = [
+  'Elementary',
+  'Pre-Intermediate',
+  'Intermediate',
+  'Upper-Intermediate',
+  'Advanced',
+];
+
+const LANGUAGES = [
+  { name: 'Azərbaycan dili', code: 'az' },
+  { name: 'Türkçe', code: 'tr' },
+  { name: 'Русский', code: 'ru' },
+  { name: 'Español', code: 'es' },
+  { name: 'Français', code: 'fr' },
+  { name: 'Deutsch', code: 'de' },
+  { name: '中文', code: 'zh' },
+  { name: '日本語', code: 'ja' },
+  { name: 'العربية', code: 'ar' },
+  { name: 'Polski', code: 'pl' },
+  { name: 'Українська', code: 'uk' },
+  { name: 'Italiano', code: 'it' },
+  { name: 'Português', code: 'pt' },
+];
+
 const HomePage = () => {
   const { state, dispatch } = useApp();
 
-  const proficiencyLevels: ProficiencyLevel[] = [
-    'Elementary',
-    'Pre-Intermediate',
-    'Intermediate',
-    'Upper-Intermediate',
-    'Advanced'
-  ];
-
-  const languages = [
-    { name: 'Azərbaycan dili', code: 'az' },
-    { name: 'Türkçe', code: 'tr' },
-    { name: 'Русский', code: 'ru' },
-    { name: 'Español', code: 'es' },
-    { name: 'Français', code: 'fr' },
-    { name: 'Deutsch', code: 'de' },
-    { name: '中文', code: 'zh' },
-    { name: '日本語', code: 'ja' },
-    { name: 'العربية', code: 'ar' },
-    { name: 'Polski', code: 'pl' },
-    { name: 'Українська', code: 'uk' },
-    { name: 'Italiano', code: 'it' },
-    { name: 'Português', code: 'pt' },
-  ];
-
   const handleLanguageChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    const selectedLanguage = languages.find(lang => lang.code === e.target.value);
+    const selectedLanguage = LANGUAGES.find(lang => lang.code === e.target.value);
     if (selectedLanguage) {
       dispatch(actions.setNativeLanguage(selectedLanguage.name, selectedLanguage.code));
     }
@@ -100,7 +102,7 @@ const HomePage = () => {
               onChange={handleLanguageChange}
               className="input w-full"
             >
-              {languages.map((lang) => (
+              {LANGUAGES.map((lang) => (
                 <option key={lang.code} value={lang.code}>
                   {lang.name}
                 </option>
@@ -151,7 +153,7 @@ const HomePage = () => {
             Select Your English Proficiency Level
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-            {proficiencyLevels.map((level) => (
+            {PROFICIENCY_LEVELS.map((level) => (
               <button
                 key={level}
                 onClick={() => handleLevelSelect(level)}

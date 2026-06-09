@@ -79,11 +79,6 @@ const DEFAULT_MODELS = {
 
 // AI Service
 export const aiService = {
-  async validateToken(apiToken: string) {
-    const response = await api.post('/ai/validate-token', { apiToken });
-    return response.data;
-  },
-
   async generateText(
     level: ProficiencyLevel, 
     apiToken: string, 

@@ -55,35 +55,6 @@ interface AIResponse {
   error?: string;
 }
 
-// Validate AI token endpoint
-aiRouter.post('/validate-token', async (req: Request, res: Response<AIResponse>) => {
-  try {
-    const { apiToken } = req.body;
-
-    if (!apiToken) {
-      return res.status(400).json({
-        success: false,
-        error: 'API token is required'
-      });
-    }
-
-    // Here you would validate the token with your AI provider (OpenAI, etc.)
-    // For now, we'll just return a success response with the welcome message
-    return res.json({
-      success: true,
-      message: 'Hello! I am your personal English teacher. I am ready to help you learn. Please select your proficiency level to begin.'
-    });
-  } catch (error) {
-    console.error('Token validation error:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to validate token'
-    });
-  }
-});
-
-
-// ... (inside your aiRouter.ts file)
 
 aiRouter.post('/generate-text', async (req: Request, res: Response<AIResponse>) => {
   try {

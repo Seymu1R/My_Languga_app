@@ -7,6 +7,8 @@ import fs from 'fs';
 
 export const dictionaryRouter = express.Router();
 
+const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 // In-memory fallback storage
 let memoryDictionary: any[] = [];
 let memoryId = 1;
@@ -156,8 +158,8 @@ dictionaryRouter.post('/words', async (req: Request, res: Response<DictionaryRes
 
     if (isMongoConnected()) {
       // Use MongoDB
-      const existingWord = await Word.findOne({ 
-        english: { $regex: new RegExp(`^${english}$`, 'i') }
+      const existingWord = await Word.findOne({
+        english: { $regex: new RegExp(`^${escapeRegex(english)}$`, 'i') }
       });
 
       if (existingWord) {

@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import connectDB from './config/database';
 import { aiRouter } from './routes/ai';
@@ -14,6 +15,23 @@ connectDB();
 const app = express();
 const PORT = process.env.PORT || 7001;
 
+// Rate limiters
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 dəqiqə
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests. Please try again later.' },
+});
+
+const aiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30, // AI endpoint-ləri baha başa gəlir — ayrıca, daha sıx limit
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many AI requests. Please wait and try again.' },
+});
+
 // Middleware
 app.use(helmet({
   crossOriginResourcePolicy: false, // Required to serve images
@@ -26,12 +44,14 @@ app.use(cors({
   ],
   credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10kb' }));
 
 // Serve uploaded images statically
 app.use('/uploads', express.static('uploads'));
 
 // Routes
+app.use('/api', generalLimiter);
+app.use('/api/ai', aiLimiter);
 app.use('/api/ai', aiRouter);
 app.use('/api/dictionary', dictionaryRouter);
 

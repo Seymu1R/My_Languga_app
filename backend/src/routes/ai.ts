@@ -2,7 +2,6 @@ import express, { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { AIService } from '../services/aiService';
 import { Word } from '../models/Word';
-import { log } from 'node:console';
 
 export const aiRouter = express.Router();
 
@@ -158,8 +157,8 @@ interface TranslateResponse {
 
 aiRouter.post('/translate-word', async (req: Request, res: Response<TranslateResponse>) => {
   try {
-    console.log('📝 Translation request received:', req.body);
     const { word, targetLanguage, languageCode, contextSentence, aiToken, provider, model }: TranslateWordRequest = req.body;
+    console.log(`📝 Translation request: word="${word}", lang="${targetLanguage}", provider="${provider}"`);
     
     if (!word || !targetLanguage || !languageCode) {
       console.log('❌ Missing required fields');
@@ -327,8 +326,8 @@ interface PronunciationResponse {
 
 aiRouter.post('/pronunciation', async (req: Request, res: Response<PronunciationResponse>) => {
   try {
-    console.log('🔊 Pronunciation request received:', req.body);
     const { word, aiToken, provider, model }: PronunciationRequest = req.body;
+    console.log(`🔊 Pronunciation request: word="${word}", provider="${provider}"`);
     
     if (!word) {
       console.log('❌ Missing word');
@@ -413,8 +412,8 @@ interface ExampleSentencesResponse {
 
 aiRouter.post('/example-sentences', async (req: Request, res: Response<ExampleSentencesResponse>) => {
   try {
-    console.log('📝 Example sentences request received:', req.body);
     const { word, level, aiToken, provider, model }: ExampleSentencesRequest = req.body;
+    console.log(`📝 Example sentences request: word="${word}", level="${level}", provider="${provider}"`);
 
     if (!word) {
       return res.status(400).json({

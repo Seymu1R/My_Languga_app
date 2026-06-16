@@ -2,11 +2,22 @@ import express, { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { AIService } from '../services/aiService';
 import { Word } from '../models/Word';
+import type {
+  GenerateTextBody,
+  TranslateWordBody,
+  PronunciationBody,
+  ExampleSentencesBody,
+  AITextResponse,
+  TranslateResponse,
+  PronunciationResponse,
+  ExampleSentencesResponse,
+  ProficiencyLevel,
+} from '../types';
 
 export const aiRouter = express.Router();
 
 const LEVEL_GENERATION_CONFIG: Record<
-  TextGenerationRequest['level'],
+  ProficiencyLevel,
   { minWords: number; maxWords: number; maxTokens: number }
 > = {
   Elementary: { minWords: 170, maxWords: 190, maxTokens: 500 },
@@ -17,7 +28,7 @@ const LEVEL_GENERATION_CONFIG: Record<
 };
 
 const buildReadingPrompt = (
-  level: TextGenerationRequest['level'],
+  level: ProficiencyLevel,
   customPrompt?: string
 ) => {
   const cfg = LEVEL_GENERATION_CONFIG[level];
@@ -39,26 +50,9 @@ const buildReadingPrompt = (
   ].join('\n');
 };
 
-// Types
-interface TextGenerationRequest {
-  level: 'Elementary' | 'Pre-Intermediate' | 'Intermediate' | 'Upper-Intermediate' | 'Advanced';
-  apiToken: string;
-  provider: 'openai' | 'grok' | 'gemini' | 'deepseek' | 'mistral';
-  model?: string;
-  customPrompt?: string;
-}
-
-interface AIResponse {
-  success: boolean;
-  text?: string;
-  message?: string;
-  error?: string;
-}
-
-
-aiRouter.post('/generate-text', async (req: Request, res: Response<AIResponse>) => {
+aiRouter.post('/generate-text', async (req: Request, res: Response<AITextResponse>) => {
   try {
-    const { level, apiToken, provider, model, customPrompt }: TextGenerationRequest = req.body;
+    const { level, apiToken, provider, model, customPrompt }: GenerateTextBody = req.body;
     
     if (!level || !apiToken || !provider || !model) {
       return res.status(400).json({
@@ -109,26 +103,9 @@ aiRouter.post('/generate-text', async (req: Request, res: Response<AIResponse>) 
   }
 });
 
-// Translate word endpoint
-interface TranslateWordRequest {
-  word: string;
-  targetLanguage: string;
-  languageCode: string;
-  contextSentence?: string;
-  aiToken?: string;
-  provider?: string;
-  model?: string;
-}
-
-interface TranslateResponse {
-  success: boolean;
-  translation?: string;
-  error?: string;
-}
-
 aiRouter.post('/translate-word', async (req: Request, res: Response<TranslateResponse>) => {
   try {
-    const { word, targetLanguage, languageCode, contextSentence, aiToken, provider, model }: TranslateWordRequest = req.body;
+    const { word, targetLanguage, languageCode, contextSentence, aiToken, provider, model }: TranslateWordBody = req.body;
     console.log(`📝 Translation request: word="${word}", lang="${targetLanguage}", provider="${provider}"`);
     
     if (!word || !targetLanguage || !languageCode) {
@@ -281,23 +258,9 @@ aiRouter.post('/translate-word', async (req: Request, res: Response<TranslateRes
   }
 });
 
-// Pronunciation endpoint
-interface PronunciationRequest {
-  word: string;
-  aiToken?: string;
-  provider?: string;
-  model?: string;
-}
-
-interface PronunciationResponse {
-  success: boolean;
-  pronunciation?: string;
-  error?: string;
-}
-
 aiRouter.post('/pronunciation', async (req: Request, res: Response<PronunciationResponse>) => {
   try {
-    const { word, aiToken, provider, model }: PronunciationRequest = req.body;
+    const { word, aiToken, provider, model }: PronunciationBody = req.body;
     console.log(`🔊 Pronunciation request: word="${word}", provider="${provider}"`);
     
     if (!word) {
@@ -366,24 +329,9 @@ aiRouter.post('/pronunciation', async (req: Request, res: Response<Pronunciation
   }
 });
 
-// Example sentences endpoint
-interface ExampleSentencesRequest {
-  word: string;
-  level?: string;
-  aiToken?: string;
-  provider?: string;
-  model?: string;
-}
-
-interface ExampleSentencesResponse {
-  success: boolean;
-  sentences?: string[];
-  error?: string;
-}
-
 aiRouter.post('/example-sentences', async (req: Request, res: Response<ExampleSentencesResponse>) => {
   try {
-    const { word, level, aiToken, provider, model }: ExampleSentencesRequest = req.body;
+    const { word, level, aiToken, provider, model }: ExampleSentencesBody = req.body;
     console.log(`📝 Example sentences request: word="${word}", level="${level}", provider="${provider}"`);
 
     if (!word) {

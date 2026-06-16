@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import type { AddWordBody, LearningStatusBody, DictionaryResponse } from '../types';
 
 export const dictionaryRouter = express.Router();
 
@@ -45,28 +46,6 @@ const upload = multer({
     }
   }
 });
-
-// Types
-interface AddWordRequest {
-  english: string;
-  translation: string;
-  pronunciation?: string;
-  referenceSentence?: string;
-  imageUrl?: string;
-}
-
-interface DictionaryResponse {
-  success: boolean;
-  words?: any[];
-  word?: any;
-  message?: string;
-  error?: string;
-  imageUrl?: string;
-}
-
-interface LearningStatusRequest {
-  known: boolean;
-}
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
@@ -147,7 +126,7 @@ dictionaryRouter.get('/words/learnings', async (req: Request, res: Response<Dict
 // Add a new word to dictionary
 dictionaryRouter.post('/words', async (req: Request, res: Response<DictionaryResponse>) => {
   try {
-    const { english, translation, pronunciation, referenceSentence, imageUrl }: AddWordRequest = req.body;
+    const { english, translation, pronunciation, referenceSentence, imageUrl }: AddWordBody = req.body;
     
     if (!english || !translation) {
       return res.status(400).json({
@@ -231,7 +210,7 @@ dictionaryRouter.post('/words', async (req: Request, res: Response<DictionaryRes
 dictionaryRouter.patch('/words/:id/learning-status', async (req: Request, res: Response<DictionaryResponse>) => {
   try {
     const { id } = req.params;
-    const { known }: LearningStatusRequest = req.body;
+    const { known }: LearningStatusBody = req.body;
 
     if (typeof known !== 'boolean') {
       return res.status(400).json({
@@ -398,7 +377,7 @@ dictionaryRouter.delete('/words/:id', async (req: Request, res: Response<Diction
 dictionaryRouter.put('/words/:id', async (req: Request, res: Response<DictionaryResponse>) => {
   try {
     const { id } = req.params;
-    const { english, translation, pronunciation, referenceSentence, imageUrl }: AddWordRequest = req.body;
+    const { english, translation, pronunciation, referenceSentence, imageUrl }: AddWordBody = req.body;
     
     if (!english || !translation) {
       return res.status(400).json({

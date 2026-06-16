@@ -2,6 +2,13 @@ import express, { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { AIService } from '../services/aiService';
 import { Word } from '../models/Word';
+import { validate } from '../middleware/validate';
+import {
+  generateTextSchema,
+  translateWordSchema,
+  pronunciationSchema,
+  exampleSentencesSchema,
+} from '../schemas';
 import type {
   GenerateTextBody,
   TranslateWordBody,
@@ -50,17 +57,10 @@ const buildReadingPrompt = (
   ].join('\n');
 };
 
-aiRouter.post('/generate-text', async (req: Request, res: Response<AITextResponse>) => {
+aiRouter.post('/generate-text', validate(generateTextSchema), async (req: Request, res: Response<AITextResponse>) => {
   try {
     const { level, apiToken, provider, model, customPrompt }: GenerateTextBody = req.body;
-    
-    if (!level || !apiToken || !provider || !model) {
-      return res.status(400).json({
-        success: false,
-        error: 'Level, API token, provider, and model are required'
-      });
-    }
-
+    // Validation: validate() middleware artıq level/apiToken/provider-i yoxlayır
     console.log(`🤖 Generating text with ${provider} (model: ${model}) for ${level} level`);
 
     const prompt = buildReadingPrompt(level, customPrompt);
@@ -103,24 +103,16 @@ aiRouter.post('/generate-text', async (req: Request, res: Response<AITextRespons
   }
 });
 
-aiRouter.post('/translate-word', async (req: Request, res: Response<TranslateResponse>) => {
+aiRouter.post('/translate-word', validate(translateWordSchema), async (req: Request, res: Response<TranslateResponse>) => {
   try {
     const { word, targetLanguage, languageCode, contextSentence, aiToken, provider, model }: TranslateWordBody = req.body;
     console.log(`📝 Translation request: word="${word}", lang="${targetLanguage}", provider="${provider}"`);
     
-    if (!word || !targetLanguage || !languageCode) {
-      console.log('❌ Missing required fields');
-      return res.status(400).json({
-        success: false,
-        error: 'Word, target language, and language code are required'
-      });
-    }
-
+    // Zod schema word/targetLanguage/languageCode-u yoxlayır
     console.log(`🔤 Translating "${word}" to ${targetLanguage} (${languageCode})`);
 
     if (!aiToken || !provider) {
-      console.log(`⚠️ No AI token or provider provided for translation`);
-      return res.json({
+      return res.status(400).json({
         success: false,
         error: 'AI token and provider are required for translation'
       });
@@ -238,13 +230,13 @@ aiRouter.post('/translate-word', async (req: Request, res: Response<TranslateRes
       }
 
       console.log(`⚠️ AI translation failed: ${aiResponse.error}`);
-      return res.json({
+      return res.status(502).json({
         success: false,
         error: `Unable to translate "${word}". ${aiResponse.error}`
       });
     } catch (aiError) {
       console.log(`❌ AI translation error: ${aiError}`);
-      return res.json({
+      return res.status(502).json({
         success: false,
         error: `Translation error: ${aiError instanceof Error ? aiError.message : 'Unknown error'}`
       });
@@ -258,24 +250,16 @@ aiRouter.post('/translate-word', async (req: Request, res: Response<TranslateRes
   }
 });
 
-aiRouter.post('/pronunciation', async (req: Request, res: Response<PronunciationResponse>) => {
+aiRouter.post('/pronunciation', validate(pronunciationSchema), async (req: Request, res: Response<PronunciationResponse>) => {
   try {
     const { word, aiToken, provider, model }: PronunciationBody = req.body;
     console.log(`🔊 Pronunciation request: word="${word}", provider="${provider}"`);
     
-    if (!word) {
-      console.log('❌ Missing word');
-      return res.status(400).json({
-        success: false,
-        error: 'Word is required'
-      });
-    }
-
+    // Zod schema word-u yoxlayır
     console.log(`🔊 Getting pronunciation for "${word}"`);
 
     if (!aiToken || !provider) {
-      console.log(`⚠️ No AI token or provider provided for pronunciation`);
-      return res.json({
+      return res.status(400).json({
         success: false,
         error: 'AI token and provider are required for pronunciation'
       });
@@ -309,13 +293,13 @@ aiRouter.post('/pronunciation', async (req: Request, res: Response<Pronunciation
       }
 
       console.log(`⚠️ AI pronunciation failed: ${aiResponse.error}`);
-      return res.json({
+      return res.status(502).json({
         success: false,
         error: `Unable to get pronunciation for "${word}". ${aiResponse.error}`
       });
     } catch (aiError) {
       console.log(`❌ AI pronunciation error: ${aiError}`);
-      return res.json({
+      return res.status(502).json({
         success: false,
         error: `Pronunciation error: ${aiError instanceof Error ? aiError.message : 'Unknown error'}`
       });
@@ -329,20 +313,14 @@ aiRouter.post('/pronunciation', async (req: Request, res: Response<Pronunciation
   }
 });
 
-aiRouter.post('/example-sentences', async (req: Request, res: Response<ExampleSentencesResponse>) => {
+aiRouter.post('/example-sentences', validate(exampleSentencesSchema), async (req: Request, res: Response<ExampleSentencesResponse>) => {
   try {
     const { word, level, aiToken, provider, model }: ExampleSentencesBody = req.body;
     console.log(`📝 Example sentences request: word="${word}", level="${level}", provider="${provider}"`);
 
-    if (!word) {
-      return res.status(400).json({
-        success: false,
-        error: 'Word is required'
-      });
-    }
-
+    // Zod schema word-u yoxlayır
     if (!aiToken || !provider) {
-      return res.json({
+      return res.status(400).json({
         success: false,
         error: 'AI token and provider are required for generating example sentences'
       });
@@ -400,13 +378,13 @@ aiRouter.post('/example-sentences', async (req: Request, res: Response<ExampleSe
       }
 
       console.log(`⚠️ Example sentences generation failed: ${aiResponse.error}`);
-      return res.json({
+      return res.status(502).json({
         success: false,
         error: `Unable to generate example sentences for "${word}". ${aiResponse.error}`
       });
     } catch (aiError) {
       console.log(`❌ Example sentences error: ${aiError}`);
-      return res.json({
+      return res.status(502).json({
         success: false,
         error: `Example sentences error: ${aiError instanceof Error ? aiError.message : 'Unknown error'}`
       });

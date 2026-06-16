@@ -5,6 +5,8 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import type { AddWordBody, LearningStatusBody, DictionaryResponse } from '../types';
+import { validate } from '../middleware/validate';
+import { addWordSchema, learningStatusSchema } from '../schemas';
 
 export const dictionaryRouter = express.Router();
 
@@ -124,16 +126,10 @@ dictionaryRouter.get('/words/learnings', async (req: Request, res: Response<Dict
 });
 
 // Add a new word to dictionary
-dictionaryRouter.post('/words', async (req: Request, res: Response<DictionaryResponse>) => {
+dictionaryRouter.post('/words', validate(addWordSchema), async (req: Request, res: Response<DictionaryResponse>) => {
   try {
+    // Validation: validate(addWordSchema) english + translation-ı yoxlayır
     const { english, translation, pronunciation, referenceSentence, imageUrl }: AddWordBody = req.body;
-    
-    if (!english || !translation) {
-      return res.status(400).json({
-        success: false,
-        error: 'Both english word and translation are required'
-      });
-    }
 
     if (isMongoConnected()) {
       // Use MongoDB
@@ -207,18 +203,12 @@ dictionaryRouter.post('/words', async (req: Request, res: Response<DictionaryRes
 });
 
 // Update learning status based on flashcard result
-dictionaryRouter.patch('/words/:id/learning-status', async (req: Request, res: Response<DictionaryResponse>) => {
+dictionaryRouter.patch('/words/:id/learning-status', validate(learningStatusSchema), async (req: Request, res: Response<DictionaryResponse>) => {
   try {
     const { id } = req.params;
     const { known }: LearningStatusBody = req.body;
 
-    if (typeof known !== 'boolean') {
-      return res.status(400).json({
-        success: false,
-        error: 'known must be a boolean value'
-      });
-    }
-
+    // Validation: validate(learningStatusSchema) known boolean-i yoxlayır
     if (isMongoConnected()) {
       const existingWord = await Word.findById(id);
 
@@ -374,17 +364,11 @@ dictionaryRouter.delete('/words/:id', async (req: Request, res: Response<Diction
 });
 
 // Update a word in dictionary
-dictionaryRouter.put('/words/:id', async (req: Request, res: Response<DictionaryResponse>) => {
+dictionaryRouter.put('/words/:id', validate(addWordSchema), async (req: Request, res: Response<DictionaryResponse>) => {
   try {
     const { id } = req.params;
+    // Validation: validate(addWordSchema) english + translation-ı yoxlayır
     const { english, translation, pronunciation, referenceSentence, imageUrl }: AddWordBody = req.body;
-    
-    if (!english || !translation) {
-      return res.status(400).json({
-        success: false,
-        error: 'Both english word and translation are required'
-      });
-    }
 
     if (isMongoConnected()) {
       const updatedWord = await Word.findByIdAndUpdate(

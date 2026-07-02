@@ -76,4 +76,8 @@ const wordSchema = new Schema<IWord>({
 // Index for faster lookups
 wordSchema.index({ english: 1 });
 
+// Learning queue sorğusu status + nextReviewDate üzrə filter edir —
+// kolleksiya böyüdükcə full scan-in qarşısını alır
+wordSchema.index({ status: 1, nextReviewDate: 1 });
+
 export const Word = mongoose.model<IWord>('Word', wordSchema);

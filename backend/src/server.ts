@@ -57,9 +57,29 @@ app.use('/api/ai', aiLimiter);
 app.use('/api/ai', aiRouter);
 app.use('/api/dictionary', dictionaryRouter);
 
-// Health check
+// Health check — DB vəziyyəti, uptime və storage mode daxil
+const MONGO_STATES: Record<number, string> = {
+  0: 'disconnected',
+  1: 'connected',
+  2: 'connecting',
+  3: 'disconnecting',
+  99: 'uninitialized',
+};
+
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Language Learning API is running' });
+  const mongoState = mongoose.connection.readyState;
+  const dbConnected = mongoState === 1;
+
+  res.json({
+    status: 'OK',
+    uptime: Math.round(process.uptime()),
+    timestamp: new Date().toISOString(),
+    database: {
+      status: MONGO_STATES[mongoState] ?? 'unknown',
+      connected: dbConnected,
+      storageMode: dbConnected ? 'mongodb' : 'in-memory',
+    },
+  });
 });
 
 // Error handling middleware

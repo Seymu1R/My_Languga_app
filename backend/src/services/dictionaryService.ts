@@ -1,0 +1,220 @@
+import mongoose from 'mongoose';
+import fs from 'fs';
+import path from 'path';
+import { Word } from '../models/Word';
+import type { AddWordBody } from '../types';
+
+// Custom domain errors — router bunları HTTP status-lara map edir
+export class DuplicateWordError extends Error {
+  constructor() {
+    super('Word already exists in dictionary');
+    this.name = 'DuplicateWordError';
+  }
+}
+
+export class WordNotFoundError extends Error {
+  constructor() {
+    super('Word not found');
+    this.name = 'WordNotFoundError';
+  }
+}
+
+const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const isMongoConnected = () => mongoose.connection.readyState === 1;
+
+// Spaced Repetition System (SRS) parametrləri
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+const DEFAULT_INTERVAL_DAYS = 7;
+const MAX_INTERVAL_DAYS = 30;
+const INTERVAL_GROWTH_FACTOR = 4;
+
+// In-memory fallback storage (MongoDB bağlı olmayanda)
+let memoryDictionary: any[] = [];
+let memoryId = 1;
+
+// Lokal upload olunmuş şəkli sil (xarici URL-lərə toxunmur)
+const deleteLocalImage = (imageUrl?: string) => {
+  if (!imageUrl || !imageUrl.startsWith('/uploads/')) return;
+
+  const imagePath = path.join(__dirname, '../..', imageUrl);
+  if (fs.existsSync(imagePath)) {
+    try {
+      fs.unlinkSync(imagePath);
+    } catch (err) {
+      console.error('Failed to delete image file:', err);
+    }
+  }
+};
+
+// Söz artıq "known" idisə intervalı genişləndir, əks halda cari intervalı saxla
+const computeNextInterval = (
+  currentStatus: string | undefined,
+  currentInterval: number | undefined,
+) => {
+  const interval = currentInterval || DEFAULT_INTERVAL_DAYS;
+  return currentStatus === 'known'
+    ? Math.min(interval * INTERVAL_GROWTH_FACTOR, MAX_INTERVAL_DAYS)
+    : interval;
+};
+
+const normalizeWordFields = (data: AddWordBody) => ({
+  english: data.english.trim(),
+  translation: data.translation.trim(),
+  pronunciation: data.pronunciation?.trim(),
+  referenceSentence: data.referenceSentence?.trim(),
+  imageUrl: data.imageUrl?.trim(),
+});
+
+export const dictionaryService = {
+  async getAllWords() {
+    if (isMongoConnected()) {
+      return Word.find().sort({ dateAdded: -1 });
+    }
+
+    return [...memoryDictionary].sort(
+      (a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime(),
+    );
+  },
+
+  // Learning queue: öyrənilməkdə olan sözlər + review vaxtı çatmış "known" sözlər
+  async getLearningWords() {
+    const now = new Date();
+
+    if (isMongoConnected()) {
+      return Word.find({
+        $or: [
+          { status: 'learning' },
+          { status: { $exists: false } },
+          { status: 'known', nextReviewDate: { $lte: now } },
+        ],
+      }).sort({ dateAdded: -1 });
+    }
+
+    return memoryDictionary
+      .filter((word) => {
+        if (word.status !== 'known') return true;
+        if (!word.nextReviewDate) return true;
+        return new Date(word.nextReviewDate).getTime() <= now.getTime();
+      })
+      .sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime());
+  },
+
+  async addWord(data: AddWordBody) {
+    const fields = normalizeWordFields(data);
+
+    if (isMongoConnected()) {
+      const existingWord = await Word.findOne({
+        english: { $regex: new RegExp(`^${escapeRegex(data.english)}$`, 'i') },
+      });
+
+      if (existingWord) throw new DuplicateWordError();
+
+      const newWord = new Word(fields);
+      await newWord.save();
+      return newWord.toJSON();
+    }
+
+    const existingWord = memoryDictionary.find(
+      (w) => w.english.toLowerCase() === data.english.toLowerCase(),
+    );
+
+    if (existingWord) throw new DuplicateWordError();
+
+    const newWord = {
+      id: (memoryId++).toString(),
+      ...fields,
+      status: 'learning',
+      nextReviewDate: null,
+      reviewIntervalDays: DEFAULT_INTERVAL_DAYS,
+      dateAdded: new Date().toISOString(),
+    };
+
+    memoryDictionary.push(newWord);
+    return newWord;
+  },
+
+  // Flashcard nəticəsinə görə SRS statusunu yenilə
+  async updateLearningStatus(id: string, known: boolean) {
+    if (isMongoConnected()) {
+      const existingWord = await Word.findById(id);
+      if (!existingWord) throw new WordNotFoundError();
+
+      let nextStatus = 'learning';
+      let nextReviewDate: Date | null = null;
+      let nextIntervalDays = DEFAULT_INTERVAL_DAYS;
+
+      if (known) {
+        nextIntervalDays = computeNextInterval(
+          existingWord.status,
+          existingWord.reviewIntervalDays,
+        );
+        nextStatus = 'known';
+        nextReviewDate = new Date(Date.now() + nextIntervalDays * DAY_IN_MS);
+      }
+
+      const updatedWord = await Word.findByIdAndUpdate(
+        id,
+        { status: nextStatus, nextReviewDate, reviewIntervalDays: nextIntervalDays },
+        { new: true },
+      );
+
+      return updatedWord?.toJSON();
+    }
+
+    const wordIndex = memoryDictionary.findIndex((w) => w.id === id);
+    if (wordIndex === -1) throw new WordNotFoundError();
+
+    const currentWord = memoryDictionary[wordIndex];
+
+    if (known) {
+      const nextIntervalDays = computeNextInterval(
+        currentWord.status,
+        currentWord.reviewIntervalDays,
+      );
+      currentWord.status = 'known';
+      currentWord.nextReviewDate = new Date(Date.now() + nextIntervalDays * DAY_IN_MS).toISOString();
+      currentWord.reviewIntervalDays = nextIntervalDays;
+    } else {
+      currentWord.status = 'learning';
+      currentWord.nextReviewDate = null;
+      currentWord.reviewIntervalDays = DEFAULT_INTERVAL_DAYS;
+    }
+
+    memoryDictionary[wordIndex] = currentWord;
+    return currentWord;
+  },
+
+  async deleteWord(id: string) {
+    if (isMongoConnected()) {
+      const deletedWord = await Word.findByIdAndDelete(id);
+      if (!deletedWord) throw new WordNotFoundError();
+
+      deleteLocalImage(deletedWord.imageUrl);
+      return;
+    }
+
+    const wordIndex = memoryDictionary.findIndex((w) => w.id === id);
+    if (wordIndex === -1) throw new WordNotFoundError();
+
+    const [wordToDelete] = memoryDictionary.splice(wordIndex, 1);
+    deleteLocalImage(wordToDelete.imageUrl);
+  },
+
+  async updateWord(id: string, data: AddWordBody) {
+    const fields = normalizeWordFields(data);
+
+    if (isMongoConnected()) {
+      const updatedWord = await Word.findByIdAndUpdate(id, fields, { new: true });
+      if (!updatedWord) throw new WordNotFoundError();
+
+      return updatedWord.toJSON();
+    }
+
+    const wordIndex = memoryDictionary.findIndex((w) => w.id === id);
+    if (wordIndex === -1) throw new WordNotFoundError();
+
+    memoryDictionary[wordIndex] = { ...memoryDictionary[wordIndex], ...fields };
+    return memoryDictionary[wordIndex];
+  },
+};

@@ -1,79 +1,26 @@
 import express, { Request, Response } from 'express';
-import { Word } from '../models/Word';
-import mongoose from 'mongoose';
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
 import type { AddWordBody, LearningStatusBody, DictionaryResponse } from '../types';
 import { validate } from '../middleware/validate';
+import { upload } from '../middleware/upload';
 import { addWordSchema, learningStatusSchema } from '../schemas';
+import {
+  dictionaryService,
+  DuplicateWordError,
+  WordNotFoundError,
+} from '../services/dictionaryService';
 
 export const dictionaryRouter = express.Router();
-
-const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-// In-memory fallback storage
-let memoryDictionary: any[] = [];
-let memoryId = 1;
-
-// Helper to check if MongoDB is connected
-const isMongoConnected = () => mongoose.connection.readyState === 1;
-
-// Multer Setup
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    // Ensure uploads directory exists
-    const uploadPath = path.join(__dirname, '../../uploads');
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-    // Generate unique filename
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({ 
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-  fileFilter: (req, file, cb) => {
-    // Allow only images
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed'));
-    }
-  }
-});
-
-const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 // Get all words in dictionary
 dictionaryRouter.get('/words', async (req: Request, res: Response<DictionaryResponse>) => {
   try {
-    if (isMongoConnected()) {
-      const words = await Word.find().sort({ dateAdded: -1 });
-      return res.json({
-        success: true,
-        words: words
-      });
-    } else {
-      // Use in-memory storage
-      return res.json({
-        success: true,
-        words: memoryDictionary.sort((a, b) => 
-          new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime()
-        )
-      });
-    }
+    const words = await dictionaryService.getAllWords();
+    return res.json({ success: true, words });
   } catch (error) {
     console.error('Get words error:', error);
     return res.status(500).json({
       success: false,
-      error: 'Failed to retrieve words'
+      error: 'Failed to retrieve words',
     });
   }
 });
@@ -81,46 +28,13 @@ dictionaryRouter.get('/words', async (req: Request, res: Response<DictionaryResp
 // Get words for learnings queue (learning words + due known words)
 dictionaryRouter.get('/words/learnings', async (req: Request, res: Response<DictionaryResponse>) => {
   try {
-    const now = new Date();
-
-    if (isMongoConnected()) {
-      const words = await Word.find({
-        $or: [
-          { status: 'learning' },
-          { status: { $exists: false } },
-          { status: 'known', nextReviewDate: { $lte: now } }
-        ]
-      }).sort({ dateAdded: -1 });
-
-      return res.json({
-        success: true,
-        words
-      });
-    }
-
-    const words = memoryDictionary
-      .filter((word) => {
-        if (word.status !== 'known') {
-          return true;
-        }
-
-        if (!word.nextReviewDate) {
-          return true;
-        }
-
-        return new Date(word.nextReviewDate).getTime() <= now.getTime();
-      })
-      .sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime());
-
-    return res.json({
-      success: true,
-      words
-    });
+    const words = await dictionaryService.getLearningWords();
+    return res.json({ success: true, words });
   } catch (error) {
     console.error('Get learning words error:', error);
     return res.status(500).json({
       success: false,
-      error: 'Failed to retrieve learning words'
+      error: 'Failed to retrieve learning words',
     });
   }
 });
@@ -128,76 +42,22 @@ dictionaryRouter.get('/words/learnings', async (req: Request, res: Response<Dict
 // Add a new word to dictionary
 dictionaryRouter.post('/words', validate(addWordSchema), async (req: Request, res: Response<DictionaryResponse>) => {
   try {
-    // Validation: validate(addWordSchema) english + translation-ı yoxlayır
-    const { english, translation, pronunciation, referenceSentence, imageUrl }: AddWordBody = req.body;
+    const word = await dictionaryService.addWord(req.body as AddWordBody);
 
-    if (isMongoConnected()) {
-      // Use MongoDB
-      const existingWord = await Word.findOne({
-        english: { $regex: new RegExp(`^${escapeRegex(english)}$`, 'i') }
-      });
-
-      if (existingWord) {
-        return res.status(409).json({
-          success: false,
-          error: 'Word already exists in dictionary'
-        });
-      }
-
-      const newWord = new Word({
-        english: english.trim(),
-        translation: translation.trim(),
-        pronunciation: pronunciation?.trim(),
-        referenceSentence: referenceSentence?.trim(),
-        imageUrl: imageUrl?.trim()
-      });
-
-      await newWord.save();
-
-      return res.status(201).json({
-        success: true,
-        word: newWord.toJSON(),
-        message: 'Word added successfully'
-      });
-    } else {
-      // Use in-memory storage
-      const existingWord = memoryDictionary.find(w => 
-        w.english.toLowerCase() === english.toLowerCase()
-      );
-
-      if (existingWord) {
-        return res.status(409).json({
-          success: false,
-          error: 'Word already exists in dictionary'
-        });
-      }
-
-      const newWord = {
-        id: (memoryId++).toString(),
-        english: english.trim(),
-        translation: translation.trim(),
-        pronunciation: pronunciation?.trim(),
-        referenceSentence: referenceSentence?.trim(),
-        imageUrl: imageUrl?.trim(),
-        status: 'learning',
-        nextReviewDate: null,
-        reviewIntervalDays: 7,
-        dateAdded: new Date().toISOString()
-      };
-
-      memoryDictionary.push(newWord);
-
-      return res.status(201).json({
-        success: true,
-        word: newWord,
-        message: 'Word added successfully (in-memory)'
-      });
-    }
+    return res.status(201).json({
+      success: true,
+      word,
+      message: 'Word added successfully',
+    });
   } catch (error) {
+    if (error instanceof DuplicateWordError) {
+      return res.status(409).json({ success: false, error: error.message });
+    }
+
     console.error('Add word error:', error);
     return res.status(500).json({
       success: false,
-      error: 'Failed to add word'
+      error: 'Failed to add word',
     });
   }
 });
@@ -205,89 +65,23 @@ dictionaryRouter.post('/words', validate(addWordSchema), async (req: Request, re
 // Update learning status based on flashcard result
 dictionaryRouter.patch('/words/:id/learning-status', validate(learningStatusSchema), async (req: Request, res: Response<DictionaryResponse>) => {
   try {
-    const { id } = req.params;
     const { known }: LearningStatusBody = req.body;
-
-    // Validation: validate(learningStatusSchema) known boolean-i yoxlayır
-    if (isMongoConnected()) {
-      const existingWord = await Word.findById(id);
-
-      if (!existingWord) {
-        return res.status(404).json({
-          success: false,
-          error: 'Word not found'
-        });
-      }
-
-      let nextStatus = 'learning';
-      let nextReviewDate: Date | null = null;
-      let nextIntervalDays = 7;
-
-      if (known) {
-        const currentInterval = existingWord.reviewIntervalDays || 7;
-        // If word was already known and shown again, expand interval for future reviews.
-        nextIntervalDays = existingWord.status === 'known'
-          ? Math.min(currentInterval * 4, 30)
-          : currentInterval;
-        nextStatus = 'known';
-        nextReviewDate = new Date(Date.now() + (nextIntervalDays * 24 * 60 * 60 * 1000));
-      }
-
-      const updatedWord = await Word.findByIdAndUpdate(
-        id,
-        {
-          status: nextStatus,
-          nextReviewDate,
-          reviewIntervalDays: nextIntervalDays
-        },
-        { new: true }
-      );
-
-      return res.json({
-        success: true,
-        word: updatedWord?.toJSON(),
-        message: known ? 'Word marked as known' : 'Word moved back to learning'
-      });
-    }
-
-    const wordIndex = memoryDictionary.findIndex(w => w.id === id);
-
-    if (wordIndex === -1) {
-      return res.status(404).json({
-        success: false,
-        error: 'Word not found'
-      });
-    }
-
-    const currentWord = memoryDictionary[wordIndex];
-    let nextIntervalDays = 7;
-
-    if (known) {
-      const currentInterval = currentWord.reviewIntervalDays || 7;
-      nextIntervalDays = currentWord.status === 'known'
-        ? Math.min(currentInterval * 4, 30)
-        : currentInterval;
-      currentWord.status = 'known';
-      currentWord.nextReviewDate = new Date(Date.now() + nextIntervalDays * DAY_IN_MS).toISOString();
-      currentWord.reviewIntervalDays = nextIntervalDays;
-    } else {
-      currentWord.status = 'learning';
-      currentWord.nextReviewDate = null;
-      currentWord.reviewIntervalDays = 7;
-    }
-
-    memoryDictionary[wordIndex] = currentWord;
+    const word = await dictionaryService.updateLearningStatus(req.params.id, known);
 
     return res.json({
       success: true,
-      word: currentWord,
-      message: known ? 'Word marked as known' : 'Word moved back to learning'
+      word,
+      message: known ? 'Word marked as known' : 'Word moved back to learning',
     });
   } catch (error) {
+    if (error instanceof WordNotFoundError) {
+      return res.status(404).json({ success: false, error: error.message });
+    }
+
     console.error('Update learning status error:', error);
     return res.status(500).json({
       success: false,
-      error: 'Failed to update learning status'
+      error: 'Failed to update learning status',
     });
   }
 });
@@ -295,70 +89,21 @@ dictionaryRouter.patch('/words/:id/learning-status', validate(learningStatusSche
 // Delete a word from dictionary
 dictionaryRouter.delete('/words/:id', async (req: Request, res: Response<DictionaryResponse>) => {
   try {
-    const { id } = req.params;
-    
-    if (isMongoConnected()) {
-      const deletedWord = await Word.findByIdAndDelete(id);
-      
-      if (!deletedWord) {
-        return res.status(404).json({
-          success: false,
-          error: 'Word not found'
-        });
-      }
+    await dictionaryService.deleteWord(req.params.id);
 
-      // Delete associated image file if it exists and is local
-      if (deletedWord.imageUrl && deletedWord.imageUrl.startsWith('/uploads/')) {
-        const imagePath = path.join(__dirname, '../..', deletedWord.imageUrl);
-        if (fs.existsSync(imagePath)) {
-          try {
-            fs.unlinkSync(imagePath);
-          } catch (err) {
-            console.error('Failed to delete image file:', err);
-          }
-        }
-      }
-
-      return res.json({
-        success: true,
-        message: 'Word deleted successfully'
-      });
-    } else {
-      // Use in-memory storage
-      const wordIndex = memoryDictionary.findIndex(w => w.id === id);
-      
-      if (wordIndex === -1) {
-        return res.status(404).json({
-          success: false,
-          error: 'Word not found'
-        });
-      }
-
-      const wordToDelete = memoryDictionary[wordIndex];
-      memoryDictionary.splice(wordIndex, 1);
-
-      // Delete associated image file if it exists and is local
-      if (wordToDelete.imageUrl && wordToDelete.imageUrl.startsWith('/uploads/')) {
-        const imagePath = path.join(__dirname, '../..', wordToDelete.imageUrl);
-        if (fs.existsSync(imagePath)) {
-          try {
-            fs.unlinkSync(imagePath);
-          } catch (err) {
-            console.error('Failed to delete image file (in-memory path):', err);
-          }
-        }
-      }
-
-      return res.json({
-        success: true,
-        message: 'Word deleted successfully (in-memory)'
-      });
-    }
+    return res.json({
+      success: true,
+      message: 'Word deleted successfully',
+    });
   } catch (error) {
+    if (error instanceof WordNotFoundError) {
+      return res.status(404).json({ success: false, error: error.message });
+    }
+
     console.error('Delete word error:', error);
     return res.status(500).json({
       success: false,
-      error: 'Failed to delete word'
+      error: 'Failed to delete word',
     });
   }
 });
@@ -366,66 +111,22 @@ dictionaryRouter.delete('/words/:id', async (req: Request, res: Response<Diction
 // Update a word in dictionary
 dictionaryRouter.put('/words/:id', validate(addWordSchema), async (req: Request, res: Response<DictionaryResponse>) => {
   try {
-    const { id } = req.params;
-    // Validation: validate(addWordSchema) english + translation-ı yoxlayır
-    const { english, translation, pronunciation, referenceSentence, imageUrl }: AddWordBody = req.body;
+    const word = await dictionaryService.updateWord(req.params.id, req.body as AddWordBody);
 
-    if (isMongoConnected()) {
-      const updatedWord = await Word.findByIdAndUpdate(
-        id,
-        {
-          english: english.trim(),
-          translation: translation.trim(),
-          pronunciation: pronunciation?.trim(),
-          referenceSentence: referenceSentence?.trim(),
-          imageUrl: imageUrl?.trim()
-        },
-        { new: true }
-      );
-      
-      if (!updatedWord) {
-        return res.status(404).json({
-          success: false,
-          error: 'Word not found'
-        });
-      }
-
-      return res.json({
-        success: true,
-        word: updatedWord.toJSON(),
-        message: 'Word updated successfully'
-      });
-    } else {
-      // Use in-memory storage
-      const wordIndex = memoryDictionary.findIndex(w => w.id === id);
-      
-      if (wordIndex === -1) {
-        return res.status(404).json({
-          success: false,
-          error: 'Word not found'
-        });
-      }
-
-      memoryDictionary[wordIndex] = {
-        ...memoryDictionary[wordIndex],
-        english: english.trim(),
-        translation: translation.trim(),
-        pronunciation: pronunciation?.trim(),
-        referenceSentence: referenceSentence?.trim(),
-        imageUrl: imageUrl?.trim()
-      };
-
-      return res.json({
-        success: true,
-        word: memoryDictionary[wordIndex],
-        message: 'Word updated successfully (in-memory)'
-      });
-    }
+    return res.json({
+      success: true,
+      word,
+      message: 'Word updated successfully',
+    });
   } catch (error) {
+    if (error instanceof WordNotFoundError) {
+      return res.status(404).json({ success: false, error: error.message });
+    }
+
     console.error('Update word error:', error);
     return res.status(500).json({
       success: false,
-      error: 'Failed to update word'
+      error: 'Failed to update word',
     });
   }
 });
@@ -436,24 +137,22 @@ dictionaryRouter.post('/upload-image', upload.single('image'), (req: Request, re
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        error: 'No image file provided'
+        error: 'No image file provided',
       });
     }
 
-    // Return the URL path to the uploaded image
-    // Note: Assuming backend runs on a specific port matching the server configuration
     const imageUrl = `/uploads/${req.file.filename}`;
-    
+
     return res.status(200).json({
       success: true,
       imageUrl,
-      message: 'Image uploaded successfully'
+      message: 'Image uploaded successfully',
     });
   } catch (error) {
     console.error('Image upload error:', error);
     return res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to upload image'
+      error: error instanceof Error ? error.message : 'Failed to upload image',
     });
   }
 });

@@ -11,11 +11,42 @@ import {
 
 export const dictionaryRouter = express.Router();
 
-// Get all words in dictionary
+const MAX_PAGE_LIMIT = 100;
+const DEFAULT_PAGE_LIMIT = 20;
+
+// ?page= və ya ?limit= verilməyibsə undefined qaytarır → köhnə davranış (bütün sözlər)
+const parsePagination = (query: Request['query']) => {
+  if (query.page === undefined && query.limit === undefined) return undefined;
+
+  const page = Math.max(1, parseInt(String(query.page), 10) || 1);
+  const limit = Math.min(
+    MAX_PAGE_LIMIT,
+    Math.max(1, parseInt(String(query.limit), 10) || DEFAULT_PAGE_LIMIT),
+  );
+
+  return { page, limit };
+};
+
+// Get all words in dictionary (optionally paginated: /words?page=1&limit=20)
 dictionaryRouter.get('/words', async (req: Request, res: Response<DictionaryResponse>) => {
   try {
-    const words = await dictionaryService.getAllWords();
-    return res.json({ success: true, words });
+    const pagination = parsePagination(req.query);
+    const { words, total } = await dictionaryService.getAllWords(pagination);
+
+    if (!pagination) {
+      return res.json({ success: true, words });
+    }
+
+    return res.json({
+      success: true,
+      words,
+      pagination: {
+        total,
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.ceil(total / pagination.limit),
+      },
+    });
   } catch (error) {
     console.error('Get words error:', error);
     return res.status(500).json({

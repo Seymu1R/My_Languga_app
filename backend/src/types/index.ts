@@ -86,6 +86,13 @@ export interface LearningStatusBody {
 
 // ─── Dictionary route response shape ─────────────────────────────────────────
 
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export interface DictionaryResponse {
   success: boolean;
   words?: any[];
@@ -93,4 +100,5 @@ export interface DictionaryResponse {
   message?: string;
   error?: string;
   imageUrl?: string;
+  pagination?: PaginationMeta;
 }

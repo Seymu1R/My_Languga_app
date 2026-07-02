@@ -66,15 +66,41 @@ const normalizeWordFields = (data: AddWordBody) => ({
   imageUrl: data.imageUrl?.trim(),
 });
 
+export interface PaginationParams {
+  page: number;
+  limit: number;
+}
+
 export const dictionaryService = {
-  async getAllWords() {
+  // pagination verilməsə bütün sözlər qaytarılır (geriyə uyğunluq)
+  async getAllWords(pagination?: PaginationParams) {
     if (isMongoConnected()) {
-      return Word.find().sort({ dateAdded: -1 });
+      if (!pagination) {
+        const words = await Word.find().sort({ dateAdded: -1 });
+        return { words, total: words.length };
+      }
+
+      const { page, limit } = pagination;
+      const [words, total] = await Promise.all([
+        Word.find().sort({ dateAdded: -1 }).skip((page - 1) * limit).limit(limit),
+        Word.countDocuments(),
+      ]);
+      return { words, total };
     }
 
-    return [...memoryDictionary].sort(
+    const sorted = [...memoryDictionary].sort(
       (a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime(),
     );
+
+    if (!pagination) {
+      return { words: sorted, total: sorted.length };
+    }
+
+    const start = (pagination.page - 1) * pagination.limit;
+    return {
+      words: sorted.slice(start, start + pagination.limit),
+      total: sorted.length,
+    };
   },
 
   // Learning queue: öyrənilməkdə olan sözlər + review vaxtı çatmış "known" sözlər

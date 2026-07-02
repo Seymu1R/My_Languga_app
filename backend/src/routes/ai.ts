@@ -7,6 +7,7 @@ import {
   exampleSentencesSchema,
 } from '../schemas';
 import { aiContentService } from '../services/aiContentService';
+import { logger } from '../utils/logger';
 import type {
   GenerateTextBody,
   TranslateWordBody,
@@ -23,7 +24,7 @@ export const aiRouter = express.Router();
 aiRouter.post('/generate-text', validate(generateTextSchema), async (req: Request, res: Response<AITextResponse>) => {
   try {
     const { level, apiToken, provider, model, customPrompt }: GenerateTextBody = req.body;
-    console.log(`🤖 Generating text with ${provider} (model: ${model}) for ${level} level`);
+    logger.info({ provider, model, level }, 'Generating reading text');
 
     const aiResponse = await aiContentService.generateReadingText(
       { provider, apiToken, model },
@@ -32,17 +33,17 @@ aiRouter.post('/generate-text', validate(generateTextSchema), async (req: Reques
     );
 
     if (aiResponse.success && aiResponse.text) {
-      console.log(`✅ Successfully generated AI text with ${provider}`);
+      logger.info({ provider }, 'Reading text generated');
       return res.json({ success: true, text: aiResponse.text });
     }
 
-    console.log(`⚠️ AI generation failed for ${provider}: ${aiResponse.error}`);
+    logger.warn({ provider, error: aiResponse.error }, 'AI generation failed');
     return res.status(400).json({
       success: false,
       error: `AI text generation failed: ${aiResponse.error || 'Unknown error'}.`
     });
   } catch (error) {
-    console.error('Unhandled text generation error:', error);
+    logger.error({ err: error }, 'Unhandled text generation error');
     return res.status(500).json({
       success: false,
       error: 'An unexpected error occurred on the server.'
@@ -53,7 +54,7 @@ aiRouter.post('/generate-text', validate(generateTextSchema), async (req: Reques
 aiRouter.post('/translate-word', validate(translateWordSchema), async (req: Request, res: Response<TranslateResponse>) => {
   try {
     const { word, targetLanguage, languageCode, contextSentence, aiToken, provider, model }: TranslateWordBody = req.body;
-    console.log(`📝 Translation request: word="${word}", lang="${targetLanguage}", provider="${provider}"`);
+    logger.info({ word, targetLanguage, languageCode, provider }, 'Translation request');
 
     if (!aiToken || !provider) {
       return res.status(400).json({
@@ -61,8 +62,6 @@ aiRouter.post('/translate-word', validate(translateWordSchema), async (req: Requ
         error: 'AI token and provider are required for translation'
       });
     }
-
-    console.log(`🔤 Translating "${word}" to ${targetLanguage} (${languageCode})`);
 
     const result = await aiContentService.translateWord(
       { provider, apiToken: aiToken, model },
@@ -75,7 +74,7 @@ aiRouter.post('/translate-word', validate(translateWordSchema), async (req: Requ
 
     return res.status(502).json(result);
   } catch (error) {
-    console.error('Word translation error:', error);
+    logger.error({ err: error }, 'Word translation error');
     return res.status(500).json({
       success: false,
       error: 'Failed to translate word'
@@ -86,7 +85,7 @@ aiRouter.post('/translate-word', validate(translateWordSchema), async (req: Requ
 aiRouter.post('/pronunciation', validate(pronunciationSchema), async (req: Request, res: Response<PronunciationResponse>) => {
   try {
     const { word, aiToken, provider, model }: PronunciationBody = req.body;
-    console.log(`🔊 Pronunciation request: word="${word}", provider="${provider}"`);
+    logger.info({ word, provider }, 'Pronunciation request');
 
     if (!aiToken || !provider) {
       return res.status(400).json({
@@ -106,7 +105,7 @@ aiRouter.post('/pronunciation', validate(pronunciationSchema), async (req: Reque
 
     return res.status(502).json(result);
   } catch (error) {
-    console.error('Pronunciation error:', error);
+    logger.error({ err: error }, 'Pronunciation error');
     return res.status(500).json({
       success: false,
       error: 'Failed to get pronunciation'
@@ -117,7 +116,7 @@ aiRouter.post('/pronunciation', validate(pronunciationSchema), async (req: Reque
 aiRouter.post('/example-sentences', validate(exampleSentencesSchema), async (req: Request, res: Response<ExampleSentencesResponse>) => {
   try {
     const { word, level, aiToken, provider, model }: ExampleSentencesBody = req.body;
-    console.log(`📝 Example sentences request: word="${word}", level="${level}", provider="${provider}"`);
+    logger.info({ word, level, provider }, 'Example sentences request');
 
     if (!aiToken || !provider) {
       return res.status(400).json({
@@ -138,7 +137,7 @@ aiRouter.post('/example-sentences', validate(exampleSentencesSchema), async (req
 
     return res.status(502).json(result);
   } catch (error) {
-    console.error('Example sentences error:', error);
+    logger.error({ err: error }, 'Example sentences error');
     return res.status(500).json({
       success: false,
       error: 'Failed to generate example sentences'

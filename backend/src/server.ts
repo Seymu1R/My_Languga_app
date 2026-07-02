@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import { logger } from './utils/logger';
 import connectDB from './config/database';
 import { aiRouter } from './routes/ai';
 import { dictionaryRouter } from './routes/dictionary';
@@ -63,7 +64,7 @@ app.get('/api/health', (req, res) => {
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(err.stack);
+  logger.error({ err }, 'Unhandled error in request pipeline');
   res.status(500).json({ 
     error: 'Something went wrong!',
     message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
@@ -76,8 +77,7 @@ app.use('*', (req, res) => {
 });
 
 const server = app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📚 Language Learning API is ready!`);
+  logger.info({ port: PORT }, 'Language Learning API is running');
 });
 
 // Graceful shutdown: yeni connection-ları dayandır,
@@ -85,22 +85,22 @@ const server = app.listen(PORT, () => {
 const FORCE_EXIT_TIMEOUT_MS = 10_000;
 
 const shutdown = (signal: string) => {
-  console.log(`${signal} received. Shutting down gracefully...`);
+  logger.info({ signal }, 'Shutdown signal received, closing gracefully');
 
   server.close(async () => {
     try {
       await mongoose.connection.close();
-      console.log('MongoDB connection closed.');
+      logger.info('MongoDB connection closed');
     } catch (err) {
-      console.error('Error closing MongoDB connection:', err);
+      logger.error({ err }, 'Error closing MongoDB connection');
     }
-    console.log('Shutdown complete.');
+    logger.info('Shutdown complete');
     process.exit(0);
   });
 
   // Aktiv request-lər timeout müddətində bitməsə, məcburi çıx
   setTimeout(() => {
-    console.error('Forced shutdown: connections did not close in time.');
+    logger.error('Forced shutdown: connections did not close in time');
     process.exit(1);
   }, FORCE_EXIT_TIMEOUT_MS).unref();
 };

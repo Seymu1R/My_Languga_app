@@ -1,36 +1,32 @@
 import mongoose from 'mongoose';
+import { logger } from '../utils/logger';
 
 const connectDB = async () => {
   const mongoURI = process.env.MONGODB_URI;
 
   if (!mongoURI) {
-    console.log('⚠️ MONGODB_URI is not set. Server will continue without MongoDB (in-memory storage)');
-    console.log('💡 Add MONGODB_URI to backend/.env to enable MongoDB');
+    logger.warn('MONGODB_URI is not set. Server will continue with in-memory storage. Add MONGODB_URI to backend/.env to enable MongoDB');
     return;
   }
+
   try {
-    // Extract DB name from URI or use default
     await mongoose.connect(mongoURI, {
-       dbName: 'language_learning'
+      dbName: 'language_learning'
     });
-    
-    console.log('✅ MongoDB connected successfully');
-    console.log(`📊 Database: ${mongoose.connection.name}`);
+
+    logger.info({ database: mongoose.connection.name }, 'MongoDB connected successfully');
   } catch (error) {
-    console.error('❌ MongoDB connection error:', error);
-    console.log('⚠️  Server will continue without MongoDB (in-memory storage)');
-    console.log('💡 To enable MongoDB, run: mongod --port 27018 --dbpath ~/mongodb_data --fork --logpath ~/mongodb.log');
-    // Don't exit - allow server to continue without MongoDB
+    logger.error({ err: error }, 'MongoDB connection error — continuing with in-memory storage');
   }
 };
 
 // Handle connection events
 mongoose.connection.on('disconnected', () => {
-  console.log('⚠️ MongoDB disconnected');
+  logger.warn('MongoDB disconnected');
 });
 
 mongoose.connection.on('error', (err) => {
-  console.error('❌ MongoDB error:', err);
+  logger.error({ err }, 'MongoDB error');
 });
 
 export default connectDB;

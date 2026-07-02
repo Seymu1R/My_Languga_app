@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import fs from 'fs';
 import path from 'path';
 import { Word } from '../models/Word';
+import { logger } from '../utils/logger';
 import type { AddWordBody } from '../types';
 
 // Custom domain errors — router bunları HTTP status-lara map edir
@@ -42,7 +43,7 @@ const deleteLocalImage = (imageUrl?: string) => {
     try {
       fs.unlinkSync(imagePath);
     } catch (err) {
-      console.error('Failed to delete image file:', err);
+      logger.error({ err, imageUrl }, 'Failed to delete image file');
     }
   }
 };

@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { AIService, AIServiceResponse } from './aiService';
 import { Word } from '../models/Word';
+import { logger } from '../utils/logger';
 import type {
   AIProvider,
   ProficiencyLevel,
@@ -61,11 +62,11 @@ const lookupSavedSenses = async (word: string): Promise<string[]> => {
 
     const senses = [...new Set(savedEntries.map((e: any) => e.translation).filter(Boolean))];
     if (senses.length > 0) {
-      console.log(`📚 MongoDB senses for "${word}":`, senses);
+      logger.info({ word, senses }, 'RAG layer 1 hit: saved senses found in MongoDB');
     }
     return senses;
   } catch (dbErr) {
-    console.warn('⚠️ MongoDB sense lookup failed, proceeding without RAG:', dbErr);
+    logger.warn({ err: dbErr }, 'MongoDB sense lookup failed, proceeding without RAG');
     return [];
   }
 };
@@ -84,11 +85,11 @@ const lookupDictionaryDefinitions = async (word: string): Promise<string[]> => {
       .slice(0, 3);
 
     if (definitions.length > 0) {
-      console.log(`📖 Free Dictionary definitions for "${word}":`, definitions);
+      logger.info({ word, definitions }, 'RAG layer 2 hit: Free Dictionary definitions found');
     }
     return definitions;
   } catch (dictErr) {
-    console.warn('⚠️ Free Dictionary API lookup failed:', dictErr);
+    logger.warn({ err: dictErr }, 'Free Dictionary API lookup failed');
     return [];
   }
 };
@@ -219,17 +220,17 @@ export const aiContentService = {
 
       if (aiResponse.success && aiResponse.text) {
         const translation = cleanTranslationOutput(aiResponse.text);
-        console.log(`✅ AI translation successful: "${word}" → "${translation}"`);
+        logger.info({ word, translation }, 'AI translation successful');
         return { success: true, translation };
       }
 
-      console.log(`⚠️ AI translation failed: ${aiResponse.error}`);
+      logger.warn({ word, error: aiResponse.error }, 'AI translation failed');
       return {
         success: false,
         error: `Unable to translate "${word}". ${aiResponse.error}`,
       };
     } catch (aiError) {
-      console.log(`❌ AI translation error: ${aiError}`);
+      logger.error({ err: aiError, word }, 'AI translation error');
       return {
         success: false,
         error: `Translation error: ${aiError instanceof Error ? aiError.message : 'Unknown error'}`,
@@ -251,17 +252,17 @@ export const aiContentService = {
 
       if (aiResponse.success && aiResponse.text) {
         const pronunciation = aiResponse.text.trim();
-        console.log(`✅ AI pronunciation successful: "${word}" → "${pronunciation}"`);
+        logger.info({ word, pronunciation }, 'AI pronunciation successful');
         return { success: true, pronunciation };
       }
 
-      console.log(`⚠️ AI pronunciation failed: ${aiResponse.error}`);
+      logger.warn({ word, error: aiResponse.error }, 'AI pronunciation failed');
       return {
         success: false,
         error: `Unable to get pronunciation for "${word}". ${aiResponse.error}`,
       };
     } catch (aiError) {
-      console.log(`❌ AI pronunciation error: ${aiError}`);
+      logger.error({ err: aiError, word }, 'AI pronunciation error');
       return {
         success: false,
         error: `Pronunciation error: ${aiError instanceof Error ? aiError.message : 'Unknown error'}`,
@@ -290,17 +291,17 @@ export const aiContentService = {
 
       if (aiResponse.success && aiResponse.text) {
         const sentences = parseSentences(aiResponse.text, word);
-        console.log(`✅ Example sentences generated: ${sentences.length}`);
+        logger.info({ word, count: sentences.length }, 'Example sentences generated');
         return { success: true, sentences };
       }
 
-      console.log(`⚠️ Example sentences generation failed: ${aiResponse.error}`);
+      logger.warn({ word, error: aiResponse.error }, 'Example sentences generation failed');
       return {
         success: false,
         error: `Unable to generate example sentences for "${word}". ${aiResponse.error}`,
       };
     } catch (aiError) {
-      console.log(`❌ Example sentences error: ${aiError}`);
+      logger.error({ err: aiError, word }, 'Example sentences error');
       return {
         success: false,
         error: `Example sentences error: ${aiError instanceof Error ? aiError.message : 'Unknown error'}`,

@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { logger } from '../utils/logger';
 
 export interface AIServiceConfig {
   provider: 'openai' | 'grok' | 'gemini' | 'deepseek' | 'mistral';
@@ -213,7 +214,7 @@ export class AIService {
           };
       }
     } catch (error) {
-      console.error(`AI generation error (${this.config.provider}):`, error);
+      logger.error({ err: error, provider: this.config.provider }, 'AI generation error');
       
       // Parse specific error types for user-friendly messages
       let userMessage = 'Unknown AI service error';
@@ -431,7 +432,7 @@ export class AIService {
       }
 
       const modelName = resolveGeminiModel(this.config.model);
-      console.log(`🔍 Gemini using model: ${modelName}`);
+      logger.info({ model: modelName }, 'Gemini model resolved');
       
       const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({

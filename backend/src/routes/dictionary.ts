@@ -3,6 +3,7 @@ import type { AddWordBody, LearningStatusBody, DictionaryResponse } from '../typ
 import { validate } from '../middleware/validate';
 import { upload } from '../middleware/upload';
 import { addWordSchema, learningStatusSchema } from '../schemas';
+import { logger } from '../utils/logger';
 import {
   dictionaryService,
   DuplicateWordError,
@@ -48,7 +49,7 @@ dictionaryRouter.get('/words', async (req: Request, res: Response<DictionaryResp
       },
     });
   } catch (error) {
-    console.error('Get words error:', error);
+    logger.error({ err: error }, 'Get words error');
     return res.status(500).json({
       success: false,
       error: 'Failed to retrieve words',
@@ -62,7 +63,7 @@ dictionaryRouter.get('/words/learnings', async (req: Request, res: Response<Dict
     const words = await dictionaryService.getLearningWords();
     return res.json({ success: true, words });
   } catch (error) {
-    console.error('Get learning words error:', error);
+    logger.error({ err: error }, 'Get learning words error');
     return res.status(500).json({
       success: false,
       error: 'Failed to retrieve learning words',
@@ -85,7 +86,7 @@ dictionaryRouter.post('/words', validate(addWordSchema), async (req: Request, re
       return res.status(409).json({ success: false, error: error.message });
     }
 
-    console.error('Add word error:', error);
+    logger.error({ err: error }, 'Add word error');
     return res.status(500).json({
       success: false,
       error: 'Failed to add word',
@@ -109,7 +110,7 @@ dictionaryRouter.patch('/words/:id/learning-status', validate(learningStatusSche
       return res.status(404).json({ success: false, error: error.message });
     }
 
-    console.error('Update learning status error:', error);
+    logger.error({ err: error }, 'Update learning status error');
     return res.status(500).json({
       success: false,
       error: 'Failed to update learning status',
@@ -131,7 +132,7 @@ dictionaryRouter.delete('/words/:id', async (req: Request, res: Response<Diction
       return res.status(404).json({ success: false, error: error.message });
     }
 
-    console.error('Delete word error:', error);
+    logger.error({ err: error }, 'Delete word error');
     return res.status(500).json({
       success: false,
       error: 'Failed to delete word',
@@ -154,7 +155,7 @@ dictionaryRouter.put('/words/:id', validate(addWordSchema), async (req: Request,
       return res.status(404).json({ success: false, error: error.message });
     }
 
-    console.error('Update word error:', error);
+    logger.error({ err: error }, 'Update word error');
     return res.status(500).json({
       success: false,
       error: 'Failed to update word',
@@ -180,7 +181,7 @@ dictionaryRouter.post('/upload-image', upload.single('image'), (req: Request, re
       message: 'Image uploaded successfully',
     });
   } catch (error) {
-    console.error('Image upload error:', error);
+    logger.error({ err: error }, 'Image upload error');
     return res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to upload image',

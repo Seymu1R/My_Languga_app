@@ -6,7 +6,7 @@
 
 ## 2026-10-02 — #4: vaxtından əvvəl təkrar öyrənmə cədvəlini artıq dəyişmir
 
-Branch: `fix/srs-early-review` (`main`-dən). Commit-lər: `6698e9b` (`fix:` + testlər), sonra `docs:`.
+Branch: `fix/srs-early-review` (`main`-dən). Commit-lər: `6698e9b` (`fix:` + testlər), `e4d610f` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi. Merge-dən sonra `main`-də frontend və backend type-check, həmçinin 348 backend testi keçdi. Sonra `main` GitHub-a push olundu, `fix/srs-early-review` lokalda silindi (heç vaxt push olunmamışdı). Yalnız `main` qaldı.
 
 **Problem:** `updateLearningStatus(id, known=true)` söz artıq `known` olanda review vaxtına baxmadan intervalı ×4 böyüdürdü. Flashcard-larda "Review Again" basıb sözü yenə "Know" etmək 7 günlük intervalı dərhal 28 günə qaldırırdı, sonrakı dəfə isə 30-a. Bu, aralıqlı təkrarın mənasını pozurdu.
 

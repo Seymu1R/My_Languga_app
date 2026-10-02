@@ -19,7 +19,7 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 | 9 | 🟠 Yüksək | Açar yoxlaması tam mətn generasiya edir (pul, limit) | **bağlanıb** (2026-10-02) |
 | 10 | 🟡 Orta | Dublikat yoxlaması natamamdır (update, unique index) | **bağlanıb** (2026-10-02) |
 | 11 | 🟡 Orta | Yetim şəkil faylları | açıq |
-| 12 | 🟡 Orta | dictionaryapi.dev fetch-də timeout yoxdur | açıq |
+| 12 | 🟡 Orta | dictionaryapi.dev fetch-də timeout yoxdur | **bağlanıb** (2026-10-02) |
 | 13 | 🟡 Orta | RAG layer 1 regex index işlətmir (full scan) | açıq |
 | 14 | 🟡 Orta | `cleanWord` apostrof/tireni silir, əyri dırnaqları saxlayır | açıq |
 | 15 | 🟡 Orta | Flashcard status xətası udulur; "Review Again" dublikatlarla | açıq |
@@ -42,7 +42,7 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 1. Təhlükəsizlik: ~~#1~~, ~~#8~~
 2. İstifadəçinin gördüyü buglar: ~~#2~~, ~~#5~~, ~~#6~~, ~~#7~~
 3. Data bütövlüyü: ~~#3~~, ~~#4~~, ~~#10~~, ~~#27~~, ~~#26~~, ~~#28~~
-4. Səmərəlilik: ~~#9~~, #12, #13
+4. Səmərəlilik: ~~#9~~, ~~#12~~, #13
 5. İnfrastruktur: ~~backend testləri~~, frontend testləri, lint, `.gitignore`
 6. Refaktor: `aiService` təkrarları, ortaq tiplər
 
@@ -113,7 +113,8 @@ Həll: `updateWord` dublikat yoxlaması, `english_unique_ci` unique index, 11000
 
 Ətraflı: [architecture/image-upload.md](architecture/image-upload.md).
 
-### 12. Timeout yoxdur
+### 12. Timeout yoxdur — **bağlanıb**
+Həll: `fetch(..., { signal: AbortSignal.timeout(3000) })`, siqnal body oxunuşunu da kəsir. Bax: changelog "#12". İlkin təsvir:
 `aiContentService.ts` → `lookupDictionaryDefinitions`.
 **Həll:** `AbortSignal.timeout(3000)`.
 

@@ -7,7 +7,7 @@
 - **Səviyyəyə uyğun oxu mətnləri.** 5 səviyyə var: Elementary, Pre-Intermediate, Intermediate, Upper-Intermediate, Advanced. Mətnin uzunluğu səviyyəyə görə 170–440 söz olur.
 - **İnteraktiv oxu.** Mətndəki istənilən sözə klik etdikdə:
   - **Kontekstə uyğun tərcümə** ana dilinizə göstərilir. 13 dil dəstəklənir: Azərbaycan, Türk, Rus, İspan, Fransız, Alman, Çin, Yapon, Ərəb, Polyak, Ukrayna, İtalyan, Portuqal.
-    - Tərcümədən əvvəl iki mənbəyə baxılır: lüğətinizdə həmin söz üçün saxladığınız əvvəlki tərcümələr və [Free Dictionary API](https://dictionaryapi.dev/) tərifləri.
+    - Tərcümədən əvvəl iki mənbəyə baxılır: lüğətinizdə həmin söz üçün saxladığınız əvvəlki tərcümələr və [Free Dictionary API](https://dictionaryapi.dev/) tərifləri. Bu API 3 saniyəyə cavab verməsə, tərcümə təriflərsiz davam edir.
     - Model bu məlumatlardan cümləyə uyğun mənanı seçir.
   - **IPA tələffüzü** göstərilir, məsələn `/əˈpɑːrt/`.
   - **3 nümunə cümlə** təklif olunur, biri istinad cümləsi kimi saxlanır.

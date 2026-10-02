@@ -4,6 +4,29 @@
 
 ---
 
+## 2026-10-02 — #12: dictionaryapi.dev sorğusuna 3 saniyəlik timeout
+
+Branch: `fix/dictionary-fetch-timeout` (`main`-dən). Commit-lər: `8cac18b` (`fix:` + testlər), ardınca `docs:`. Hələ `main`-ə birləşdirilməyib.
+
+**Problem:** tərcümədə RAG layer 2 (`aiContentService.lookupDictionaryDefinitions`) `api.dictionaryapi.dev`-ə timeout-suz `fetch` edirdi. Bu API cavab verməsə və ya body-ni yarımçıq göndərsə, tərcümə sorğusu AI-a heç çatmadan asılı qalırdı. Frontend 30 saniyədən sonra "timeout" görürdü. Halbuki təriflər tərcümə üçün sadəcə əlavə məlumatdır.
+
+**Həll** (`services/aiContentService.ts`):
+- `fetch(url, { signal: AbortSignal.timeout(DICTIONARY_API_TIMEOUT_MS) })`, limit 3000 ms. Siqnal həm sorğunu, həm də `res.json()` ilə body oxunuşunu kəsir.
+- Timeout olanda tərcümə təriflərsiz davam edir (əvvəlki "API xətası" davranışı kimi).
+- Timeout ayrıca loglanır: `warn { word, timeoutMs } 'Free Dictionary API timed out'`. Digər xətalar əvvəlki kimi `'Free Dictionary API lookup failed'`.
+
+**Testlər** (`aiContentService.test.ts`, əvvəl yazıldı; köhnə kodda 5 test düşdü, ikisi asılıb timeout ilə):
+- `AbortSignal.timeout` idarə olunan siqnalla əvəz edilir, ona görə testlər real 3 saniyə gözləmir. Mock server siqnal olmadan heç vaxt cavab vermir (asılı API kimi).
+- 3000 ms limiti və siqnalın `fetch`-ə ötürülməsi.
+- API cavab vermir → tərcümə təriflərsiz uğurla qayıdır.
+- Body yarımçıq qalır (`json()` bitmir) → tərcümə yenə qayıdır.
+- Timeout ayrıca loglanır, digər xəta isə köhnə mesajla. Mutasiya: `TimeoutError` budağı işləməsə bu test düşür.
+- Mövcud "encoded URL" testi indi `{ signal }` arqumentini də yoxlayır.
+- Nəticə: 430 test (426 + 4 yeni), `npm run type-check` təmiz.
+- Real `fetch` ilə (Node 22, lokal server, xarici sorğu yoxdur): cavab verməyən server və yarımçıq body hər ikisi ~300 ms limitdə `TimeoutError` ilə kəsildi, xəta `Error` instance-ıdır.
+
+---
+
 ## 2026-10-02 — #9: açar yoxlaması 1 tokenlik sorğu ilə, tam mətn generasiyası olmadan
 
 Branch: `fix/validate-key` (`main`-dən). Commit-lər: `b1b08df` (`fix:` + testlər), `23499a0` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi. Merge-dən sonra `main`-də frontend və backend type-check, həmçinin 426 backend testi keçdi. Sonra `main` GitHub-a push olundu, `fix/validate-key` lokalda silindi (heç vaxt push olunmamışdı). Yalnız `main` qaldı.

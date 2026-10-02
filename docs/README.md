@@ -29,18 +29,20 @@ ona görə hər sessiyanın əvvəlində avtomatik oxunur. Ətraflı fayllar laz
   - **#10**: söz adları redaktədə və eyni anda gələn sorğularda da unikaldır (MongoDB-də `english_unique_ci` index-i);
   - **#3**: saxlama rejimi açılışda seçilir, server MongoDB-ni gözləyir, qopmada 503 (data səssizcə itmir).
   - **#9**: açar `/api/ai/validate-key` ilə 1 tokenlik sorğu ilə yoxlanılır, tam mətn generasiya olunmur;
-  - **#12**: dictionaryapi.dev 3 saniyəyə cavab verməsə, tərcümə təriflərsiz davam edir.
+  - **#12**: dictionaryapi.dev 3 saniyəyə cavab verməsə, tərcümə təriflərsiz davam edir;
+  - **#13**: tərcümədə saxlanmış sözün axtarışı və dublikat yoxlaması regex əvəzinə collation ilə `english_unique_ci` index-indən keçir.
 
   Qismən:
   - **#19**: backend testləri var, frontend testləri və lint yoxdur;
   - **#24**: kök README yenidən yazılıb, shuffle qalır.
 
   Qalanları açıqdır.
-- **Testlər:** `cd backend && npm test` (Vitest, 430 test, ~8 san; ən yavaşı `server.test.ts`). Hər backend dəyişikliyindən sonra işə sal.
+- **Testlər:** `cd backend && npm test` (Vitest, 436 test, ~8 san; ən yavaşı `server.test.ts`). Hər backend dəyişikliyindən sonra işə sal.
   - Hazırda heç bir `it.fails` testi yoxdur.
 - Kök `README.md` Azərbaycan dilindədir. Funksiya, env, port və ya endpoint dəyişəndə onu da yenilə.
-- Kritik maddə qalmayıb. Təklif olunan növbəti iş: **#13** (`english_unique_ci` index-i artıq var), **#11** (yetim şəkillər), **#14** (`cleanWord`).
+- Kritik maddə qalmayıb. Təklif olunan növbəti iş: **#11** (yetim şəkillər), **#14** (`cleanWord`), **#15** (flashcard status xətası udulur).
 - **Git / GitHub** (remote: `origin` = https://github.com/Seymu1R/My_Languga_app):
+  - **#13** `perf/rag-collation-lookup` branch-ında commit olunub (`178befb` + `docs:`), hələ `main`-ə birləşdirilməyib.
   - Lokalda və GitHub-da yalnız **`main`** branch-ı var. İstifadəçinin istəyi ilə 2026-10-02-də bütün iş `main`-ə birləşdirildi, `main` push olundu, digər branch-lar (lokal 6, remote 1) silindi.
   - Bütün işlər `main`-dədir və push olunub: #1, #2, #3, #4, #5, #6, #7, #8, #9, #10, #12, #21, #25, #26, #27, #28, backend testləri və sənədlər. Hamısı fast-forward ilə birləşdirildi, merge commit-i yoxdur.
   - Növbəti iş üçün `main`-dən yeni branch açılır (bax: İş qaydaları, 7).

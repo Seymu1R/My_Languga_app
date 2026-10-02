@@ -4,6 +4,37 @@
 
 ---
 
+## 2026-10-02 — #13: `english` üzrə axtarışlar regex əvəzinə collation ilə index-dən keçir
+
+Branch: `perf/rag-collation-lookup` (`main`-dən). Commit-lər: `178befb` (`perf:` + testlər), ardınca `docs:`. Hələ `main`-ə birləşdirilməyib.
+
+**Problem:** `english` üzrə iki sorğu hərf böyüklüyünü nəzərə almamaq üçün `^word$` + `i` regex işlədirdi:
+- `aiContentService.lookupSavedSenses` (tərcümədə RAG layer 1, hər söz klikində);
+- `dictionaryService.findWordByEnglish` (hər `addWord`/`updateWord`-də dublikat yoxlaması). Backlog-da yalnız birincisi yazılmışdı, ikincisi eyni problemdir.
+
+Case-insensitive regex index-dən səmərəli istifadə edə bilmir, kolleksiya böyüdükcə hər sorğu bütün sözləri gəzir.
+
+**Həll:** #10-da əlavə olunan `english_unique_ci` index-i (collation `en`, strength 2) artıq var. Eyni collation ilə verilən sorğu bu index-dən keçir.
+- `models/Word.ts`: `ENGLISH_COLLATION = { locale: 'en', strength: 2 }` export olunur. Index də onu işlədir, ona görə sorğu və index həmişə eyni qalır.
+- `lookupSavedSenses`: `Word.find({ english: word }, null, { collation: ENGLISH_COLLATION })`.
+- `findWordByEnglish`: `Word.findOne({ english, ... }, null, { collation: ENGLISH_COLLATION })`. Collation option kimi ötürülür (`.collation()` zənciri yox), ona görə #10-un yarış testindəki `findOne` mock-u dəyişmədən işləyir.
+- Regex escape (`escapeRegex`, `safeWord`) artıq lazım deyil və silindi. Kodda `$regex` qalmadı.
+- Dublikat yoxlaması indi unique index-in qaydası ilə tam üst-üstə düşür: hərf böyüklüyü fərq etmir, aksentlər fərq edir (`café` ≠ `cafe`).
+- In-memory rejim dəyişmədi (`toLowerCase` müqayisəsi).
+- Real bazada case-only dublikatlar səbəbindən index qurula bilməyibsə (#10), sorğular yenə düzgün işləyir, sadəcə index olmadan.
+
+**Testlər** (əvvəl yazıldı; köhnə kodda 3 index testi düşdü):
+- `tests/helpers/mongo.ts`: yeni `indexUses(collection, indexName)`. `$indexStats`-dan index-in neçə sorğuda istifadə olunduğunu oxuyur. Əməliyyatdan əvvəl və sonra müqayisə olunur.
+- `aiContentService.rag.test.ts`:
+  - tərcümə zamanı `english_unique_ci` düz 1 dəfə istifadə olunur (`BANK` → saxlanmış `Bank` tapılır);
+  - davranış qoruyucuları (köhnə kodda da keçir): qeyri-ASCII hərflər (`CAFÉ` = `Café`, `cafe` ≠ `Café`), regex simvolları olan söz (`C++`);
+  - `Word.init()` əlavə olundu ki, index test bazasında qurulsun.
+- `dictionaryService.test.ts` (mongodb): `addWord` və `updateWord` dublikat yoxlaması `english_unique_ci`-dən keçir; aksentli və aksentsiz söz fərqli sayılır.
+- Mövcud testlər (o cümlədən `a.c` regex escape testi) dəyişmədən keçir.
+- Nəticə: 436 test (430 + 6 yeni), `npm run type-check` təmiz.
+
+---
+
 ## 2026-10-02 — #12: dictionaryapi.dev sorğusuna 3 saniyəlik timeout
 
 Branch: `fix/dictionary-fetch-timeout` (`main`-dən). Commit-lər: `8cac18b` (`fix:` + testlər), `e21d657` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi. Merge-dən sonra `main`-də frontend və backend type-check, həmçinin 430 backend testi keçdi. Sonra `main` GitHub-a push olundu, `fix/dictionary-fetch-timeout` lokalda silindi (heç vaxt push olunmamışdı). Yalnız `main` qaldı.

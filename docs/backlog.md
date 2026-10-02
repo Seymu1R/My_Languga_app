@@ -20,7 +20,7 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 | 10 | 🟡 Orta | Dublikat yoxlaması natamamdır (update, unique index) | **bağlanıb** (2026-10-02) |
 | 11 | 🟡 Orta | Yetim şəkil faylları | açıq |
 | 12 | 🟡 Orta | dictionaryapi.dev fetch-də timeout yoxdur | **bağlanıb** (2026-10-02) |
-| 13 | 🟡 Orta | RAG layer 1 regex index işlətmir (full scan) | açıq |
+| 13 | 🟡 Orta | RAG layer 1 regex index işlətmir (full scan) | **bağlanıb** (2026-10-02) |
 | 14 | 🟡 Orta | `cleanWord` apostrof/tireni silir, əyri dırnaqları saxlayır | açıq |
 | 15 | 🟡 Orta | Flashcard status xətası udulur; "Review Again" dublikatlarla | açıq |
 | 16 | 🟡 Orta | Bir ümumi `isLoading` hər şeyə təsir edir | açıq |
@@ -42,7 +42,7 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 1. Təhlükəsizlik: ~~#1~~, ~~#8~~
 2. İstifadəçinin gördüyü buglar: ~~#2~~, ~~#5~~, ~~#6~~, ~~#7~~
 3. Data bütövlüyü: ~~#3~~, ~~#4~~, ~~#10~~, ~~#27~~, ~~#26~~, ~~#28~~
-4. Səmərəlilik: ~~#9~~, ~~#12~~, #13
+4. Səmərəlilik: ~~#9~~, ~~#12~~, ~~#13~~
 5. İnfrastruktur: ~~backend testləri~~, frontend testləri, lint, `.gitignore`
 6. Refaktor: `aiService` təkrarları, ortaq tiplər
 
@@ -118,7 +118,8 @@ Həll: `fetch(..., { signal: AbortSignal.timeout(3000) })`, siqnal body oxunuşu
 `aiContentService.ts` → `lookupDictionaryDefinitions`.
 **Həll:** `AbortSignal.timeout(3000)`.
 
-### 13. RAG layer 1 performansı
+### 13. RAG layer 1 performansı — **bağlanıb**
+Həll: regex əvəzinə `{ collation: ENGLISH_COLLATION }` ilə sorğu, `english_unique_ci` index-indən keçir. Eyni düzəliş `dictionaryService.findWordByEnglish`-ə (dublikat yoxlaması) də edildi. Bax: changelog "#13". İlkin təsvir:
 **Qeyd (2026-10-02):** #10 ilə `english_unique_ci` collation index-i (`locale: 'en', strength: 2`) əlavə olundu. Regex əvəzinə `find({ english: word }).collation({ locale: 'en', strength: 2 })` bu index-dən istifadə edər. Ayrıca sahə lazım deyil.
 `aiContentService.ts` → `lookupSavedSenses` `^word$` + `i` regex işlədir, bu da index-dən istifadə etmir.
 **Həll:** lowercase sahə və ya collation index.

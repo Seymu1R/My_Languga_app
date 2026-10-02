@@ -6,7 +6,7 @@
 
 ## 2026-10-02 — #27: yalnız boşluqdan ibarət söz və tərcümə rədd edilir
 
-Branch: `fix/whitespace-only-words` (`main`-dən). Commit-lər: `fcfdaf7` (`fix:` + testlər), sonra `docs:`.
+Branch: `fix/whitespace-only-words` (`main`-dən). Commit-lər: `fcfdaf7` (`fix:` + testlər), `7381174` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi. Merge-dən sonra `main`-də frontend və backend type-check, həmçinin 322 backend testi keçdi. Push olunmayıb.
 
 **Problem:** `addWordSchema`-da `english` və `translation` üçün qayda `z.string().min(1).max(N).transform(trim)` idi, yəni uzunluq trim-dən **əvvəl** yoxlanılırdı. Nəticələr:
 - `"   "` validasiyadan keçib boş sətrə çevrilirdi. In-memory rejimdə boş söz saxlanılırdı, Mongo rejimində mongoose `required` xətası 500 verirdi.

@@ -21,7 +21,7 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 | 11 | 🟡 Orta | Yetim şəkil faylları | qismən (2026-10-02: uğursuz saxlama və redaktə) |
 | 12 | 🟡 Orta | dictionaryapi.dev fetch-də timeout yoxdur | **bağlanıb** (2026-10-02) |
 | 13 | 🟡 Orta | RAG layer 1 regex index işlətmir (full scan) | **bağlanıb** (2026-10-02) |
-| 14 | 🟡 Orta | `cleanWord` apostrof/tireni silir, əyri dırnaqları saxlayır | açıq |
+| 14 | 🟡 Orta | `cleanWord` apostrof/tireni silir, əyri dırnaqları saxlayır | **bağlanıb** (2026-10-02, testsiz) |
 | 15 | 🟡 Orta | Flashcard status xətası udulur; "Review Again" dublikatlarla | açıq |
 | 16 | 🟡 Orta | Bir ümumi `isLoading` hər şeyə təsir edir | açıq |
 | 17 | 🟡 Orta | Zod sxemləri handler-lərlə uyğun deyil | açıq |
@@ -131,7 +131,8 @@ Həll: regex əvəzinə `{ collation: ENGLISH_COLLATION }` ilə sorğu, `english
 `aiContentService.ts` → `lookupSavedSenses` `^word$` + `i` regex işlədir, bu da index-dən istifadə etmir.
 **Həll:** lowercase sahə və ya collation index.
 
-### 14. `cleanWord`
+### 14. `cleanWord` — **bağlanıb**
+Həll: `frontend/src/utils/text.ts` → `cleanWord`: yalnız kənarlardakı hərf/rəqəm olmayan simvollar silinir, əyri apostroflar `'`-ə çevrilir. Bax: changelog "#14". İlkin təsvir:
 `InteractiveText.tsx`: `don't` → `dont`, `well-known` → `wellknown`. `“ ” ’` simvolları silinmir.
 
 ### 15. LearningsPage

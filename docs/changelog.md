@@ -4,6 +4,31 @@
 
 ---
 
+## 2026-10-02 — #14: kliklənən sözün təmizlənməsi apostrof və tireni saxlayır
+
+Branch: `fix/clean-word` (`main`-dən). Commit-lər: `0884017` (`fix:`), ardınca `docs:`. Hələ `main`-ə birləşdirilməyib.
+
+**Problem:** `InteractiveText.cleanWord` siyahıdakı bütün durğu işarələrini sözün **hər yerindən** silirdi, siyahıda olmayanları isə saxlayırdı:
+- `don't` → `dont`, `well-known` → `wellknown`, `mother-in-law` → `motherinlaw`: lüğətə səhv söz düşür, AI tərcüməsi və dictionaryapi.dev axtarışı pisləşir;
+- AI mətnlərindəki əyri dırnaq və apostroflar (`“ ” ‘ ’`) və tire (`—`) silinmirdi: `“Hello,”` → `“hello”`, `it’s` → `it’s`.
+
+**Həll:**
+- `frontend/src/utils/text.ts` (yeni): `cleanWord`.
+  - Əvvəlcə əyri apostroflar (`’ ‘ ʼ`) `'`-ə çevrilir.
+  - Sonra yalnız **kənarlardakı** hərf/rəqəm olmayan simvollar silinir (`/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu`). Sözün içindəki apostrof və tire qalır.
+  - Kiçik hərfə çevirmə əvvəlki kimidir.
+- `components/InteractiveText.tsx`: lokal funksiya silindi, `cleanWord` import olunur (klik və `aria-label`).
+- Fərq: sözün içindəki digər işarələr artıq silinmir (`U.S.` → `u.s`, əvvəl `us`; `time—and` əvvəlki kimi `time—and`).
+- Backend dəyişmədi: sxemlər apostrof və tireni onsuz da qəbul edir.
+
+**Yoxlama:** frontend testləri yoxdur (istifadəçi sonraya saxlayıb). Frontend type-check və `npm run build` keçdi. Bundan əlavə `cleanWord` müvəqqəti skriptlə (esbuild + node, commit olunmayıb) 17 hal üzrə köhnə funksiya ilə müqayisə olundu, hamısı gözlənilən nəticəni verdi:
+- `don't` → `don't` (köhnə: `dont`), `well-known` → `well-known` (köhnə: `wellknown`), `mother-in-law,` → `mother-in-law` (köhnə: `motherinlaw`);
+- `it’s` → `it's`, `“Hello,”` → `hello`, `‘quoted’` → `quoted`, `—dash` → `dash` (köhnə nəticələrdə dırnaq/tire qalırdı);
+- dəyişməyənlər: `(bank)`, `end.`, `Wait!?`, `students'` → `students`, `café.` → `café`, `1990s`, `...` → boş.
+Brauzerdə yoxlanılmayıb.
+
+---
+
 ## 2026-10-02 — #11 (qismən): saxlanmayan və əvəz olunan şəkillər diskdə qalmır
 
 Branch: `fix/orphan-images` (`main`-dən). Commit-lər: `48e6bdb` (`fix:` + testlər), `e3603d3` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi. Merge-dən sonra `main`-də frontend və backend type-check, həmçinin 461 backend testi keçdi. Sonra `main` GitHub-a push olundu, `fix/orphan-images` lokalda silindi (heç vaxt push olunmamışdı). Yalnız `main` qaldı.

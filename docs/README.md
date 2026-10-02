@@ -30,7 +30,8 @@ ona görə hər sessiyanın əvvəlində avtomatik oxunur. Ətraflı fayllar laz
   - **#3**: saxlama rejimi açılışda seçilir, server MongoDB-ni gözləyir, qopmada 503 (data səssizcə itmir).
   - **#9**: açar `/api/ai/validate-key` ilə 1 tokenlik sorğu ilə yoxlanılır, tam mətn generasiya olunmur;
   - **#12**: dictionaryapi.dev 3 saniyəyə cavab verməsə, tərcümə təriflərsiz davam edir;
-  - **#13**: tərcümədə saxlanmış sözün axtarışı və dublikat yoxlaması regex əvəzinə collation ilə `english_unique_ci` index-indən keçir.
+  - **#13**: tərcümədə saxlanmış sözün axtarışı və dublikat yoxlaması regex əvəzinə collation ilə `english_unique_ci` index-indən keçir;
+  - **#14**: kliklənən söz düzgün təmizlənir (`don't`, `well-known`, `“Hello,”` → `hello`). Testsizdir, frontend testləri yoxdur.
 
   Qismən:
   - **#11**: uğursuz saxlama/redaktədə və şəkil dəyişəndə köhnə fayl silinir, başqa sözün şəkli toxunulmaz qalır; restart və "yüklənib, saxlanmayıb" halları qalır;
@@ -41,8 +42,9 @@ ona görə hər sessiyanın əvvəlində avtomatik oxunur. Ətraflı fayllar laz
 - **Testlər:** `cd backend && npm test` (Vitest, 461 test, ~8 san; ən yavaşı `server.test.ts`). Hər backend dəyişikliyindən sonra işə sal.
   - Hazırda heç bir `it.fails` testi yoxdur.
 - Kök `README.md` Azərbaycan dilindədir. Funksiya, env, port və ya endpoint dəyişəndə onu da yenilə.
-- Kritik maddə qalmayıb. Təklif olunan növbəti iş: **#14** (`cleanWord`), **#15** (flashcard status xətası udulur), **#29** (`PUT` buraxılan sahələr, kiçik).
+- Kritik maddə qalmayıb. Təklif olunan növbəti iş: **#15** (flashcard status xətası udulur), **#29** (`PUT` buraxılan sahələr, kiçik), **#16** (ümumi `isLoading`).
 - **Git / GitHub** (remote: `origin` = https://github.com/Seymu1R/My_Languga_app):
+  - **#14** `fix/clean-word` branch-ında commit olunub (`0884017` + `docs:`), hələ `main`-ə birləşdirilməyib.
   - Lokalda və GitHub-da yalnız **`main`** branch-ı var. İstifadəçinin istəyi ilə 2026-10-02-də bütün iş `main`-ə birləşdirildi, `main` push olundu, digər branch-lar (lokal 6, remote 1) silindi.
   - Bütün işlər `main`-dədir və push olunub: #1, #2, #3, #4, #5, #6, #7, #8, #9, #10, #11 (qismən), #12, #13, #21, #25, #26, #27, #28, backend testləri və sənədlər. Hamısı fast-forward ilə birləşdirildi, merge commit-i yoxdur.
   - Növbəti iş üçün `main`-dən yeni branch açılır (bax: İş qaydaları, 7).

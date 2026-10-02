@@ -6,7 +6,7 @@
 
 ## 2026-10-02 — #6: söz modalında köhnəlmiş AI cavabları artıq yeni sözə yazılmır
 
-Branch: `fix/word-modal-stale-responses` (`main`-dən). Commit-lər: `d1a5c42` (`fix:`), sonra `docs:`.
+Branch: `fix/word-modal-stale-responses` (`main`-dən). Commit-lər: `d1a5c42` (`fix:`), `b17dab9` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi. Merge-dən sonra `main`-də frontend və backend type-check, həmçinin 317 backend testi keçdi. Push olunmayıb.
 
 **Problem:** `WordDefinitionModal`-ın effekti modal hər açılanda 3 AI sorğusu göndərir: tərcümə, tələffüz və nümunə cümlələr. Sorğular heç vaxt "köhnəlmiş" kimi işarələnmirdi. İstifadəçi A sözünü açıb tez bağlayır və B sözünü açırsa, A-nın gec gələn cavabları B-nin tərcüməsinin, tələffüzünün, cümlələrinin və loading spinner-lərinin üstünə yazılırdı. Save isə B sözünü A-nın tərcüməsi ilə saxlayardı.
 

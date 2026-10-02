@@ -1,7 +1,9 @@
-import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
+import fs from 'fs';
 import request from 'supertest';
 import { createApp } from '../src/app';
 import { startMongo, stopMongo } from './helpers/mongo';
+import { PNG } from './helpers/images';
 
 describe('GET /api/health', () => {
   it('reports in-memory storage when MongoDB is not connected', async () => {
@@ -31,7 +33,19 @@ describe('fallback handlers', () => {
   const originalEnv = process.env.NODE_ENV;
   afterEach(() => {
     process.env.NODE_ENV = originalEnv;
+    vi.restoreAllMocks();
   });
+
+  const postJson = (body: string, contentType = 'application/json') =>
+    request(createApp()).post('/api/dictionary/words').set('Content-Type', contentType).send(body);
+
+  // Həqiqi server xətası: yüklənmiş faylın başlığını oxumaq mümkün olmur → next(err) → 500
+  const triggerServerError = () => {
+    vi.spyOn(fs.promises, 'open').mockRejectedValueOnce(new Error('EIO: disk failure'));
+    return request(createApp())
+      .post('/api/dictionary/upload-image')
+      .attach('image', PNG, { filename: 'a.png', contentType: 'image/png' });
+  };
 
   it('responds 404 for an unknown route', async () => {
     const res = await request(createApp()).get('/api/nope');
@@ -39,43 +53,53 @@ describe('fallback handlers', () => {
     expect(res.body).toEqual({ error: 'Route not found' });
   });
 
-  it('hides error details outside development', async () => {
+  it('responds 500 and hides error details outside development', async () => {
     process.env.NODE_ENV = 'production';
 
-    const res = await request(createApp())
-      .post('/api/dictionary/words')
-      .set('Content-Type', 'application/json')
-      .send('{"english":');
+    const res = await triggerServerError();
 
+    expect(res.status).toBe(500);
     expect(res.body).toEqual({ error: 'Something went wrong!', message: 'Internal server error' });
   });
 
   it('shows the error message in development', async () => {
     process.env.NODE_ENV = 'development';
 
-    const res = await request(createApp())
-      .post('/api/dictionary/words')
-      .set('Content-Type', 'application/json')
-      .send('{"english":');
+    const res = await triggerServerError();
 
-    expect(res.body.error).toBe('Something went wrong!');
-    expect(res.body.message).toMatch(/JSON/);
+    expect(res.status).toBe(500);
+    expect(res.body).toEqual({ error: 'Something went wrong!', message: 'EIO: disk failure' });
   });
 
-  // #26: body-parser xətaları (status 400/413) global handler-də 500-ə çevrilir
-  it.fails('responds 400 for malformed JSON (#26)', async () => {
-    const res = await request(createApp())
-      .post('/api/dictionary/words')
-      .set('Content-Type', 'application/json')
-      .send('{"english":');
-    expect(res.status).toBe(400);
-  });
+  // #26: body-parser xətaları klient xətasıdır — öz statusları ilə qayıtmalıdır, 500 ilə yox
+  describe('request body errors (#26)', () => {
+    it('responds 400 for malformed JSON', async () => {
+      const res = await postJson('{"english":');
 
-  it.fails('responds 413 for a JSON body over 10kb (#26)', async () => {
-    const res = await request(createApp())
-      .post('/api/dictionary/words')
-      .send({ english: 'a', translation: 'x'.repeat(11 * 1024) });
-    expect(res.status).toBe(413);
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ success: false, error: 'Request body is not valid JSON' });
+    });
+
+    it('responds 413 for a JSON body over 10kb', async () => {
+      const res = await request(createApp())
+        .post('/api/dictionary/words')
+        .send({ english: 'a', translation: 'x'.repeat(11 * 1024) });
+
+      expect(res.status).toBe(413);
+      expect(res.body).toEqual({ success: false, error: 'Request body is too large (max 10kb)' });
+    });
+
+    it('passes other client errors through with their own status', async () => {
+      const res = await postJson('{"english":"a"}', 'application/json; charset=no-such-charset');
+
+      expect(res.status).toBe(415);
+      expect(res.body).toEqual({ success: false, error: 'unsupported charset "NO-SUCH-CHARSET"' });
+    });
+
+    it('does not depend on NODE_ENV', async () => {
+      process.env.NODE_ENV = 'production';
+      expect((await postJson('{"english":')).status).toBe(400);
+    });
   });
 });
 

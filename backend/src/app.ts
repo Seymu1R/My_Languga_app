@@ -17,6 +17,12 @@ const MONGO_STATES: Record<number, string> = {
   99: 'uninitialized',
 };
 
+// body-parser xəta tipləri üçün oxunaqlı mesajlar; digər klient xətalarında öz mesajı qalır
+const BODY_ERROR_MESSAGES: Record<string, string> = {
+  'entity.parse.failed': 'Request body is not valid JSON',
+  'entity.too.large': 'Request body is too large (max 10kb)',
+};
+
 // Express tətbiqini qurur, amma port açmır — server.ts listen edir,
 // testlər isə hər dəfə təzə (rate limit sayğacları sıfır olan) tətbiq yaradır
 export const createApp = () => {
@@ -80,6 +86,17 @@ export const createApp = () => {
 
   // Error handling middleware
   app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    // express.json xətaları (səhv JSON, böyük body, dəstəklənməyən charset) http-errors formatındadır:
+    // status 4xx və expose=true — bunlar klient xətasıdır, 500 deyil (#26)
+    const status = err?.status ?? err?.statusCode;
+    if (err?.expose && Number.isInteger(status) && status >= 400 && status < 500) {
+      logger.warn({ status, type: err.type }, 'Rejected request body');
+      return res.status(status).json({
+        success: false,
+        error: BODY_ERROR_MESSAGES[err.type] ?? err.message,
+      });
+    }
+
     logger.error({ err }, 'Unhandled error in request pipeline');
     res.status(500).json({
       error: 'Something went wrong!',

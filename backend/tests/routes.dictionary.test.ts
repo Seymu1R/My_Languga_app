@@ -192,6 +192,20 @@ describe('PATCH /api/dictionary/words/:id/learning-status', () => {
     expect(res.body).toMatchObject({ success: true, word: { status }, message });
   });
 
+  it('does not change the schedule when a known word is reviewed again early (#4)', async () => {
+    const { body } = await addWord('apple');
+    const url = `/api/dictionary/words/${body.word.id}/learning-status`;
+    const first = await api().patch(url).send({ known: true });
+
+    const again = await api().patch(url).send({ known: true });
+
+    expect(again.status).toBe(200);
+    expect(again.body.word).toMatchObject({
+      reviewIntervalDays: 7,
+      nextReviewDate: first.body.word.nextReviewDate,
+    });
+  });
+
   it('responds 400 when known is not a boolean', async () => {
     const { body } = await addWord('apple');
     const res = await api().patch(`/api/dictionary/words/${body.word.id}/learning-status`).send({ known: 'yes' });

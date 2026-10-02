@@ -165,13 +165,44 @@ describe.each([
       expect(word).toMatchObject({ status: 'learning', nextReviewDate: null, reviewIntervalDays: 7 });
     });
 
-    // #4: interval review vaxtı çatmadan da böyüyür ("Review Again" → dərhal 28 gün)
-    it.fails('does not grow the interval when the word was not yet due (#4)', async () => {
-      const { id } = plain(await add('apple'));
-      await dictionaryService.updateLearningStatus(id, true);
+    // #4: vaxtından əvvəl təkrar ("Review Again") cədvəli dəyişməməlidir
+    describe('early review (#4)', () => {
+      it('keeps the interval and the review date when the word is not yet due', async () => {
+        const { id } = plain(await add('apple'));
+        const first = plain(await dictionaryService.updateLearningStatus(id, true));
 
-      const again = plain(await dictionaryService.updateLearningStatus(id, true));
-      expect(again.reviewIntervalDays).toBe(7);
+        travelDays(3);
+        const again = plain(await dictionaryService.updateLearningStatus(id, true));
+
+        expect(again).toMatchObject({
+          status: 'known',
+          reviewIntervalDays: 7,
+          nextReviewDate: first.nextReviewDate,
+        });
+      });
+
+      it('keeps the schedule through several early reviews, then grows once due', async () => {
+        const { id } = plain(await add('apple'));
+        await dictionaryService.updateLearningStatus(id, true);
+        await dictionaryService.updateLearningStatus(id, true);
+        await dictionaryService.updateLearningStatus(id, true);
+
+        travelDays(8);
+        const due = plain(await dictionaryService.updateLearningStatus(id, true));
+
+        expect(due.reviewIntervalDays).toBe(28);
+      });
+
+      it('grows the interval exactly at the review date', async () => {
+        const { id } = plain(await add('apple'));
+        const first = plain(await dictionaryService.updateLearningStatus(id, true));
+
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date(first.nextReviewDate));
+        const due = plain(await dictionaryService.updateLearningStatus(id, true));
+
+        expect(due.reviewIntervalDays).toBe(28);
+      });
     });
 
     it('throws WordNotFoundError for an unknown id', async () => {
@@ -301,6 +332,22 @@ describe('dictionaryService (mongodb only)', () => {
     const words = plain(await dictionaryService.getLearningWords());
 
     expect(words.map((w: any) => w.id)).toEqual(['legacy-id']);
+  });
+
+  // Köhnə sənəd: status known, amma nextReviewDate yoxdur — vaxtı çatmış sayılır
+  it('treats a legacy known word without a review date as due (#4)', async () => {
+    await Word.collection.insertOne({
+      _id: 'legacy-known',
+      english: 'legacy',
+      translation: 'köhnə',
+      status: 'known',
+      reviewIntervalDays: 7,
+      dateAdded: new Date(),
+    } as any);
+
+    const word = plain(await dictionaryService.updateLearningStatus('legacy-known', true));
+
+    expect(word.reviewIntervalDays).toBe(28);
   });
 
   it('stores words as UUID string ids', async () => {

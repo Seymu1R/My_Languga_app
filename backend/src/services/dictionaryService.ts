@@ -56,6 +56,17 @@ const deleteLocalImage = (imageUrl?: string) => {
   }
 };
 
+// Review vaxtı çatıbmı? Tarixi olmayan (köhnə) "known" söz vaxtı çatmış sayılır
+const isReviewDue = (nextReviewDate: Date | string | null | undefined) =>
+  !nextReviewDate || new Date(nextReviewDate).getTime() <= Date.now();
+
+// Vaxtından əvvəl "bilirəm" ("Review Again") cədvəli dəyişmir — interval yalnız
+// review vaxtı çatanda böyüyür (#4)
+const isEarlyReview = (
+  currentStatus: string | undefined,
+  nextReviewDate: Date | string | null | undefined,
+) => currentStatus === 'known' && !isReviewDue(nextReviewDate);
+
 // Söz artıq "known" idisə intervalı genişləndir, əks halda cari intervalı saxla
 const computeNextInterval = (
   currentStatus: string | undefined,
@@ -175,6 +186,10 @@ export const dictionaryService = {
       const existingWord = await Word.findById(id);
       if (!existingWord) throw new WordNotFoundError();
 
+      if (known && isEarlyReview(existingWord.status, existingWord.nextReviewDate)) {
+        return existingWord.toJSON();
+      }
+
       let nextStatus = 'learning';
       let nextReviewDate: Date | null = null;
       let nextIntervalDays = DEFAULT_INTERVAL_DAYS;
@@ -201,6 +216,10 @@ export const dictionaryService = {
     if (wordIndex === -1) throw new WordNotFoundError();
 
     const currentWord = memoryDictionary[wordIndex];
+
+    if (known && isEarlyReview(currentWord.status, currentWord.nextReviewDate)) {
+      return currentWord;
+    }
 
     if (known) {
       const nextIntervalDays = computeNextInterval(

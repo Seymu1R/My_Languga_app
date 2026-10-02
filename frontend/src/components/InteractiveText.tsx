@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useApp, actions } from '../context/AppContext';
 import { dictionaryService } from '../services/api';
 import WordDefinitionModal from './WordDefinitionModal';
+import { cleanWord } from '../utils/text';
 
 interface InteractiveTextProps {
   text: string;
@@ -12,11 +13,6 @@ const InteractiveText = ({ text }: InteractiveTextProps) => {
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [selectedSentence, setSelectedSentence] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // Function to clean word of punctuation for dictionary lookup
-  const cleanWord = (word: string): string => {
-    return word.replace(/[.,!?;:"'()[\]{}\-]/g, '').toLowerCase();
-  };
 
   const getSentenceForIndex = (charIndex: number): string => {
     const boundaryRegex = /[.!?\n]/;

@@ -64,4 +64,13 @@ describe('Word model', () => {
     expect(indexes).toContainEqual({ english: 1 });
     expect(indexes).toContainEqual({ status: 1, nextReviewDate: 1 });
   });
+
+  it('declares a case-insensitive unique index on english (#10)', () => {
+    const unique = Word.schema.indexes().find(([, options]) => options?.name === 'english_unique_ci');
+
+    expect(unique).toEqual([
+      { english: 1 },
+      expect.objectContaining({ unique: true, collation: { locale: 'en', strength: 2 } }),
+    ]);
+  });
 });

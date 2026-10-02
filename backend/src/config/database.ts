@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { logger } from '../utils/logger';
+import { Word } from '../models/Word';
 
 const connectDB = async () => {
   const mongoURI = process.env.MONGODB_URI;
@@ -17,6 +18,18 @@ const connectDB = async () => {
     logger.info({ database: mongoose.connection.name }, 'MongoDB connected successfully');
   } catch (error) {
     logger.error({ err: error }, 'MongoDB connection error — continuing with in-memory storage');
+    return;
+  }
+
+  // Unique index (#10) bazada artıq hərf böyüklüyü ilə fərqlənən dublikatlar varsa qurula bilmir.
+  // Server işləməyə davam edir (servis dublikatları yenə yoxlayır), amma nə etmək lazım olduğunu yazırıq
+  try {
+    await Word.init();
+  } catch (error) {
+    logger.error(
+      { err: error },
+      'Word indexes could not be built. If this is a duplicate key error, delete words that differ only in letter case and restart the server',
+    );
   }
 };
 

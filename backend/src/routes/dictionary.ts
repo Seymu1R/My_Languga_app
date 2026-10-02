@@ -154,6 +154,9 @@ dictionaryRouter.put('/words/:id', validate(addWordSchema), async (req: Request,
     if (error instanceof WordNotFoundError) {
       return res.status(404).json({ success: false, error: error.message });
     }
+    if (error instanceof DuplicateWordError) {
+      return res.status(409).json({ success: false, error: error.message });
+    }
 
     logger.error({ err: error }, 'Update word error');
     return res.status(500).json({

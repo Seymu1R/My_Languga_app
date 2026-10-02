@@ -25,6 +25,21 @@ const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const isMongoConnected = () => mongoose.connection.readyState === 1;
 
+// Unique index (english_unique_ci) pozulanda MongoDB 11000 qaytarır (#10)
+const isDuplicateKeyError = (error: unknown) => (error as { code?: number })?.code === 11000;
+
+// Hərf böyüklüyündən asılı olmayaraq eyni sözü tap; excludeId — redaktə olunan sözün özü
+const findWordByEnglish = (english: string, excludeId?: string) =>
+  Word.findOne({
+    english: { $regex: new RegExp(`^${escapeRegex(english)}$`, 'i') },
+    ...(excludeId ? { _id: { $ne: excludeId } } : {}),
+  });
+
+const hasMemoryDuplicate = (english: string, excludeId?: string) =>
+  memoryDictionary.some(
+    (w) => w.id !== excludeId && w.english.toLowerCase() === english.toLowerCase(),
+  );
+
 // Spaced Repetition System (SRS) parametrləri
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_INTERVAL_DAYS = 7;
@@ -150,22 +165,20 @@ export const dictionaryService = {
     const fields = normalizeWordFields(data);
 
     if (isMongoConnected()) {
-      const existingWord = await Word.findOne({
-        english: { $regex: new RegExp(`^${escapeRegex(data.english)}$`, 'i') },
-      });
-
-      if (existingWord) throw new DuplicateWordError();
+      if (await findWordByEnglish(fields.english)) throw new DuplicateWordError();
 
       const newWord = new Word(fields);
-      await newWord.save();
+      try {
+        await newWord.save();
+      } catch (error) {
+        // Yoxlamadan sonra eyni söz başqa sorğu ilə artıq yazılıb
+        if (isDuplicateKeyError(error)) throw new DuplicateWordError();
+        throw error;
+      }
       return newWord.toJSON();
     }
 
-    const existingWord = memoryDictionary.find(
-      (w) => w.english.toLowerCase() === data.english.toLowerCase(),
-    );
-
-    if (existingWord) throw new DuplicateWordError();
+    if (hasMemoryDuplicate(fields.english)) throw new DuplicateWordError();
 
     const newWord = {
       id: (memoryId++).toString(),
@@ -259,14 +272,23 @@ export const dictionaryService = {
     const fields = normalizeWordFields(data);
 
     if (isMongoConnected()) {
-      const updatedWord = await Word.findByIdAndUpdate(id, fields, { new: true });
-      if (!updatedWord) throw new WordNotFoundError();
+      if (!(await Word.exists({ _id: id }))) throw new WordNotFoundError();
+      // Sözü başqa mövcud sözün adına dəyişmək olmaz; öz adını saxlamaq və ya hərf böyüklüyünü dəyişmək olar (#10)
+      if (await findWordByEnglish(fields.english, id)) throw new DuplicateWordError();
 
-      return updatedWord.toJSON();
+      try {
+        const updatedWord = await Word.findByIdAndUpdate(id, fields, { new: true });
+        if (!updatedWord) throw new WordNotFoundError();
+        return updatedWord.toJSON();
+      } catch (error) {
+        if (isDuplicateKeyError(error)) throw new DuplicateWordError();
+        throw error;
+      }
     }
 
     const wordIndex = memoryDictionary.findIndex((w) => w.id === id);
     if (wordIndex === -1) throw new WordNotFoundError();
+    if (hasMemoryDuplicate(fields.english, id)) throw new DuplicateWordError();
 
     memoryDictionary[wordIndex] = { ...memoryDictionary[wordIndex], ...fields };
     return memoryDictionary[wordIndex];

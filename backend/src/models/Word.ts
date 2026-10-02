@@ -76,6 +76,13 @@ const wordSchema = new Schema<IWord>({
 // Index for faster lookups
 wordSchema.index({ english: 1 });
 
+// Eyni söz hərf böyüklüyündən asılı olmayaraq iki dəfə saxlanmasın. Servisin öz yoxlamasından
+// eyni anda keçən sorğulara qarşı son müdafiə (#10). Ayrı ad: köhnə bazalardakı english_1 ilə toqquşmasın
+wordSchema.index(
+  { english: 1 },
+  { unique: true, collation: { locale: 'en', strength: 2 }, name: 'english_unique_ci' },
+);
+
 // Learning queue sorğusu status + nextReviewDate üzrə filter edir —
 // kolleksiya böyüdükcə full scan-in qarşısını alır
 wordSchema.index({ status: 1, nextReviewDate: 1 });

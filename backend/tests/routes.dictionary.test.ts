@@ -157,6 +157,16 @@ describe('PUT /api/dictionary/words/:id', () => {
     expect(res.body).toMatchObject({ success: true, word: { english: 'green apple' }, message: 'Word updated successfully' });
   });
 
+  it('responds 409 when renaming to an existing word (#10)', async () => {
+    await addWord('apple');
+    const { body } = await addWord('pear');
+
+    const res = await api().put(`/api/dictionary/words/${body.word.id}`).send({ english: 'Apple', translation: 'alma' });
+
+    expect(res.status).toBe(409);
+    expect(res.body).toEqual({ success: false, error: 'Word already exists in dictionary' });
+  });
+
   it('responds 404 for an unknown id', async () => {
     const res = await api().put('/api/dictionary/words/missing').send({ english: 'a', translation: 'b' });
     expect(res.status).toBe(404);

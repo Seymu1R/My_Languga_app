@@ -18,10 +18,15 @@ const findSystemMongod = () => {
   }
 };
 
+// Müvəqqəti MongoDB qaldırır, mongoose-u qoşmur (qoşulmadan əvvəl data hazırlamaq üçün)
+export const createMongoServer = () => {
+  const binary = findSystemMongod();
+  return MongoMemoryServer.create(binary ? { binary } : undefined);
+};
+
 // Müvəqqəti, təmiz MongoDB qaldırır və mongoose-u ona qoşur
 export const startMongo = async () => {
-  const binary = findSystemMongod();
-  server = await MongoMemoryServer.create(binary ? { binary } : undefined);
+  server = await createMongoServer();
   await mongoose.connect(server.getUri(), { dbName: 'language_learning_test' });
 };
 

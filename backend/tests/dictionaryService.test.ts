@@ -33,7 +33,10 @@ describe.each([
   ['mongodb', true],
 ])('dictionaryService (%s storage)', (_mode, useMongo) => {
   beforeAll(async () => {
-    if (useMongo) await startMongo();
+    if (useMongo) {
+      await startMongo();
+      await Word.init(); // unique index qurulsun
+    }
   });
 
   afterAll(async () => {
@@ -91,6 +94,17 @@ describe.each([
     it('treats regex characters literally when checking duplicates', async () => {
       await add('abc');
       await expect(add('a.c')).resolves.toBeDefined();
+    });
+
+    // #10: yoxla-sonra-yaz arasında eyni anda gələn sorğular dublikat yaratmamalıdır
+    it('stores only one word when the same word is added concurrently (#10)', async () => {
+      const results = await Promise.allSettled([add('apple'), add('Apple'), add('APPLE')]);
+
+      expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+      for (const r of results.filter((r) => r.status === 'rejected')) {
+        expect((r as PromiseRejectedResult).reason).toBeInstanceOf(DuplicateWordError);
+      }
+      expect((await dictionaryService.getAllWords()).total).toBe(1);
     });
   });
 
@@ -259,14 +273,34 @@ describe.each([
       ).rejects.toBeInstanceOf(WordNotFoundError);
     });
 
-    // #10: redaktə zamanı dublikat yoxlanılmır
-    it.fails('rejects renaming a word to an existing word (#10)', async () => {
+    // #10: redaktə zamanı da dublikat yoxlanılmalıdır
+    it('rejects renaming a word to an existing word, regardless of case (#10)', async () => {
       await add('apple');
       const { id } = plain(await add('pear'));
 
       await expect(
         dictionaryService.updateWord(id, { english: 'Apple', translation: 'alma' }),
       ).rejects.toBeInstanceOf(DuplicateWordError);
+      expect(plain((await dictionaryService.getAllWords()).words).map((w: any) => w.english).sort()).toEqual([
+        'apple',
+        'pear',
+      ]);
+    });
+
+    it('allows a word to keep its own name or change only its case (#10)', async () => {
+      const { id } = plain(await add('apple'));
+
+      await expect(dictionaryService.updateWord(id, { english: 'apple', translation: 'alma' })).resolves.toBeDefined();
+      const word = plain(await dictionaryService.updateWord(id, { english: 'Apple', translation: 'alma' }));
+
+      expect(word.english).toBe('Apple');
+    });
+
+    it('reports WordNotFoundError before checking duplicates', async () => {
+      await add('apple');
+      await expect(
+        dictionaryService.updateWord('missing', { english: 'apple', translation: 'x' }),
+      ).rejects.toBeInstanceOf(WordNotFoundError);
     });
   });
 
@@ -317,7 +351,10 @@ describe.each([
 });
 
 describe('dictionaryService (mongodb only)', () => {
-  beforeAll(startMongo);
+  beforeAll(async () => {
+    await startMongo();
+    await Word.init(); // unique index qurulsun
+  });
   afterAll(stopMongo);
   beforeEach(clearMongo);
 
@@ -348,6 +385,27 @@ describe('dictionaryService (mongodb only)', () => {
     const word = plain(await dictionaryService.updateLearningStatus('legacy-known', true));
 
     expect(word.reviewIntervalDays).toBe(28);
+  });
+
+  it('enforces case-insensitive uniqueness in the database itself (#10)', async () => {
+    await Word.create({ english: 'apple', translation: 'alma' });
+
+    await expect(Word.create({ english: 'APPLE', translation: 'x' })).rejects.toMatchObject({ code: 11000 });
+  });
+
+  it('turns a duplicate-key error on update into DuplicateWordError (#10)', async () => {
+    await add('apple');
+    const { id } = plain(await add('pear'));
+    // Yarış halı: servisin dublikat yoxlaması (english üzrə findOne) heç nə tapmır,
+    // yazma isə DB index-inə dəyir. Digər findOne çağırışları (məs. Word.exists) real qalır
+    const realFindOne = Word.findOne.bind(Word);
+    vi.spyOn(Word, 'findOne').mockImplementation(((filter: any, ...rest: any[]) =>
+      filter?.english ? Promise.resolve(null) : realFindOne(filter, ...rest)) as any);
+
+    await expect(
+      dictionaryService.updateWord(id, { english: 'APPLE', translation: 'alma' }),
+    ).rejects.toBeInstanceOf(DuplicateWordError);
+    vi.restoreAllMocks();
   });
 
   it('stores words as UUID string ids', async () => {

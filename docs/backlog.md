@@ -10,7 +10,7 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 |---|---|---|---|
 | 1 | 🔴 Kritik | Path traversal ilə ixtiyari faylın silinməsi | **bağlanıb** (2026-10-02) |
 | 2 | 🔴 Kritik | AI xəta mesajları istifadəçiyə çatmır ("Network error") | **bağlanıb** (2026-10-02) |
-| 3 | 🔴 Kritik | MongoDB qoşulması gözlənilmir, yazılar in-memory-yə düşür | açıq |
+| 3 | 🔴 Kritik | MongoDB qoşulması gözlənilmir, yazılar in-memory-yə düşür | **bağlanıb** (2026-10-02) |
 | 4 | 🟠 Yüksək | SRS: interval vaxtı çatmadan böyüyür | **bağlanıb** (2026-10-02) |
 | 5 | 🟠 Yüksək | "Translation not available" tərcümə kimi saxlanır | **bağlanıb** (2026-10-02) |
 | 6 | 🟠 Yüksək | Modalda race condition: köhnə AI cavabları yeni sözə yazılır | **bağlanıb** (2026-10-02, testsiz) |
@@ -41,7 +41,7 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 
 1. Təhlükəsizlik: ~~#1~~, ~~#8~~
 2. İstifadəçinin gördüyü buglar: ~~#2~~, ~~#5~~, ~~#6~~, ~~#7~~
-3. Data bütövlüyü: #3, ~~#4~~, ~~#10~~, ~~#27~~, ~~#26~~, ~~#28~~
+3. Data bütövlüyü: ~~#3~~, ~~#4~~, ~~#10~~, ~~#27~~, ~~#26~~, ~~#28~~
 4. Səmərəlilik: #9, #12, #13
 5. İnfrastruktur: ~~backend testləri~~, frontend testləri, lint, `.gitignore`
 6. Refaktor: `aiService` təkrarları, ortaq tiplər
@@ -63,7 +63,8 @@ Backend AI xətasında 400/502 qaytarır, axios interceptor (`frontend/src/servi
 
 **Həll:** `catch`-də `err instanceof ApiError ? err.message : ...`.
 
-### 3. MongoDB qoşulması gözlənilmir
+### 3. MongoDB qoşulması gözlənilmir — **bağlanıb**
+Həll: rejim açılışda seçilir (`config/storage.ts`), `server.ts` `connectDB`-ni gözləyir, MongoDB rejimində qopma → 503, bax: changelog "#3". İlkin təsvir:
 `server.ts`-də `connectDB()` `await` edilmədən `listen` başlayır. İlk saniyələrdə gələn yazılar in-memory-yə düşür və itir. Mongo iş zamanı qopsa, yazılar səssizcə yaddaşa gedir və ID-lər (`"1"`) UUID-lərlə qarışır.
 **Həll:** `listen`-dən əvvəl `await connectDB()`. Mongo konfiqurasiya olunubsa, qopanda 503 qaytarmaq.
 

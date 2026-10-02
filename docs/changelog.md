@@ -4,6 +4,53 @@
 
 ---
 
+## 2026-10-02 — #3: saxlama rejimi açılışda seçilir, MongoDB qopanda data səssizcə itmir
+
+Branch: `fix/storage-mode` (`main`-dən). Commit-lər: `ec75b51` (`fix:` + testlər), sonra `docs:`.
+
+**Problem:** `dictionaryService` hər sorğuda **həmin anki** `mongoose.connection.readyState`-ə baxıb MongoDB ilə in-memory arasında seçim edirdi.
+1. `server.ts` `connectDB()`-ni gözləmədən portu açırdı. İlk sorğular in-memory-yə yazılır və itirdi. Testdə təsdiqləndi: "running" logu "MongoDB connected"-dən əvvəl gəlirdi.
+2. İş zamanı MongoDB qopanda yazılar səssizcə in-memory-yə gedirdi. Söz "uğurla" saxlanmış görünürdü, bağlantı qayıdanda isə yox olurdu. ID-lər (`"1"`) də UUID-lərlə qarışırdı.
+
+**Qərar:** rejim server açılanda bir dəfə seçilir və dəyişmir.
+- **`mongodb`:** açılışda qoşulmaq alındı. İş zamanı bağlantı yoxdursa lüğət sorğuları 503 alır, mongoose yenidən qoşulanda özü bərpa olunur.
+- **`in-memory`:** `MONGODB_URI` yoxdur və ya açılışda qoşulmaq alınmadı. Bu, əvvəlki kimidir və README-dəki "MongoDB olmadan" funksiyası saxlanılır.
+
+**Dəyişikliklər:**
+- `src/config/storage.ts` (yeni): `getStorageMode()` / `setStorageMode()`, default `in-memory`.
+- `config/database.ts`: uğurlu qoşulmada `setStorageMode('mongodb')`. `serverSelectionTimeoutMS: 5000`: server artıq qoşulmanı gözləyir, MongoDB işləməyəndə açılış default 30 san yerinə 5 san gecikir.
+- `services/dictionaryService.ts`: `isMongoConnected()` → `useMongo()`. MongoDB rejimində bağlantı yoxdursa `StorageUnavailableError` atır (6 funksiyanın hamısında).
+- `routes/dictionary.ts`: bütün 6 lüğət route-unda `StorageUnavailableError` → 503 "Database is temporarily unavailable. Please try again shortly." (`sendStorageUnavailable`). `upload-image` xaricdir, o DB-yə toxunmur.
+- `app.ts`: health-də `storageMode` artıq `getStorageMode()`-dən gəlir. `database.connected` hazırkı bağlantını göstərir.
+- `server.ts`: `start()` → `await connectDB()` → `listen`. Shutdown handler-ləri `start()` içinə köçdü. "running" logunda `storageMode` da yazılır.
+- Dəyişmədi: `aiContentService.lookupSavedSenses` bağlantı yoxdursa saxlanmış tərcümələri sadəcə ötürür (yalnız oxuyur, data itkisi yoxdur).
+
+**Testlər** (əvvəl yazıldı). İki addımla yoxlanıldı: əvvəlcə yalnız boş modul və xəta sinfi əlavə olundu, məntiq dəyişmədi. Bu halda köhnə davranışa görə 12 test düşdü.
+- `server.test.ts` (yeni): `server.ts` ayrıca prosesdə işə salınır.
+  - MongoDB ilə: "MongoDB connected" logu "running"-dən **əvvəl** gəlir, health `mongodb/connected` göstərir, SIGTERM → exit 0 və "Shutdown complete".
+  - MongoDB əlçatan olmayanda: qoşulma xətası "running"-dən əvvəl loglanır, health `in-memory` göstərir.
+  - `MONGODB_URI` həmişə test tərəfindən verilir, `backend/.env`-dəki real baza istifadə olunmur.
+- `dictionaryService.test.ts` (Mongo), real `mongoose.disconnect()` ilə:
+  - bütün 7 əməliyyat `StorageUnavailableError` atır;
+  - qopma zamanı yazma səssizcə qəbul edilmir. Əvvəlki versiyası köhnə kodda da keçirdi, yəni bug-ı tutmurdu, düzəldildi;
+  - yenidən qoşulandan sonra hər şey işləyir.
+- `routes.dictionary.test.ts`: 6 lüğət route-u → 503.
+- `database.test.ts`:
+  - uğurlu qoşulma → `mongodb` rejimi;
+  - URI yoxdursa və ya qoşulma alınmadısa → `in-memory`;
+  - `serverSelectionTimeoutMS: 5000`.
+- `app.test.ts`: `mongodb` rejimi + bağlantı yox → health `{ status: 'disconnected', connected: false, storageMode: 'mongodb' }`.
+- `storage.test.ts` (yeni): default və dəyişmə.
+- `tests/helpers/mongo.ts`: `startMongo` rejimi `mongodb`, `stopMongo` isə `in-memory` edir; yeni `reconnectMongo()`.
+
+**Yoxlama:** `npm test` → 375/375 (əvvəl 360, ~8 san), `npm run type-check` keçdi.
+
+`CLAUDE.md` (Dual storage, Tests) və kök `README.md` (funksiyalar, health) yeniləndi.
+
+**Davranış dəyişikliyi (istifadəçi üçün):**
+- MongoDB konfiqurasiya olunubsa, amma işləmirsə, server açılışı ~5 san gecikir, sonra in-memory rejimdə işləyir. Əvvəl dərhal açılırdı.
+- MongoDB rejimində bağlantı qopanda frontend 503 mesajını göstərir (interceptor serverin mesajını ötürür). Əvvəl söz saxlanmış görünürdü, amma itirdi.
+
 ## 2026-10-02 — #10: söz adları redaktədə və eyni anda gələn sorğularda da unikal qalır
 
 Branch: `fix/duplicate-words` (`main`-dən). Commit-lər: `062a5a2` (`fix:` + testlər), `b45477e` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi. Merge-dən sonra `main`-də frontend və backend type-check, həmçinin 360 backend testi keçdi. Sonra `main` GitHub-a push olundu, `fix/duplicate-words` lokalda silindi (heç vaxt push olunmamışdı). Yalnız `main` qaldı.

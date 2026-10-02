@@ -18,7 +18,7 @@
 - **Öz AI açarınızla işləyir.** OpenAI, Grok (xAI), Google Gemini, DeepSeek və Mistral dəstəklənir.
   - Açar serverdə saxlanmır. O, brauzerin `sessionStorage`-ında qalır və hər sorğu ilə göndərilir.
   - Server loglarında açar avtomatik maskalanır.
-- **MongoDB və ya in-memory.** MongoDB yoxdursa tətbiq yenə işləyir, amma məlumatlar server yenidən başlayanda itir.
+- **MongoDB və ya in-memory.** Rejim server açılanda seçilir. MongoDB-yə qoşulmaq alınsa, bütün data bazada saxlanır. `MONGODB_URI` yoxdursa və ya açılışda qoşulmaq alınmasa (5 san gözləmə), tətbiq in-memory rejimdə işləyir və məlumatlar restart-da itir. MongoDB rejimində bağlantı sonradan qopsa, lüğət sorğuları **503** qaytarır (data itməsin deyə yaddaşa yazılmır) və bağlantı qayıdanda özü bərpa olunur.
 
 | Provider | Modellər |
 |---|---|
@@ -94,7 +94,11 @@ npm run dev:frontend   # yalnız frontend
 | Backend API | http://localhost:7001/api |
 | Health check | http://localhost:7001/api/health |
 
-Health check uptime-ı və bazanın vəziyyətini qaytarır, o cümlədən `storageMode: "mongodb" | "in-memory"`. Server hansı rejimdə işlədiyini buradan görmək olar.
+Health check uptime-ı və bazanın vəziyyətini qaytarır:
+- `storageMode: "mongodb" | "in-memory"`: server açılanda seçilmiş rejim;
+- `database.connected`: bağlantının hazırkı vəziyyəti.
+
+MongoDB rejimində `connected: false` görünürsə, baza müvəqqəti əlçatan deyil, lüğət sorğuları 503 qaytarır.
 
 ### İstifadə
 

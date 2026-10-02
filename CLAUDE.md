@@ -49,7 +49,15 @@ cd frontend && npm run build       # tsc && vite build
 `app.ts` exports `createApp()`, which builds the Express app without listening: helmet, CORS, rate limits (200 requests per 15 minutes on `/api`, plus a stricter 30 per 15 minutes on `/api/ai`), static `/uploads` (served from `uploadPath`), routes, the health check, and the error/404 handlers. The error handler returns errors that carry `expose: true` and a 4xx `status` (http-errors style, e.g. body-parser's malformed JSON 400 / body over 10kb 413) with that status as `{ success: false, error }`; everything else becomes a 500. `server.ts` loads env, calls `connectDB()`, listens, and handles graceful shutdown.
 
 ### Dual storage: MongoDB or in-memory
-If `MONGODB_URI` is missing or the connection fails, the server keeps running. Every `dictionaryService` method branches on `mongoose.connection.readyState === 1`, using either the `Word` model or a module-level `memoryDictionary` array. **Any change to dictionary behavior must be made in both branches.**
+The storage mode is chosen **once at startup** and never changes while the server runs (`config/storage.ts`):
+- `server.ts` awaits `connectDB()` before it calls `listen`.
+- If `connectDB()` connects (`serverSelectionTimeoutMS: 5000`), the mode is `mongodb`. Otherwise it is `in-memory`, which covers both a missing `MONGODB_URI` and a failed initial connection; in this mode data is lost on restart.
+
+Every `dictionaryService` method branches on `useMongo()`, using either the `Word` model or a module-level `memoryDictionary` array:
+- In `mongodb` mode with the connection currently down, `useMongo()` throws `StorageUnavailableError`, and the dictionary routes answer 503. Writes must never fall back to memory there, because that data would vanish once Mongoose reconnects.
+- `/api/health` reports the startup mode (`storageMode`) separately from the live connection state.
+
+**Any change to dictionary behavior must be made in both branches.** Tests that call `startMongo()` also switch the mode to `mongodb`.
 
 Word IDs are UUID strings (`_id: String`, with toJSON mapping `_id` to `id`), not ObjectIds. The in-memory branch uses incrementing numeric-string IDs. Words are unique by `english`, ignoring letter case: both `addWord` and `updateWord` check this (a word may keep its own name or change only its case). In MongoDB, the `english_unique_ci` index (collation `en`, strength 2) also enforces it under concurrency; duplicate-key error 11000 is mapped to `DuplicateWordError` (409). If an existing database already holds case-only duplicates, the index cannot be built; `connectDB` logs this and the server keeps running.
 
@@ -80,6 +88,7 @@ React 18, react-router (`/`, `/dictionary`, `/learnings`), and Tailwind. Global 
 - **Setup:** `tests/setup.ts` silences logs, unsets `MONGODB_URI`, and points `UPLOAD_DIR` at a temporary directory. Tests never touch the real database or `backend/uploads`.
 - **MongoDB:** `tests/helpers/mongo.ts` starts mongodb-memory-server (Node 20.19+), using the system `mongod` when one is installed. `dictionaryService.test.ts` runs the same suite against both storage modes with `describe.each`; keep that when changing dictionary behavior.
 - **Isolation:** AI SDKs (`openai`, `@google/generative-ai`), `AIService`, `aiContentService`, and `fetch` are mocked with `vi.mock`/`vi.stubGlobal`, so tests make no network calls. Use `createApp()` per test when rate-limit counters must start fresh.
+- **Server startup:** `tests/server.test.ts` runs `src/server.ts` as a separate process (JSON logs, random port, `MONGODB_URI` always set by the test so `backend/.env` is never used) to check that the port opens only after `connectDB` finishes, the in-memory fallback, and SIGTERM shutdown. It is the slowest file (about 6s, because of the 5s fallback timeout).
 - **Known bugs:** they are pinned with `it.fails(...)`, and the test name includes the backlog ID (e.g. `(#4)`). When you fix one, the test starts failing as "unexpectedly passed"; remove `.fails` then.
 
 ## Conventions

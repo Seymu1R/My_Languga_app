@@ -12,3 +12,9 @@ yarn-error.log*
 .DS_Store
 .vscode/
 *.log
+
+# IDE (istifadəçinin lokal ayarları)
+.idea/
+
+# İstifadəçinin yüklədiyi şəkillər — runtime datasıdır; qovluğu upload middleware özü yaradır (#22)
+backend/uploads/

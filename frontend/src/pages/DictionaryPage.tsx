@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp, actions } from '../context/AppContext';
 import type { Word } from '../types';
-import { dictionaryService, resolveAssetUrl } from '../services/api';
+import { dictionaryService, resolveAssetUrl, getErrorMessage } from '../services/api';
 import ConfirmModal from '../components/ConfirmModal';
 
 const DictionaryPage = () => {
@@ -20,7 +20,7 @@ const DictionaryPage = () => {
         const words = await dictionaryService.getWords();
         dispatch(actions.setDictionary(words));
       } catch (err) {
-        setError('Failed to load dictionary');
+        setError(getErrorMessage(err, 'Failed to load dictionary'));
         console.error('Dictionary loading error:', err);
       } finally {
         setIsLoading(false);
@@ -36,7 +36,7 @@ const DictionaryPage = () => {
       await dictionaryService.deleteWord(wordToDelete);
       dispatch(actions.removeWord(wordToDelete));
     } catch (err) {
-      setError('Failed to delete word');
+      setError(getErrorMessage(err, 'Failed to delete word'));
       console.error('Delete word error:', err);
     } finally {
       setWordToDelete(null);

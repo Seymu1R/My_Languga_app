@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useApp, actions } from '../context/AppContext';
-import { aiService, API_ORIGIN } from '../services/api';
+import { aiService, getErrorMessage } from '../services/api';
 
 interface AITokenModalProps {
   isOpen: boolean;
@@ -156,18 +156,11 @@ const AITokenModal = ({ isOpen, onClose }: AITokenModalProps) => {
       } else {
         setError(greetingResponse.error || 'AI ilə əlaqə qurula bilmədi. API açarınızı yoxlayın.');
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Token validation error:', err);
-      if (err.response) {
-        // Server responded with error
-        setError(err.response.data?.error || `Server error: ${err.response.status}`);
-      } else if (err.request) {
-        // Request was made but no response received
-        setError(`Cannot connect to server. Please check if the backend server is running on ${API_ORIGIN}`);
-      } else {
-        // Something else happened
-        setError('Network error. Please check your connection and try again.');
-      }
+      // Interceptor bütün HTTP xətalarını ApiError-a çevirir: səhv açar, kvota və
+      // "server işləmir" mesajları da daxil
+      setError(getErrorMessage(err, 'AI ilə əlaqə qurula bilmədi. Yenidən cəhd edin.'));
     } finally {
       setIsSubmitting(false);
     }

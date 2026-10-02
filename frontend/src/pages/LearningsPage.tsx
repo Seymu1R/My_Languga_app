@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Word } from '../types';
-import { dictionaryService } from '../services/api';
+import { dictionaryService, getErrorMessage } from '../services/api';
 import Flashcard from '../components/Flashcard';
 import { Link } from 'react-router-dom';
 
@@ -20,8 +20,8 @@ const LearningsPage = () => {
       try {
         const words = await dictionaryService.getLearningWords();
         initQueue(words);
-      } catch {
-        setError('Failed to load words. Please check your connection and try again.');
+      } catch (err) {
+        setError(getErrorMessage(err, 'Failed to load words. Please try again.'));
       } finally {
         setIsLoading(false);
       }

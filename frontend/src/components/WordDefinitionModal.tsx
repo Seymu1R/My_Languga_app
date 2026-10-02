@@ -1,6 +1,6 @@
 import { useState, useEffect, type ChangeEvent, type FormEvent } from "react";
 import { useApp } from "../context/AppContext";
-import { aiService, dictionaryService, resolveAssetUrl, ApiError } from "../services/api";
+import { aiService, dictionaryService, resolveAssetUrl, getErrorMessage } from "../services/api";
 
 // Backend-in qəbul etdiyi tiplərlə eyni (backend/src/middleware/upload.ts)
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -16,7 +16,7 @@ interface WordDefinitionModalProps {
     pronunciation?: string,
     referenceSentence?: string,
     imageUrl?: string,
-  ) => void;
+  ) => Promise<void>;
 }
 
 const WordDefinitionModal = ({
@@ -29,6 +29,8 @@ const WordDefinitionModal = ({
   const { state } = useApp();
   const [translation, setTranslation] = useState("");
   const [aiTranslation, setAiTranslation] = useState("");
+  // Xəta ayrıca saxlanılır ki, heç vaxt tərcümə kimi yadda saxlanılmasın (#5)
+  const [translationError, setTranslationError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [pronunciation, setPronunciation] = useState("");
   const [aiPronunciation, setAiPronunciation] = useState("");
@@ -61,6 +63,7 @@ const WordDefinitionModal = ({
     setTranslation("");
     setFormError(null);
     setAiTranslation("");
+    setTranslationError(null);
     setPronunciation("");
     setAiPronunciation("");
     setExampleSentences([]);
@@ -90,13 +93,13 @@ const WordDefinitionModal = ({
           aiModel,
           contextSentence,
         );
-        setAiTranslation(
-          response.success && response.translation
-            ? response.translation
-            : "Translation not available",
-        );
-      } catch {
-        setAiTranslation("Translation error");
+        if (response.success && response.translation) {
+          setAiTranslation(response.translation);
+        } else {
+          setTranslationError(response.error || "AI translation is not available.");
+        }
+      } catch (error) {
+        setTranslationError(getErrorMessage(error, "AI translation failed. Please try again."));
       } finally {
         setIsLoadingTranslation(false);
       }
@@ -193,12 +196,13 @@ const WordDefinitionModal = ({
     if (selectedImageFile) {
       try {
         finalImageUrl = await dictionaryService.uploadImage(selectedImageFile);
-      } catch (error: any) {
+      } catch (error) {
         console.error("Error uploading image:", error);
         setImageError(
-          error instanceof ApiError
-            ? error.message
-            : "Failed to upload image. Please try again without it or choose another one.",
+          getErrorMessage(
+            error,
+            "Failed to upload image. Please try again without it or choose another one.",
+          ),
         );
         setIsSubmitting(false);
         return;
@@ -228,7 +232,9 @@ const WordDefinitionModal = ({
       setImageUrl(null);
       setSelectedImageFile(null);
     } catch (error) {
+      // Məsələn, 409 "Word already exists in dictionary" — modalın içində göstərilir
       console.error("Error saving word:", error);
+      setFormError(getErrorMessage(error, "Failed to save word. Please try again."));
     } finally {
       setIsSubmitting(false);
     }
@@ -240,6 +246,7 @@ const WordDefinitionModal = ({
     }
     setTranslation("");
     setAiTranslation("");
+    setTranslationError(null);
     setPronunciation("");
     setAiPronunciation("");
     setExampleSentences([]);
@@ -355,9 +362,15 @@ const WordDefinitionModal = ({
                 </div>
               )}
             </div>
-            <p className="mt-1 text-xs text-blue-600">
-              ✨ AI optimal translation suggestion
-            </p>
+            {translationError && !isLoadingTranslation ? (
+              <p className="mt-1 text-sm text-red-600" role="alert">
+                {translationError} You can still enter your own translation below.
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-blue-600">
+                ✨ AI optimal translation suggestion
+              </p>
+            )}
           </div>
 
           {/* AI Pronunciation - Optional Editable Input */}

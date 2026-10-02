@@ -48,7 +48,9 @@ const InteractiveText = ({ text }: InteractiveTextProps) => {
     }
   };
 
-  // Function to save word to dictionary
+  // Function to save word to dictionary.
+  // Xəta burada tutulmur: WordDefinitionModal onu modalın içində göstərir
+  // (əvvəl səhifədə, modalın arxasında görünürdü)
   const handleSaveWord = async (english: string, translation: string, pronunciation?: string, referenceSentence?: string, imageUrl?: string) => {
     try {
       dispatch(actions.setLoading(true));
@@ -56,9 +58,6 @@ const InteractiveText = ({ text }: InteractiveTextProps) => {
       dispatch(actions.addWord(newWord));
       setIsModalOpen(false);
       setSelectedWord(null);
-    } catch (error) {
-      console.error('Error saving word:', error);
-      dispatch(actions.setError('Failed to save word to dictionary'));
     } finally {
       dispatch(actions.setLoading(false));
     }

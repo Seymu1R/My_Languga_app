@@ -1,7 +1,7 @@
 import { type ChangeEvent } from 'react';
 import { useApp, actions } from '../context/AppContext';
 import type { ProficiencyLevel } from '../types';
-import { aiService } from '../services/api';
+import { aiService, getErrorMessage } from '../services/api';
 import InteractiveText from '../components/InteractiveText';
 
 // Statik sabitlər komponent xaricinə çıxarıldı —
@@ -65,7 +65,7 @@ const HomePage = () => {
         dispatch(actions.setError(response.error || 'Failed to generate text'));
       }
     } catch (error) {
-      dispatch(actions.setError('Network error. Please check your connection.'));
+      dispatch(actions.setError(getErrorMessage(error, 'Failed to generate text. Please try again.')));
       console.error('Text generation error:', error);
     } finally {
       dispatch(actions.setLoading(false));

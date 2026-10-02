@@ -24,6 +24,11 @@ export class ApiError extends Error {
   }
 }
 
+// catch blokları üçün: ApiError serverin (və ya interceptor-un) istifadəçiyə uyğun mesajını daşıyır,
+// gözlənilməz xətalarda isə fallback göstərilir
+export const getErrorMessage = (error: unknown, fallback: string) =>
+  error instanceof ApiError ? error.message : fallback;
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000, // 30 saniyə gözlə, sonra xəta ver

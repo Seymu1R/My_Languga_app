@@ -12,6 +12,59 @@ ona görə hər sessiyanın əvvəlində avtomatik oxunur. Ətraflı fayllar laz
 | [architecture/](architecture/) | Bir neçə faylı oxumadan başa düşülməyən axınların izahı. |
 | [architecture/image-upload.md](architecture/image-upload.md) | Şəkil yükləmə axını: seçimdən silinməyə qədər. |
 
+## Harada qaldıq (2026-10-02, sessiyanın sonu)
+
+Yeni sessiya (və ya başqa kompüter) buradan başlayır.
+
+- **Son bitən iş:** #22 (`.gitignore`, şəkillər git-dən çıxarıldı, `@types/mongoose`). `main` push olunub (`7e18620`-dən sonra yalnız bu sənəd), `main` = `origin/main`, başqa branch yoxdur.
+- **Bağlanıb:** bütün kritik, yüksək və orta ciddilikli maddələr. Backend-də 483 test, heç bir `it.fails` yoxdur.
+- **Qalan işlər** (hamısı aşağı ciddilik; istifadəçi 2026-10-02-də "aşağılar hələlik qalsın" dedi, sonra #22-ni seçdi). Növbəti maddəni istifadəçi seçir:
+
+  | ID | Nədir | Həcm |
+  |---|---|---|
+  | #23 | `start.sh`: 20-ci sətirdə artıq `MONGODB_URI` sözü ("command not found" çap edir), `mongod` başlamasa da skript davam edir | kiçik, skript |
+  | #29 | `PUT /words/:id` buraxılan sahələri in-memory-də silir, MongoDB-də saxlayır | kiçik, backend + testlər |
+  | #24 (qismən) | `LearningsPage` qarışdırması `sort(() => Math.random() - 0.5)` → Fisher–Yates | kiçik, frontend |
+  | #20 | `aiService.ts` təkrarları, provider siyahısı 5 yerdə | orta, refaktor (testlər var) |
+  | #19 (qismən) | frontend testləri (istifadəçi sonraya saxlayıb) və sınıq lint (Biome 1.x config + Biome 2.4; ESLint config yoxdur) | orta |
+  | #11 (qismən) | restart və "yüklənib, saxlanmayıb" yetim şəkilləri; avtomatik təmizləmə qəsdən edilmədi | qərar tələb edir |
+  | #18 | autentifikasiya yoxdur; lokal istifadə üçün qəbul edilir | böyük |
+
+- **Brauzerdə yoxlanılmayıb** (frontend testləri yoxdur, yalnız type-check + build): #2, #5, #6, #9 (açar modalı), #14, #15, #16. Qısa əl yoxlaması faydalı olar. #9 real provider açarı ilə də yoxlanılmayıb (xüsusilə Gemini/Grok-un 1 tokenlik limitə cavabı).
+- **İstifadəçinin iş axını** (hər maddə üçün təkrarlanır):
+  1. "#N-dən başla" → `main`-dən branch, əvvəlcə bug-ı göstərən test, sonra düzəliş, sənədlər. Hesabat Azərbaycan dilində.
+  2. "bəli, ayrı-ayrı commit et" → kod (`fix:`/`perf:`/`chore:`, testləri ilə) və `docs:` ayrı commit-lər.
+  3. "main-ə merge et" → `--ff-only`, `main`-də testlər, merge qeydi sənədlərə (hələ commit-siz).
+  4. "bəli, commit et, push et, yalnız main qalsın" → sənəd commit-i, məxfi fayl/açar yoxlaması, push, branch `-d` ilə silinir.
+
+## Başqa kompüterdə davam etmək
+
+Kod və sənədlər GitHub-dadır, amma bəzi şeylər **git-də deyil** və əl ilə köçürülməlidir.
+
+1. **Kod:**
+   ```bash
+   git clone https://github.com/Seymu1R/My_Languga_app.git
+   cd My_Languga_app
+   git config user.name "Seymu1R"          # repo səviyyəsində, əvvəlki kimi
+   git config user.email "<əvvəlki email>"
+   npm run install:all
+   ```
+   Node **20.19+** lazımdır (backend testləri mongodb-memory-server işlədir; sistemdə `mongod` yoxdursa, ilk dəfə binary yüklənir, internet lazımdır).
+2. **Yoxlama:** `cd backend && npm test && npm run type-check` (483 test), `cd frontend && npx tsc --noEmit && npm run build`.
+3. **`backend/.env`** git-də deyil. Kök `README.md`-dəki nümunə ilə yenidən yarat. `start.sh` işlədilirsə `MONGODB_URI=mongodb://localhost:27018/language_learning`. AI açarı `.env`-ə yazılmır.
+4. **Lüğət datası** bu kompüterin MongoDB-sindədir (`~/mongodb_data`, port 27018, baza `language_learning`). Köçürmək üçün:
+   ```bash
+   # köhnə kompüterdə (mongod işləyərkən)
+   mongodump --port 27018 --db language_learning --out ./mongo-dump
+   # yeni kompüterdə (./start.sh ilə mongod qalxandan sonra)
+   mongorestore --port 27018 ./mongo-dump
+   ```
+   Yeni bazada köhnə case-only dublikatlar varsa, `english_unique_ci` index-i qurulmur və server bunu loglayır (bax: #10).
+5. **Şəkillər:** `backend/uploads/` artıq git-də deyil (#22). Sözlər onlara `/uploads/<fayl>` yolu ilə istinad edir, ona görə qovluğu əl ilə köçür. Qeyd: köhnə nüsxədə `git pull` bu qovluqdakı əvvəllər izlənən 2 şəkli silər; bərpa əmri changelog-un #22 qeydindədir.
+6. **Brauzer ayarları** (provider, model, dil, səviyyə `localStorage`-da, açar `sessionStorage`-da) köçmür: tətbiqdə yenidən "Add AI Token".
+7. **`start.sh`** #23 səbəbindən "MONGODB_URI: command not found" çap edir, amma işləyir. `mongod` və `mongosh` quraşdırılmalıdır.
+8. **Claude Code:** yeni sessiyada `CLAUDE.md` bu faylı avtomatik oxuyur. Claude-un lokal yaddaşı (`~/.claude/projects/...`) köçmür. Vacib dərslər buradadır (İş qaydaları, 7).
+
 ## Hazırkı vəziyyət (2026-10-02)
 
 - Backlog-da 29 tapıntı var. Bağlanıb:
@@ -71,5 +124,7 @@ Hər dəyişiklikdən sonra:
    - Hər iş `main`-dən ayrıca branch-da aparılır; `main`-ə `--ff-only` ilə birləşdirilir.
    - Commit-lər ayrı-ayrıdır: kod `fix:`/`feat:` (bug fix öz testləri ilə birlikdə), `refactor:`, `test:`, `docs:`.
    - Push-dan əvvəl göndəriləcək diff məxfi fayl və açarlara görə yoxlanılır.
+   - Hər commit-dən sonra tərkibi `git show --stat` ilə yoxlanılır. Ignore olunan yolu `git add`-ə vermə: xəta `&&` zəncirini dayandırır və növbəti commit səhv faylları götürür (#22-də baş verdi).
+   - Faylı izləmədən çıxaran (`git rm --cached`) commit-i birləşdirməzdən əvvəl həmin faylların ehtiyat nüsxəsini götür: o faylları hələ izləyən branch-a keçib fast-forward etmək onları diskdən silir (#22-də istifadəçinin 2 şəkli silindi və tarixçədən bərpa olundu).
 
 Bu sənədlər istifadəçi ilə Azərbaycan dilində yazılır.

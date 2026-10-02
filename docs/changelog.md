@@ -4,6 +4,18 @@
 
 ---
 
+## 2026-10-02 — Sessiyanın sonu: "Harada qaldıq" və "Başqa kompüterdə davam etmək"
+
+Branch: `docs/handoff` (`main`-dən). İstifadəçi başqa kompüterdən davam etmək istədi.
+
+- `docs/README.md`:
+  - **"Harada qaldıq"**: son bitən iş (#22), qalan aşağı ciddilikli maddələr həcmi ilə, brauzerdə yoxlanılmamış frontend dəyişiklikləri, istifadəçinin iş axını (4 addım).
+  - **"Başqa kompüterdə davam etmək"**: clone + git identity + quraşdırma, yoxlama əmrləri, git-də olmayanlar (`backend/.env`, MongoDB datası — `mongodump`/`mongorestore`, `backend/uploads/` şəkilləri, brauzer ayarları), `start.sh` (#23) qeydi, Claude-un lokal yaddaşının köçmədiyi.
+  - İş qaydaları, 7: #22-dən iki git dərsi (commit tərkibini `git show --stat` ilə yoxlamaq; `git rm --cached` commit-indən əvvəl ehtiyat nüsxə).
+- Kod dəyişmədi.
+
+---
+
 ## 2026-10-02 — #22: `.gitignore` tamamlandı, yüklənmiş şəkillər git-dən çıxarıldı, `@types/mongoose` silindi
 
 Branch: `chore/gitignore` (`main`-dən). Commit-lər: `2eda5da` (`chore:` `.gitignore` + şəkillər), `f76738b` (`chore(deps):`), `6d3dacf` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi. Merge-dən sonra `main`-də frontend və backend type-check, həmçinin 483 backend testi keçdi. Sonra `main` GitHub-a push olundu, `chore/gitignore` lokalda silindi (heç vaxt push olunmamışdı). Yalnız `main` qaldı.

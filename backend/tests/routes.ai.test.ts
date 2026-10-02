@@ -217,3 +217,29 @@ describe('AI rate limit', () => {
     expect((await request(app).get('/api/dictionary/words')).status).toBe(200);
   });
 });
+
+// #28: boşluqdan ibarət söz AI-a göndərilməməlidir, kənar boşluqlar isə silinməlidir
+describe.each([
+  ['/translate-word', 'translateWord', { targetLanguage: 'Azerbaijani', languageCode: 'az' }],
+  ['/pronunciation', 'getPronunciation', {}],
+  ['/example-sentences', 'generateExampleSentences', {}],
+] as const)('POST /api/ai%s word handling (#28)', (path, method, rest) => {
+  const auth = { aiToken: 'sk-1', provider: 'openai' };
+
+  it('responds 400 for a whitespace-only word without calling the AI', async () => {
+    const res = await post(path, { ...rest, ...auth, word: '   ' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.details).toEqual(['word: word is required']);
+    expect(service[method]).not.toHaveBeenCalled();
+  });
+
+  it('passes the trimmed word to the AI', async () => {
+    service[method].mockResolvedValue({ success: true });
+
+    await post(path, { ...rest, ...auth, word: '  bank ' });
+
+    const [, wordArg] = service[method].mock.calls[0];
+    expect(typeof wordArg === 'string' ? wordArg : wordArg.word).toBe('bank');
+  });
+});

@@ -85,6 +85,28 @@ describe.each([
   });
 });
 
+// #28: AI endpoint-lərinin `word` sahəsi də boşluqları uzunluq yoxlamasından əvvəl silməlidir
+describe.each([
+  ['translateWordSchema', translateWordSchema, { targetLanguage: 'Azerbaijani', languageCode: 'az' }],
+  ['pronunciationSchema', pronunciationSchema, {}],
+  ['exampleSentencesSchema', exampleSentencesSchema, {}],
+] as const)('%s word (#28)', (_name, schema, rest) => {
+  it.each(['   ', '\t\n '])('rejects a whitespace-only word %j', (word) => {
+    const result = schema.safeParse({ ...rest, word });
+
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0].message).toBe('word is required');
+  });
+
+  it('trims the word', () => {
+    expect(schema.parse({ ...rest, word: '  bank \n' }).word).toBe('bank');
+  });
+
+  it('applies the length limit to the trimmed word', () => {
+    expect(schema.safeParse({ ...rest, word: `  ${'x'.repeat(200)}  ` }).success).toBe(true);
+  });
+});
+
 describe('addWordSchema', () => {
   const valid = { english: 'apple', translation: 'alma' };
 

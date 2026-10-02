@@ -12,6 +12,9 @@ export const PROFICIENCY_LEVELS = [
 
 // ─── AI schemas ───────────────────────────────────────────────────────────────
 
+// Klik edilən söz — trim() uzunluq yoxlamasından əvvəl, əks halda "   " keçir (#28, #27 ilə eyni)
+const wordSchema = z.string().trim().min(1, 'word is required').max(200);
+
 export const generateTextSchema = z.object({
   level: z.enum(PROFICIENCY_LEVELS),
   apiToken: z.string().min(1, 'apiToken is required'),
@@ -21,7 +24,7 @@ export const generateTextSchema = z.object({
 });
 
 export const translateWordSchema = z.object({
-  word: z.string().min(1, 'word is required').max(200),
+  word: wordSchema,
   targetLanguage: z.string().min(1, 'targetLanguage is required'),
   languageCode: z.string().min(2).max(10),
   contextSentence: z.string().max(1000).optional(),
@@ -31,14 +34,14 @@ export const translateWordSchema = z.object({
 });
 
 export const pronunciationSchema = z.object({
-  word: z.string().min(1, 'word is required').max(200),
+  word: wordSchema,
   aiToken: z.string().optional(),
   provider: z.enum(AI_PROVIDERS).optional(),
   model: z.string().optional(),
 });
 
 export const exampleSentencesSchema = z.object({
-  word: z.string().min(1, 'word is required').max(200),
+  word: wordSchema,
   level: z.string().optional(),
   aiToken: z.string().optional(),
   provider: z.enum(AI_PROVIDERS).optional(),

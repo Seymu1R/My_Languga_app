@@ -11,7 +11,7 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 | 1 | 🔴 Kritik | Path traversal ilə ixtiyari faylın silinməsi | **bağlanıb** (2026-10-02) |
 | 2 | 🔴 Kritik | AI xəta mesajları istifadəçiyə çatmır ("Network error") | **bağlanıb** (2026-10-02) |
 | 3 | 🔴 Kritik | MongoDB qoşulması gözlənilmir, yazılar in-memory-yə düşür | açıq |
-| 4 | 🟠 Yüksək | SRS: interval vaxtı çatmadan böyüyür | açıq (`it.fails` testi var) |
+| 4 | 🟠 Yüksək | SRS: interval vaxtı çatmadan böyüyür | **bağlanıb** (2026-10-02) |
 | 5 | 🟠 Yüksək | "Translation not available" tərcümə kimi saxlanır | **bağlanıb** (2026-10-02) |
 | 6 | 🟠 Yüksək | Modalda race condition: köhnə AI cavabları yeni sözə yazılır | **bağlanıb** (2026-10-02, testsiz) |
 | 7 | 🟠 Yüksək | Multer xətaları 500 qaytarır (400/413 əvəzinə) | **bağlanıb** (2026-10-02) |
@@ -41,7 +41,7 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 
 1. Təhlükəsizlik: ~~#1~~, ~~#8~~
 2. İstifadəçinin gördüyü buglar: ~~#2~~, ~~#5~~, ~~#6~~, ~~#7~~
-3. Data bütövlüyü: #3, #4, #10, ~~#27~~, ~~#26~~, ~~#28~~
+3. Data bütövlüyü: #3, ~~#4~~, #10, ~~#27~~, ~~#26~~, ~~#28~~
 4. Səmərəlilik: #9, #12, #13
 5. İnfrastruktur: ~~backend testləri~~, frontend testləri, lint, `.gitignore`
 6. Refaktor: `aiService` təkrarları, ortaq tiplər
@@ -67,7 +67,8 @@ Backend AI xətasında 400/502 qaytarır, axios interceptor (`frontend/src/servi
 `server.ts`-də `connectDB()` `await` edilmədən `listen` başlayır. İlk saniyələrdə gələn yazılar in-memory-yə düşür və itir. Mongo iş zamanı qopsa, yazılar səssizcə yaddaşa gedir və ID-lər (`"1"`) UUID-lərlə qarışır.
 **Həll:** `listen`-dən əvvəl `await connectDB()`. Mongo konfiqurasiya olunubsa, qopanda 503 qaytarmaq.
 
-### 4. SRS interval məntiqi
+### 4. SRS interval məntiqi — **bağlanıb**
+Həll: vaxtından əvvəl "bilirəm" cədvəli dəyişmir (`isEarlyReview`), bax: changelog "#4". İlkin təsvir:
 `dictionaryService.ts` → `computeNextInterval`: status `known` olanda hər "Know" cavabı intervalı ×4 artırır, review vaxtının çatıb-çatmamasından asılı olmayaraq. "Review Again"-dən sonra yenə "Know" demək 7 günü dərhal 28 günə qaldırır.
 **Həll:** intervalı yalnız `nextReviewDate <= now` olanda böyütmək.
 

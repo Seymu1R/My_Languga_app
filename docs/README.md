@@ -24,21 +24,23 @@ ona görə hər sessiyanın əvvəlində avtomatik oxunur. Ətraflı fayllar laz
   - **#25**: logger artıq `.env`-dən sonra yaradılır;
   - **#27**: yalnız boşluqdan ibarət söz və tərcümə rədd edilir;
   - **#28**: AI endpoint-ləri də yalnız boşluqdan ibarət sözü rədd edir;
-  - **#26**: səhv JSON → 400, >10kb body → 413, digər klient xətaları öz statusu ilə.
+  - **#26**: səhv JSON → 400, >10kb body → 413, digər klient xətaları öz statusu ilə;
+  - **#4**: vaxtından əvvəl təkrar ("Review Again") öyrənmə cədvəlini dəyişmir.
 
   Qismən:
   - **#19**: backend testləri var, frontend testləri və lint yoxdur;
   - **#24**: kök README yenidən yazılıb, shuffle qalır.
 
   Qalanları açıqdır.
-- **Testlər:** `cd backend && npm test` (Vitest, 342 test, ~2–3 san). Hər backend dəyişikliyindən sonra işə sal.
-  - #4 və #10 üçün `it.fails` testləri var.
+- **Testlər:** `cd backend && npm test` (Vitest, 348 test, ~2–3 san). Hər backend dəyişikliyindən sonra işə sal.
+  - Yalnız #10 üçün `it.fails` testi qalıb.
 - Kök `README.md` Azərbaycan dilindədir. Funksiya, env, port və ya endpoint dəyişəndə onu da yenilə.
-- Təklif olunan növbəti iş: `it.fails` testi hazır olan backend bug-ları: **#4**, **#10**. Sonra **#3** (Mongo qoşulmasını gözləmək). Testlərlə tez bağlana bilənlər: **#4**, **#10**, **#26**, **#27**.
+- Təklif olunan növbəti iş: **#10** (`it.fails` testi hazırdır). Sonra **#3** (Mongo qoşulmasını gözləmək). Testlərlə tez bağlana bilənlər: **#4**, **#10**, **#26**, **#27**.
 - **Git / GitHub** (remote: `origin` = https://github.com/Seymu1R/My_Languga_app):
   - Lokalda və GitHub-da yalnız **`main`** branch-ı var. İstifadəçinin istəyi ilə 2026-10-02-də bütün iş `main`-ə birləşdirildi, `main` push olundu, digər branch-lar (lokal 6, remote 1) silindi.
   - Bütün işlər `main`-dədir: #1, #2, #5, #6, #7, #8, #21, #25, #26, #27, #28, backend testləri və sənədlər. Hamısı fast-forward ilə birləşdirildi, merge commit-i yoxdur.
   - Növbəti iş üçün `main`-dən yeni branch açılır (bax: İş qaydaları, 7).
+  - **Cari branch:** `fix/srs-early-review` (#4). Commit olunub: `6698e9b` (`fix:`, testlərlə birlikdə) və sənədlər (`docs:`). `main`-ə birləşdirilməyib, push olunmayıb.
 - Frontend testləri: istifadəçi 2026-10-02-də sonraya saxladı. Frontend dəyişiklikləri hələlik type-check və build ilə yoxlanılır, bu da changelog-da açıq yazılır.
 
 ## İş qaydaları

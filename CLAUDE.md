@@ -54,7 +54,7 @@ If `MONGODB_URI` is missing or the connection fails, the server keeps running. E
 Word IDs are UUID strings (`_id: String`, with toJSON mapping `_id` to `id`), not ObjectIds. The in-memory branch uses incrementing numeric-string IDs.
 
 ### Spaced repetition
-Fields: `status` (`learning`/`known`), `nextReviewDate`, `reviewIntervalDays`. When a word is marked known, its interval starts at 7 days and is multiplied by 4 on each later "known" answer, capped at 30. Marking a word unknown resets it to `learning`. `GET /api/dictionary/words/learnings` returns learning words plus known words whose review date has passed. A compound index on `{status, nextReviewDate}` backs that query.
+Fields: `status` (`learning`/`known`), `nextReviewDate`, `reviewIntervalDays`. When a word is marked known, its interval starts at 7 days and is multiplied by 4 on each later "known" answer given once the word is due, capped at 30. A "known" answer before the review date (e.g. "Review Again") changes nothing (`isEarlyReview`), and a known word without a `nextReviewDate` counts as due. Marking a word unknown resets it to `learning`. `GET /api/dictionary/words/learnings` returns learning words plus known words whose review date has passed. A compound index on `{status, nextReviewDate}` backs that query.
 
 ### AI integration (bring-your-own-key)
 There are no server-side AI keys. The user's provider, key, and model are stored in browser storage (the token in `sessionStorage`, the rest in `localStorage`, via `frontend/src/context/AppContext.tsx`). They are sent in each request body, as `apiToken` for generate-text and `aiToken` for the other endpoints. The pino logger redacts these fields, so keep any new secret fields in `REDACT_PATHS` (`utils/logger.ts`).

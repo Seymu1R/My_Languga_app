@@ -4,6 +4,37 @@
 
 ---
 
+## 2026-10-02 — #4: vaxtından əvvəl təkrar öyrənmə cədvəlini artıq dəyişmir
+
+Branch: `fix/srs-early-review` (`main`-dən). Commit-lər: `6698e9b` (`fix:` + testlər), sonra `docs:`.
+
+**Problem:** `updateLearningStatus(id, known=true)` söz artıq `known` olanda review vaxtına baxmadan intervalı ×4 böyüdürdü. Flashcard-larda "Review Again" basıb sözü yenə "Know" etmək 7 günlük intervalı dərhal 28 günə qaldırırdı, sonrakı dəfə isə 30-a. Bu, aralıqlı təkrarın mənasını pozurdu.
+
+**Qərar:** vaxtından əvvəl verilən "bilirəm" cavabı cədvəli **dəyişmir**: nə interval, nə `nextReviewDate`. Söz dəyişmədən qaytarılır.
+- Review vaxtı çatanda (`nextReviewDate <= now`, sərhəd daxil) interval əvvəlki kimi ×4 böyüyür, maksimum 30.
+- "Bilmirəm" əvvəlki kimi sözü `learning`-ə sıfırlayır.
+- `nextReviewDate` olmayan köhnə `known` söz vaxtı çatmış sayılır.
+
+**Dəyişiklik** (`backend/src/services/dictionaryService.ts`):
+- yeni `isReviewDue` və `isEarlyReview` funksiyaları;
+- `updateLearningStatus`-un **hər iki budağında** (MongoDB və in-memory) vaxtından əvvəlki "bilirəm" üçün erkən qayıdış.
+
+**Testlər (əvvəl yazıldı, köhnə kodda 5 test düşdü):**
+- `dictionaryService.test.ts`, hər iki rejimdə, `early review (#4)` bölməsi:
+  - vaxtından əvvəl təkrar interval və tarixi saxlayır;
+  - bir neçə erkən təkrardan sonra vaxt çatanda interval 28 olur;
+  - review tarixinin tam özündə böyüyür (sərhəd testi).
+- `dictionaryService.test.ts`, yalnız Mongo: tarixsiz köhnə `known` sənəd vaxtı çatmış sayılır (7 → 28).
+- `routes.dictionary.test.ts`: iki ardıcıl `PATCH known: true` → ikinci cavabda interval 7, tarix eyni.
+- `it.fails` testi normal testlərə çevrildi.
+- Sərhəd və köhnə sənəd testləri köhnə kodda da keçirdi. Bu gözlənilir: onlar düzəlişin pozmamalı olduğu davranışı qoruyur.
+
+**Yoxlama:** `npm test` → 348/348 (əvvəl 342), `npm run type-check` keçdi.
+
+`CLAUDE.md` (Spaced repetition bölməsi) yeni qaydaya uyğun yeniləndi.
+
+**Frontend:** dəyişiklik lazım olmadı. `LearningsPage` "Review Again"-də sözləri yenə göndərir, server artıq cədvəli dəyişmir. #15 (status xətasının udulması, növbədəki dublikatlar) ayrıca açıq qalır.
+
 ## 2026-10-02 — #26 `main`-ə birləşdirildi, yalnız `main` branch-ı saxlanıldı
 
 İstifadəçinin istəyi ilə:

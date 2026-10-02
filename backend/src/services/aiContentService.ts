@@ -27,6 +27,9 @@ const LEVEL_GENERATION_CONFIG: Record<
   Advanced: { minWords: 420, maxWords: 440, maxTokens: 1200 },
 };
 
+// dictionaryapi.dev üçün gözləmə limiti — tərcümə bu API-dən asılı deyil, sadəcə zənginləşir
+const DICTIONARY_API_TIMEOUT_MS = 3000;
+
 const createAIService = (config: AIRequestConfig) =>
   new AIService({ provider: config.provider, apiKey: config.apiToken, model: config.model });
 
@@ -74,8 +77,11 @@ const lookupSavedSenses = async (word: string): Promise<string[]> => {
 // RAG Layer 2: Free Dictionary API definitions
 const lookupDictionaryDefinitions = async (word: string): Promise<string[]> => {
   try {
+    // Siqnal həm sorğunu, həm də body oxunuşunu (json) kəsir — API cavab verməsə
+    // tərcümə asılı qalmır, təriflərsiz davam edir (#12)
     const dictRes = await fetch(
-      `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`
+      `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`,
+      { signal: AbortSignal.timeout(DICTIONARY_API_TIMEOUT_MS) },
     );
     if (!dictRes.ok) return [];
 
@@ -89,6 +95,10 @@ const lookupDictionaryDefinitions = async (word: string): Promise<string[]> => {
     }
     return definitions;
   } catch (dictErr) {
+    if (dictErr instanceof Error && dictErr.name === 'TimeoutError') {
+      logger.warn({ word, timeoutMs: DICTIONARY_API_TIMEOUT_MS }, 'Free Dictionary API timed out');
+      return [];
+    }
     logger.warn({ err: dictErr }, 'Free Dictionary API lookup failed');
     return [];
   }

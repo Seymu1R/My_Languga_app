@@ -1,6 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
 import { aiContentService } from '../src/services/aiContentService';
 import { PROFICIENCY_LEVELS } from '../src/schemas';
+import { logger } from '../src/utils/logger';
 
 // AIService mock olunur: hər çağırışın config və parametrlərini yazırıq
 const mocks = vi.hoisted(() => ({ configs: [] as any[], generateText: vi.fn(), validateKey: vi.fn() }));
@@ -104,7 +105,87 @@ describe('translateWord', () => {
 
     await aiContentService.translateWord(config, { word: 'ice cream', targetLanguage: 'Azerbaijani' });
 
-    expect(fetchMock).toHaveBeenCalledWith('https://api.dictionaryapi.dev/api/v2/entries/en/ice%20cream');
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.dictionaryapi.dev/api/v2/entries/en/ice%20cream',
+      { signal: expect.any(AbortSignal) },
+    );
+  });
+
+  // #12: dictionaryapi.dev cavab verməsə tərcümə asılı qalmamalıdır.
+  // AbortSignal.timeout idarə olunan siqnalla əvəz edilir — test real 3 saniyə gözləmir
+  describe('Free Dictionary API timeout (#12)', () => {
+    let controller: AbortController;
+    let timeoutSpy: MockInstance<typeof AbortSignal.timeout>;
+
+    // Cavab verməyən server: siqnal abort olanda sorğu (və ya body oxunuşu) TimeoutError ilə
+    // rədd edilir, siqnal yoxdursa heç vaxt bitmir
+    const untilAborted = (signal?: AbortSignal | null) =>
+      new Promise<never>((_, reject) => {
+        signal?.addEventListener('abort', () => reject(signal.reason));
+      });
+
+    const timeOut = () => controller.abort(new DOMException('The operation was aborted due to timeout', 'TimeoutError'));
+
+    beforeEach(() => {
+      controller = new AbortController();
+      timeoutSpy = vi.spyOn(AbortSignal, 'timeout').mockReturnValue(controller.signal);
+      mocks.generateText.mockResolvedValue({ success: true, text: 'bank' });
+    });
+
+    afterEach(() => {
+      timeoutSpy.mockRestore();
+    });
+
+    it('limits the request to 3 seconds', async () => {
+      await translate();
+
+      expect(timeoutSpy).toHaveBeenCalledWith(3000);
+      expect(fetchMock.mock.calls[0][1].signal).toBe(controller.signal);
+    });
+
+    it('translates without definitions when the API does not respond in time', async () => {
+      fetchMock.mockImplementation((_url: string, init?: RequestInit) => untilAborted(init?.signal));
+
+      const pending = translate();
+      await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
+      timeOut();
+
+      expect(await pending).toEqual({ success: true, translation: 'bank' });
+      expect(lastPrompt()).not.toContain('dictionary definitions');
+    }, 1000);
+
+    it('also stops waiting when the response body stalls', async () => {
+      fetchMock.mockImplementation(async (_url: string, init?: RequestInit) => ({
+        ok: true,
+        json: () => untilAborted(init?.signal),
+      }));
+
+      const pending = translate();
+      await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
+      timeOut();
+
+      expect(await pending).toEqual({ success: true, translation: 'bank' });
+    }, 1000);
+
+    it('logs a timeout separately from other failures', async () => {
+      const warn = vi.spyOn(logger, 'warn');
+      fetchMock.mockImplementation((_url: string, init?: RequestInit) => untilAborted(init?.signal));
+
+      const pending = translate();
+      await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
+      timeOut();
+      await pending;
+
+      expect(warn).toHaveBeenCalledWith({ word: 'bank', timeoutMs: 3000 }, 'Free Dictionary API timed out');
+      expect(warn).not.toHaveBeenCalledWith(expect.anything(), 'Free Dictionary API lookup failed');
+
+      warn.mockClear();
+      fetchMock.mockRejectedValue(new Error('ENOTFOUND'));
+      await translate();
+
+      expect(warn).toHaveBeenCalledWith({ err: expect.any(Error) }, 'Free Dictionary API lookup failed');
+      warn.mockRestore();
+    }, 1000);
   });
 
   describe('prompt layers', () => {

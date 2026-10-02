@@ -4,9 +4,27 @@
 
 ---
 
+## 2026-10-02 — #15: flashcard cavabı saxlanmasa xəta göstərilir, "Review Again" təkrarsızdır
+
+Branch: `fix/learnings-page` (`main`-dən). Commit-lər: `e8f6521` (`fix:`), ardınca `docs:`. Hələ `main`-ə birləşdirilməyib.
+
+**Problem** (`frontend/src/pages/LearningsPage.tsx`):
+1. `handleSwipeResult` `updateLearningStatus` xətasını yalnız `console.error`-a yazır və növbəti karta keçirdi. İstifadəçi cavabının saxlandığını düşünürdü. Məsələn, MongoDB qopanda (503, #3) bütün cavablar səssizcə itirdi.
+2. "Don't Know" sözü növbənin sonuna yenidən əlavə edir. Sessiya bitəndə "Review Again" bu növbəni olduğu kimi qarışdırırdı, ona görə eyni söz bir neçə dəfə çıxırdı.
+
+**Həll:**
+- Status xətasında `statusError` state-i `getErrorMessage(error, 'Your answer could not be saved. Please try again.')` ilə doldurulur və `return` edilir: kart dəyişmir, sayğac artmır. Kart sürüşdürüləndə `dragConstraints` onu mərkəzə qaytarır, ona görə istifadəçi eyni kartda yenidən cəhd edə bilər.
+- Xəta kartın üstündə `role="alert"` blokunda görünür, uğurlu cavab və ya yeni növbə onu təmizləyir.
+- "Review Again": `initQueue(uniqueById(queue))`. `uniqueById` sözləri `id`-yə görə təkrarsız edir, ilk görünmə sırasını saxlayır.
+- Toxunulmayıb: qarışdırma alqoritmi (#24, aşağı ciddilik, istifadəçi hələlik saxladı).
+
+**Yoxlama:** frontend testləri yoxdur. Frontend type-check və `npm run build` keçdi. `uniqueById` node ilə nümunə növbədə yoxlanıldı: `a,b,c,a,b,a` → `a,b,c`, boş növbə → boş. Brauzerdə yoxlanılmayıb.
+
+---
+
 ## 2026-10-02 — #14: kliklənən sözün təmizlənməsi apostrof və tireni saxlayır
 
-Branch: `fix/clean-word` (`main`-dən). Commit-lər: `0884017` (`fix:`), ardınca `docs:`. Hələ `main`-ə birləşdirilməyib.
+Branch: `fix/clean-word` (`main`-dən). Commit-lər: `0884017` (`fix:`), `fffa3c0` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi. Merge-dən sonra `main`-də frontend type-check və build, backend type-check və 461 backend testi keçdi. `main` hələ push olunmayıb.
 
 **Problem:** `InteractiveText.cleanWord` siyahıdakı bütün durğu işarələrini sözün **hər yerindən** silirdi, siyahıda olmayanları isə saxlayırdı:
 - `don't` → `dont`, `well-known` → `wellknown`, `mother-in-law` → `motherinlaw`: lüğətə səhv söz düşür, AI tərcüməsi və dictionaryapi.dev axtarışı pisləşir;

@@ -22,7 +22,7 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 | 12 | 🟡 Orta | dictionaryapi.dev fetch-də timeout yoxdur | **bağlanıb** (2026-10-02) |
 | 13 | 🟡 Orta | RAG layer 1 regex index işlətmir (full scan) | **bağlanıb** (2026-10-02) |
 | 14 | 🟡 Orta | `cleanWord` apostrof/tireni silir, əyri dırnaqları saxlayır | **bağlanıb** (2026-10-02, testsiz) |
-| 15 | 🟡 Orta | Flashcard status xətası udulur; "Review Again" dublikatlarla | açıq |
+| 15 | 🟡 Orta | Flashcard status xətası udulur; "Review Again" dublikatlarla | **bağlanıb** (2026-10-02, testsiz) |
 | 16 | 🟡 Orta | Bir ümumi `isLoading` hər şeyə təsir edir | açıq |
 | 17 | 🟡 Orta | Zod sxemləri handler-lərlə uyğun deyil | açıq |
 | 18 | 🟢 Aşağı | Autentifikasiya yoxdur | açıq |
@@ -135,7 +135,8 @@ Həll: regex əvəzinə `{ collation: ENGLISH_COLLATION }` ilə sorğu, `english
 Həll: `frontend/src/utils/text.ts` → `cleanWord`: yalnız kənarlardakı hərf/rəqəm olmayan simvollar silinir, əyri apostroflar `'`-ə çevrilir. Bax: changelog "#14". İlkin təsvir:
 `InteractiveText.tsx`: `don't` → `dont`, `well-known` → `wellknown`. `“ ” ’` simvolları silinmir.
 
-### 15. LearningsPage
+### 15. LearningsPage — **bağlanıb**
+Həll: xəta kartın üstündə göstərilir və kart yerində qalır; "Review Again" növbəni `uniqueById` ilə təkrarsız başladır. Bax: changelog "#15". Shuffle (#24) toxunulmayıb. İlkin təsvir:
 - `handleSwipeResult` `updateLearningStatus` xətasını yalnız `console`-a yazır.
 - "Review Again" növbədəki təkrarlanan sözlərlə birlikdə başlayır.
 

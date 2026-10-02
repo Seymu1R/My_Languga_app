@@ -6,7 +6,7 @@
 
 ## 2026-10-02 — #17: AI sxemləri route-ların həqiqi tələblərinə uyğunlaşdırıldı
 
-Branch: `fix/ai-schemas` (`fix/loading-state`-dən açılıb; #15 → #16 → #17 ardıcıl fast-forward ilə birləşə bilər). Commit-lər: `c1ecf2c` (`fix:` + testlər), ardınca `docs:`. Hələ `main`-ə birləşdirilməyib.
+Branch: `fix/ai-schemas` (`fix/loading-state`-dən açılıb; #15 → #16 → #17 ardıcıl fast-forward ilə birləşə bilər). Commit-lər: `c1ecf2c` (`fix:` + testlər), `f81321e` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi (#15, #16, #17 bir merge ilə). Merge-dən sonra `main`-də frontend type-check və build, backend type-check və 483 backend testi keçdi. Sonra `main` GitHub-a push olundu, `fix/learnings-page`, `fix/loading-state`, `fix/ai-schemas` lokalda silindi (heç vaxt push olunmamışdı). Yalnız `main` qaldı.
 
 **Problem** (`backend/src/schemas/index.ts`):
 1. `translate-word`, `pronunciation`, `example-sentences` sxemlərində `aiToken` və `provider` optional idi, amma hər üç handler onları ayrıca `if` ilə tələb edirdi. Qayda iki yerdə idi, xəta formatı da fərqli idi (`details` yox idi). Tiplər (`aiToken?`) handler-in həqiqətən nə aldığını göstərmirdi.
@@ -36,7 +36,7 @@ Branch: `fix/ai-schemas` (`fix/loading-state`-dən açılıb; #15 → #16 → #1
 
 ## 2026-10-02 — #16: qlobal yükləmə vəziyyəti yalnız mətn generasiyası üçündür
 
-Branch: `fix/loading-state` (`fix/learnings-page`-dən açılıb, çünki #15 hələ `main`-də deyil; hər ikisi ardıcıl fast-forward ilə birləşə bilər). Commit-lər: `7d49a1e` (`fix:`), ardınca `docs:`. Hələ `main`-ə birləşdirilməyib.
+Branch: `fix/loading-state` (`fix/learnings-page`-dən açılıb, çünki #15 hələ `main`-də deyil; hər ikisi ardıcıl fast-forward ilə birləşə bilər). Commit-lər: `7d49a1e` (`fix:`), `eff5459` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi (#15, #16, #17 bir merge ilə). Merge-dən sonra `main`-də frontend type-check və build, backend type-check və 483 backend testi keçdi. Sonra `main` GitHub-a push olundu, `fix/learnings-page`, `fix/loading-state`, `fix/ai-schemas` lokalda silindi (heç vaxt push olunmamışdı). Yalnız `main` qaldı.
 
 **Problem:** `AppContext`-də bir ümumi `isLoading` var idi. Onu iki iş işlədirdi:
 - `HomePage.handleGenerateText` (oxu mətni generasiyası);
@@ -55,7 +55,7 @@ Söz saxlanarkən ana səhifədəki "Generate Text" düyməsi bloklanır və "Ge
 
 ## 2026-10-02 — #15: flashcard cavabı saxlanmasa xəta göstərilir, "Review Again" təkrarsızdır
 
-Branch: `fix/learnings-page` (`main`-dən). Commit-lər: `e8f6521` (`fix:`), ardınca `docs:`. Hələ `main`-ə birləşdirilməyib.
+Branch: `fix/learnings-page` (`main`-dən). Commit-lər: `e8f6521` (`fix:`), `af3896d` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi (#15, #16, #17 bir merge ilə). Merge-dən sonra `main`-də frontend type-check və build, backend type-check və 483 backend testi keçdi. Sonra `main` GitHub-a push olundu, `fix/learnings-page`, `fix/loading-state`, `fix/ai-schemas` lokalda silindi (heç vaxt push olunmamışdı). Yalnız `main` qaldı.
 
 **Problem** (`frontend/src/pages/LearningsPage.tsx`):
 1. `handleSwipeResult` `updateLearningStatus` xətasını yalnız `console.error`-a yazır və növbəti karta keçirdi. İstifadəçi cavabının saxlandığını düşünürdü. Məsələn, MongoDB qopanda (503, #3) bütün cavablar səssizcə itirdi.
@@ -73,7 +73,7 @@ Branch: `fix/learnings-page` (`main`-dən). Commit-lər: `e8f6521` (`fix:`), ard
 
 ## 2026-10-02 — #14: kliklənən sözün təmizlənməsi apostrof və tireni saxlayır
 
-Branch: `fix/clean-word` (`main`-dən). Commit-lər: `0884017` (`fix:`), `fffa3c0` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi. Merge-dən sonra `main`-də frontend type-check və build, backend type-check və 461 backend testi keçdi. `main` hələ push olunmayıb.
+Branch: `fix/clean-word` (`main`-dən). Commit-lər: `0884017` (`fix:`), `fffa3c0` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi. Merge-dən sonra `main`-də frontend type-check və build, backend type-check və 461 backend testi keçdi. Sonra `main` GitHub-a push olundu, `fix/clean-word` lokalda silindi (heç vaxt push olunmamışdı). Yalnız `main` qaldı.
 
 **Problem:** `InteractiveText.cleanWord` siyahıdakı bütün durğu işarələrini sözün **hər yerindən** silirdi, siyahıda olmayanları isə saxlayırdı:
 - `don't` → `dont`, `well-known` → `wellknown`, `mother-in-law` → `motherinlaw`: lüğətə səhv söz düşür, AI tərcüməsi və dictionaryapi.dev axtarışı pisləşir;

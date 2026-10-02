@@ -47,12 +47,8 @@ ona görə hər sessiyanın əvvəlində avtomatik oxunur. Ətraflı fayllar laz
 - Kök `README.md` Azərbaycan dilindədir. Funksiya, env, port və ya endpoint dəyişəndə onu da yenilə.
 - Kritik maddə qalmayıb. Orta ciddilikli maddələr (#15, #16, #17) bağlandı; istifadəçi aşağı ciddilikliləri 2026-10-02-də hələlik saxladı. Qalanlar: #11 və #19, #24 (qismən), #18, #20, #22, #23, #29.
 - **Git / GitHub** (remote: `origin` = https://github.com/Seymu1R/My_Languga_app):
-  - **#14** `main`-ə birləşdirilib (`0884017`, `fffa3c0`), amma hələ push olunmayıb. `fix/clean-word` branch-ı hələ lokalda var.
-  - **#17** `fix/ai-schemas` branch-ındadır (`fix/loading-state`-dən açılıb), commit olunub (`c1ecf2c` + `docs:`), hələ `main`-ə birləşdirilməyib.
-  - **#16** `fix/loading-state` branch-ındadır (`fix/learnings-page`-dən açılıb, çünki #15 hələ `main`-də deyil), commit olunub (`7d49a1e` + `docs:`), hələ `main`-ə birləşdirilməyib.
-  - **#15** `fix/learnings-page` branch-ında commit olunub (`e8f6521` + `docs:`), hələ `main`-ə birləşdirilməyib.
   - Lokalda və GitHub-da yalnız **`main`** branch-ı var. İstifadəçinin istəyi ilə 2026-10-02-də bütün iş `main`-ə birləşdirildi, `main` push olundu, digər branch-lar (lokal 6, remote 1) silindi.
-  - Bütün işlər `main`-dədir və push olunub: #1, #2, #3, #4, #5, #6, #7, #8, #9, #10, #11 (qismən), #12, #13, #21, #25, #26, #27, #28, backend testləri və sənədlər. Hamısı fast-forward ilə birləşdirildi, merge commit-i yoxdur.
+  - Bütün işlər `main`-dədir və push olunub: #1, #2, #3, #4, #5, #6, #7, #8, #9, #10, #11 (qismən), #12, #13, #14, #15, #16, #17, #21, #25, #26, #27, #28, backend testləri və sənədlər. Hamısı fast-forward ilə birləşdirildi, merge commit-i yoxdur.
   - Növbəti iş üçün `main`-dən yeni branch açılır (bax: İş qaydaları, 7).
 - Frontend testləri: istifadəçi 2026-10-02-də sonraya saxladı. Frontend dəyişiklikləri hələlik type-check və build ilə yoxlanılır, bu da changelog-da açıq yazılır.
 

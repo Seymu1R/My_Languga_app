@@ -29,7 +29,7 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 | 19 | 🟢 Aşağı | ~~Test yoxdur~~, lint sınıqdır | qismən (backend testləri 2026-10-02) |
 | 20 | 🟢 Aşağı | `aiService.ts` təkrarları, siyahılar 5 yerdə | açıq |
 | 21 | 🟢 Aşağı | uploads yolu iki cür hesablanır (cwd vs `__dirname`) | **bağlanıb** (2026-10-02) |
-| 22 | 🟢 Aşağı | uploads git-də, `.gitignore` natamam, `@types/mongoose` artıq | açıq |
+| 22 | 🟢 Aşağı | uploads git-də, `.gitignore` natamam, `@types/mongoose` artıq | **bağlanıb** (2026-10-02) |
 | 23 | 🟢 Aşağı | `start.sh` problemləri | açıq |
 | 24 | 🟢 Aşağı | ~~README köhnədir~~, shuffle qeyri-bərabərdir | qismən (README 2026-10-02) |
 | 25 | 🟡 Orta | Logger `.env`-dən əvvəl yaradılırdı (`LOG_LEVEL`/`NODE_ENV` nəzərə alınmırdı) | **bağlanıb** (2026-10-02) |
@@ -116,7 +116,7 @@ Bağlanıb (2026-10-02, bax: changelog "#11"): fayl yalnız heç bir söz ona is
 Qalır:
 - In-memory rejimdə restart-dan sonra fayllar qalır.
 - Şəkil yüklənib, amma söz heç saxlanmasa (məsələn, brauzer yükləmə ilə saxlama arasında bağlanıb), fayl qalır.
-- Bunlar üçün avtomatik təmizləmə (açılışda istinadsız faylları silmək) qəsdən edilmədi: `uploads` qovluğu hər iki saxlama rejimi üçün ortaqdır (in-memory rejimdə MongoDB sözlərinin şəkillərini "yetim" görərdi), qovluq git-dədir (#22), istifadəçi faylını avtomatik silmək isə geri qaytarıla bilməz. Ehtiyac olsa, ayrıca əl ilə işlədilən skript (əvvəlcə yalnız siyahı) daha təhlükəsizdir.
+- Bunlar üçün avtomatik təmizləmə (açılışda istinadsız faylları silmək) qəsdən edilmədi: `uploads` qovluğu hər iki saxlama rejimi üçün ortaqdır (in-memory rejimdə MongoDB sözlərinin şəkillərini "yetim" görərdi), istifadəçi faylını avtomatik silmək isə geri qaytarıla bilməz. (Qovluq #22-dən sonra artıq git-də deyil.) Ehtiyac olsa, ayrıca əl ilə işlədilən skript (əvvəlcə yalnız siyahı) daha təhlükəsizdir.
 
 Ətraflı: [architecture/image-upload.md](architecture/image-upload.md).
 
@@ -171,7 +171,8 @@ Provider siyahısı bu yerlərdə təkrarlanır:
 ### 21. uploads yolu — bağlanıb
 ~~`server.ts`-də `express.static('uploads')` cwd-yə görə idi, `uploadPath` isə `__dirname`-ə görə.~~ İndi `app.ts` `express.static(uploadPath)` istifadə edir (test: `serves the uploaded file from /uploads (#21)`).
 
-### 22. Repo səliqəsi
+### 22. Repo səliqəsi — **bağlanıb**
+Həll: `.gitignore`-a `.idea/` və `backend/uploads/`; 2 şəkil `git rm --cached` ilə izlənmədən çıxarıldı (diskdə qalır); `@types/mongoose` silindi. Bax: changelog "#22". İlkin təsvir:
 - `backend/uploads/*.jpg/png` commit olunub.
 - `uploads/` və `.idea/` `.gitignore`-da yoxdur.
 - `@types/mongoose` artıqdır, mongoose 8 öz tiplərini gətirir.

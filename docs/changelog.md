@@ -4,6 +4,28 @@
 
 ---
 
+## 2026-10-02 — #22: `.gitignore` tamamlandı, yüklənmiş şəkillər git-dən çıxarıldı, `@types/mongoose` silindi
+
+Branch: `chore/gitignore` (`main`-dən). Commit-lər: `2eda5da` (`chore:` `.gitignore` + şəkillər), `f76738b` (`chore(deps):`), ardınca `docs:`. Hələ `main`-ə birləşdirilməyib.
+
+**Problem:**
+- `backend/uploads/`-dəki 2 şəkil (`1773770091190-854503861.jpg`, `1776240421133-768147316.png`) commit olunmuşdu. Bunlar istifadəçinin runtime datasıdır, kod deyil; hər yeni yükləmə də `git status`-da görünürdü.
+- `.idea/` (IDE ayarları) `.gitignore`-da yox idi və daim `git status`-da görünürdü.
+- `@types/mongoose@5` köhnə tip paketi idi; mongoose 8 öz tiplərini gətirir.
+
+**Həll:**
+- `.gitignore`: `.idea/` və `backend/uploads/` əlavə olundu. Qovluğun özünü saxlamağa ehtiyac yoxdur: `middleware/upload.ts` onu yoxdursa yaradır.
+- `git rm --cached` ilə 2 şəkil git izləməsindən çıxarıldı. **Fayllar diskdə qalır** (istifadəçinin bazasındakı sözlər onlara istinad edə bilər). Onlar git tarixçəsində qalır. Qeyd: repo-nu başqa yerdə klonlayıb bu commit-i `pull` edən nüsxədə bu iki fayl silinər (orada `uploads/`-in özü ignore olunduğu üçün yeni yükləmələrə təsir etmir).
+- `backend`: `npm uninstall @types/mongoose` (`package.json` və `package-lock.json`).
+- `README.md`: layihə strukturunda `uploads/` "git-də saxlanmır" kimi qeyd olundu. `architecture/image-upload.md`: "#22: uploads git-dədir" zəif yeri silindi.
+
+**Yoxlama:**
+- `git status --ignored`: `.idea/` və `backend/uploads/` ignore olunur, 2 şəkil diskdə qalıb (`ls backend/uploads`).
+- Backend: `npm run type-check` təmiz, 483 test keçdi, `npm run build` keçdi (`@types/mongoose` olmadan).
+- Kod dəyişmədiyi üçün yeni test yoxdur.
+
+---
+
 ## 2026-10-02 — #17: AI sxemləri route-ların həqiqi tələblərinə uyğunlaşdırıldı
 
 Branch: `fix/ai-schemas` (`fix/loading-state`-dən açılıb; #15 → #16 → #17 ardıcıl fast-forward ilə birləşə bilər). Commit-lər: `c1ecf2c` (`fix:` + testlər), `f81321e` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi (#15, #16, #17 bir merge ilə). Merge-dən sonra `main`-də frontend type-check və build, backend type-check və 483 backend testi keçdi. Sonra `main` GitHub-a push olundu, `fix/learnings-page`, `fix/loading-state`, `fix/ai-schemas` lokalda silindi (heç vaxt push olunmamışdı). Yalnız `main` qaldı.

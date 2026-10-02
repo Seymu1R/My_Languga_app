@@ -52,10 +52,9 @@ uğursuz:  POST/PUT /words 409/404 → sorğu ilə gələn şəkil deleteImageIf
 - **#11 yetim fayllar (qismən):** uğursuz saxlama/redaktə və əvəz olunan şəkil artıq təmizlənir. Qalır:
   - in-memory rejimdə restart-dan sonra fayllar qalır;
   - şəkil yüklənib, söz heç saxlanmayıbsa (brauzer bağlanıb), fayl qalır.
-  Açılışda avtomatik təmizləmə qəsdən yoxdur: qovluq iki rejim üçün ortaqdır və git-dədir (#22).
+  Açılışda avtomatik təmizləmə qəsdən yoxdur: qovluq iki rejim üçün ortaqdır, istifadəçi faylını avtomatik silmək isə geri qaytarıla bilməz.
 - **#29:** `PUT` imageUrl-siz gələndə in-memory şəkli sözdən çıxarır, MongoDB saxlayır. Fayl hər iki halda sözün həqiqi vəziyyətinə görə silinir və ya qalır.
 - **#18:** autentifikasiya yoxdur. Ümumi limit 15 dəqiqədə 200 sorğudur, bu da 15 dəqiqədə ~1GB disk deməkdir.
-- **#22:** `backend/uploads/` git-də saxlanır.
 - Sözü redaktə etmək üçün frontend UI yoxdur. Backend-də `PUT /words/:id` var, amma frontend onu çağırmır.
 
 ## Testlər

@@ -156,7 +156,7 @@ Rate limit: `/api` üçün 15 dəqiqədə 200 sorğu, `/api/ai` üçün əlavə 
 │   │   ├── app.ts        # Express qurulması (createApp): middleware, rate limit, route-lar, health
 │   │   └── server.ts     # .env, DB qoşulması, listen, graceful shutdown
 │   ├── tests/            # Vitest testləri
-│   └── uploads/          # yüklənmiş şəkillər
+│   └── uploads/          # yüklənmiş şəkillər (git-də saxlanmır)
 ├── frontend/src/
 │   ├── pages/            # Home, Dictionary, Learnings
 │   ├── components/       # modallar, flashcard, interaktiv mətn

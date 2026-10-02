@@ -34,7 +34,8 @@ ona görə hər sessiyanın əvvəlində avtomatik oxunur. Ətraflı fayllar laz
   - **#14**: kliklənən söz düzgün təmizlənir (`don't`, `well-known`, `“Hello,”` → `hello`). Testsizdir, frontend testləri yoxdur;
   - **#15**: flashcard cavabı saxlanmasa xəta göstərilir və kart yerində qalır; "Review Again" sözləri təkrarsız göstərir. Testsizdir;
   - **#16**: söz saxlanarkən "Generate Text" düyməsi artıq bloklanmır (qlobal `isGeneratingText` yalnız generasiya üçündür). Testsizdir;
-  - **#17**: AI sxemləri route-larla uyğundur: `aiToken`/`provider` məcburidir, `languageCode` yoxdur, `level` yalnız 5 səviyyədən biridir.
+  - **#17**: AI sxemləri route-larla uyğundur: `aiToken`/`provider` məcburidir, `languageCode` yoxdur, `level` yalnız 5 səviyyədən biridir;
+  - **#22**: `.idea/` və `backend/uploads/` `.gitignore`-dadır, şəkillər git-dən çıxarıldı (diskdə qalır), `@types/mongoose` silindi.
 
   Qismən:
   - **#11**: uğursuz saxlama/redaktədə və şəkil dəyişəndə köhnə fayl silinir, başqa sözün şəkli toxunulmaz qalır; restart və "yüklənib, saxlanmayıb" halları qalır;
@@ -45,8 +46,9 @@ ona görə hər sessiyanın əvvəlində avtomatik oxunur. Ətraflı fayllar laz
 - **Testlər:** `cd backend && npm test` (Vitest, 483 test, ~8 san; ən yavaşı `server.test.ts`). Hər backend dəyişikliyindən sonra işə sal.
   - Hazırda heç bir `it.fails` testi yoxdur.
 - Kök `README.md` Azərbaycan dilindədir. Funksiya, env, port və ya endpoint dəyişəndə onu da yenilə.
-- Kritik maddə qalmayıb. Orta ciddilikli maddələr (#15, #16, #17) bağlandı; istifadəçi aşağı ciddilikliləri 2026-10-02-də hələlik saxladı. Qalanlar: #11 və #19, #24 (qismən), #18, #20, #22, #23, #29.
+- Kritik maddə qalmayıb. Orta ciddilikli maddələr (#15, #16, #17) bağlandı; istifadəçi aşağı ciddilikliləri 2026-10-02-də hələlik saxladı. Qalanlar: #11 və #19, #24 (qismən), #18, #20, #23, #29.
 - **Git / GitHub** (remote: `origin` = https://github.com/Seymu1R/My_Languga_app):
+  - **#22** `chore/gitignore` branch-ında commit olunub (`2eda5da`, `f76738b` + `docs:`), hələ `main`-ə birləşdirilməyib.
   - Lokalda və GitHub-da yalnız **`main`** branch-ı var. İstifadəçinin istəyi ilə 2026-10-02-də bütün iş `main`-ə birləşdirildi, `main` push olundu, digər branch-lar (lokal 6, remote 1) silindi.
   - Bütün işlər `main`-dədir və push olunub: #1, #2, #3, #4, #5, #6, #7, #8, #9, #10, #11 (qismən), #12, #13, #14, #15, #16, #17, #21, #25, #26, #27, #28, backend testləri və sənədlər. Hamısı fast-forward ilə birləşdirildi, merge commit-i yoxdur.
   - Növbəti iş üçün `main`-dən yeni branch açılır (bax: İş qaydaları, 7).

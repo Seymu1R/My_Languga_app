@@ -6,7 +6,7 @@
 
 ## 2026-10-02 — #9: açar yoxlaması 1 tokenlik sorğu ilə, tam mətn generasiyası olmadan
 
-Branch: `fix/validate-key` (`main`-dən). Commit-lər: `b1b08df` (`fix:` + testlər), ardınca `docs:`. Hələ `main`-ə birləşdirilməyib.
+Branch: `fix/validate-key` (`main`-dən). Commit-lər: `b1b08df` (`fix:` + testlər), `23499a0` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi. Merge-dən sonra `main`-də frontend və backend type-check, həmçinin 426 backend testi keçdi. Sonra `main` GitHub-a push olundu, `fix/validate-key` lokalda silindi (heç vaxt push olunmamışdı). Yalnız `main` qaldı.
 
 **Problem:** "Add AI Token" modalı açarı yoxlamaq üçün `generateText` çağırırdı: tam oxu mətni (~500 token) generasiya olunurdu və istifadəçinin pulu xərclənirdi. Cavab gec gəlirdi.
 

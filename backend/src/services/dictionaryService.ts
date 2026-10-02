@@ -87,6 +87,35 @@ const deleteLocalImage = (imageUrl?: string) => {
   }
 };
 
+// Şəkil faylı yalnız heç bir söz ona istinad etmədikdə silinir: eyni imageUrl bir neçə
+// sözdə ola bilər (API ilə). Bazanı yoxlamaq mümkün deyilsə fayl saxlanılır — yetim fayl
+// silinmiş şəkildən yaxşıdır (#11)
+const deleteImageIfUnused = async (imageUrl?: string) => {
+  if (!imageUrl) return;
+
+  try {
+    const inUse = useMongo()
+      ? await Word.exists({ imageUrl })
+      : memoryDictionary.some((w) => w.imageUrl === imageUrl);
+    if (inUse) return;
+  } catch (err) {
+    logger.warn({ err, imageUrl }, 'Could not check image references, keeping the file');
+    return;
+  }
+
+  deleteLocalImage(imageUrl);
+};
+
+// Uğursuz əlavə/redaktə: sorğu ilə gələn (adətən təzə yüklənmiş) şəkli təmizlə, xətanı ötür
+const discardImageOnFailure = async <T>(imageUrl: string | undefined, operation: () => Promise<T>) => {
+  try {
+    return await operation();
+  } catch (error) {
+    await deleteImageIfUnused(imageUrl);
+    throw error;
+  }
+};
+
 // Review vaxtı çatıbmı? Tarixi olmayan (köhnə) "known" söz vaxtı çatmış sayılır
 const isReviewDue = (nextReviewDate: Date | string | null | undefined) =>
   !nextReviewDate || new Date(nextReviewDate).getTime() <= Date.now();
@@ -180,33 +209,36 @@ export const dictionaryService = {
   async addWord(data: AddWordBody) {
     const fields = normalizeWordFields(data);
 
-    if (useMongo()) {
-      if (await findWordByEnglish(fields.english)) throw new DuplicateWordError();
+    // Söz saxlanmasa (dublikat və s.) bu sorğu üçün yüklənmiş şəkil diskdə qalmasın (#11)
+    return discardImageOnFailure(fields.imageUrl, async () => {
+      if (useMongo()) {
+        if (await findWordByEnglish(fields.english)) throw new DuplicateWordError();
 
-      const newWord = new Word(fields);
-      try {
-        await newWord.save();
-      } catch (error) {
-        // Yoxlamadan sonra eyni söz başqa sorğu ilə artıq yazılıb
-        if (isDuplicateKeyError(error)) throw new DuplicateWordError();
-        throw error;
+        const newWord = new Word(fields);
+        try {
+          await newWord.save();
+        } catch (error) {
+          // Yoxlamadan sonra eyni söz başqa sorğu ilə artıq yazılıb
+          if (isDuplicateKeyError(error)) throw new DuplicateWordError();
+          throw error;
+        }
+        return newWord.toJSON();
       }
-      return newWord.toJSON();
-    }
 
-    if (hasMemoryDuplicate(fields.english)) throw new DuplicateWordError();
+      if (hasMemoryDuplicate(fields.english)) throw new DuplicateWordError();
 
-    const newWord = {
-      id: (memoryId++).toString(),
-      ...fields,
-      status: 'learning',
-      nextReviewDate: null,
-      reviewIntervalDays: DEFAULT_INTERVAL_DAYS,
-      dateAdded: new Date().toISOString(),
-    };
+      const newWord = {
+        id: (memoryId++).toString(),
+        ...fields,
+        status: 'learning',
+        nextReviewDate: null,
+        reviewIntervalDays: DEFAULT_INTERVAL_DAYS,
+        dateAdded: new Date().toISOString(),
+      };
 
-    memoryDictionary.push(newWord);
-    return newWord;
+      memoryDictionary.push(newWord);
+      return newWord;
+    });
   },
 
   // Flashcard nəticəsinə görə SRS statusunu yenilə
@@ -273,7 +305,7 @@ export const dictionaryService = {
       const deletedWord = await Word.findByIdAndDelete(id);
       if (!deletedWord) throw new WordNotFoundError();
 
-      deleteLocalImage(deletedWord.imageUrl);
+      await deleteImageIfUnused(deletedWord.imageUrl);
       return;
     }
 
@@ -281,32 +313,42 @@ export const dictionaryService = {
     if (wordIndex === -1) throw new WordNotFoundError();
 
     const [wordToDelete] = memoryDictionary.splice(wordIndex, 1);
-    deleteLocalImage(wordToDelete.imageUrl);
+    await deleteImageIfUnused(wordToDelete.imageUrl);
   },
 
   async updateWord(id: string, data: AddWordBody) {
     const fields = normalizeWordFields(data);
 
-    if (useMongo()) {
-      if (!(await Word.exists({ _id: id }))) throw new WordNotFoundError();
-      // Sözü başqa mövcud sözün adına dəyişmək olmaz; öz adını saxlamaq və ya hərf böyüklüyünü dəyişmək olar (#10)
-      if (await findWordByEnglish(fields.english, id)) throw new DuplicateWordError();
+    // Redaktə alınmasa sorğu ilə gələn yeni şəkil silinir, alınsa əvəz olunan köhnə şəkil (#11)
+    const { previousImageUrl, word } = await discardImageOnFailure(fields.imageUrl, async () => {
+      if (useMongo()) {
+        const existingWord = await Word.findById(id, 'imageUrl');
+        if (!existingWord) throw new WordNotFoundError();
+        // Sözü başqa mövcud sözün adına dəyişmək olmaz; öz adını saxlamaq və ya hərf böyüklüyünü dəyişmək olar (#10)
+        if (await findWordByEnglish(fields.english, id)) throw new DuplicateWordError();
 
-      try {
-        const updatedWord = await Word.findByIdAndUpdate(id, fields, { new: true });
-        if (!updatedWord) throw new WordNotFoundError();
-        return updatedWord.toJSON();
-      } catch (error) {
-        if (isDuplicateKeyError(error)) throw new DuplicateWordError();
-        throw error;
+        try {
+          const updatedWord = await Word.findByIdAndUpdate(id, fields, { new: true });
+          if (!updatedWord) throw new WordNotFoundError();
+          return { previousImageUrl: existingWord.imageUrl, word: updatedWord.toJSON() };
+        } catch (error) {
+          if (isDuplicateKeyError(error)) throw new DuplicateWordError();
+          throw error;
+        }
       }
+
+      const wordIndex = memoryDictionary.findIndex((w) => w.id === id);
+      if (wordIndex === -1) throw new WordNotFoundError();
+      if (hasMemoryDuplicate(fields.english, id)) throw new DuplicateWordError();
+
+      const previousImageUrl: string | undefined = memoryDictionary[wordIndex].imageUrl;
+      memoryDictionary[wordIndex] = { ...memoryDictionary[wordIndex], ...fields };
+      return { previousImageUrl, word: memoryDictionary[wordIndex] };
+    });
+
+    if (previousImageUrl && previousImageUrl !== word.imageUrl) {
+      await deleteImageIfUnused(previousImageUrl);
     }
-
-    const wordIndex = memoryDictionary.findIndex((w) => w.id === id);
-    if (wordIndex === -1) throw new WordNotFoundError();
-    if (hasMemoryDuplicate(fields.english, id)) throw new DuplicateWordError();
-
-    memoryDictionary[wordIndex] = { ...memoryDictionary[wordIndex], ...fields };
-    return memoryDictionary[wordIndex];
+    return word;
   },
 };

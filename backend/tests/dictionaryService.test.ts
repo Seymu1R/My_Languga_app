@@ -19,6 +19,16 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const plain = <T>(value: T): any => JSON.parse(JSON.stringify(value));
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// uploads qovluğunda unikal adlı şəkil faylı yaradır
+let imageCounter = 0;
+const makeImage = () => {
+  const filename = `${Date.now()}-${++imageCounter}.png`;
+  const file = path.join(uploadPath, filename);
+  fs.mkdirSync(uploadPath, { recursive: true });
+  fs.writeFileSync(file, 'x');
+  return { file, imageUrl: `/uploads/${filename}` };
+};
+
 const add = (english: string, extra: Record<string, string> = {}) =>
   dictionaryService.addWord({ english, translation: `${english}-tr`, ...extra });
 
@@ -348,6 +358,134 @@ describe.each([
       expect(fs.existsSync(sentinel)).toBe(true);
       fs.rmSync(outsideDir, { recursive: true, force: true });
     });
+
+    it('keeps an image that another word still uses (#11)', async () => {
+      const image = makeImage();
+      const { id } = plain(await add('apple', { imageUrl: image.imageUrl }));
+      const { id: otherId } = plain(await add('pear', { imageUrl: image.imageUrl }));
+
+      await dictionaryService.deleteWord(id);
+      expect(fs.existsSync(image.file)).toBe(true);
+
+      await dictionaryService.deleteWord(otherId);
+      expect(fs.existsSync(image.file)).toBe(false);
+    });
+  });
+
+  // #11: saxlanmayan və ya əvəz olunan şəkillər diskdə qalmamalıdır, başqa sözün
+  // işlətdiyi şəkil isə heç vaxt silinməməlidir
+  describe('image cleanup (#11)', () => {
+    it('deletes the new image when adding a duplicate word fails', async () => {
+      await add('apple');
+      const image = makeImage();
+
+      await expect(add('Apple', { imageUrl: image.imageUrl })).rejects.toBeInstanceOf(DuplicateWordError);
+
+      expect(fs.existsSync(image.file)).toBe(false);
+    });
+
+    it("keeps the existing word's image when a duplicate is submitted with it", async () => {
+      const image = makeImage();
+      await add('apple', { imageUrl: image.imageUrl });
+
+      await expect(add('APPLE', { imageUrl: image.imageUrl })).rejects.toBeInstanceOf(DuplicateWordError);
+
+      expect(fs.existsSync(image.file)).toBe(true);
+    });
+
+    it('deletes the old image when a word gets a new one', async () => {
+      const oldImage = makeImage();
+      const newImage = makeImage();
+      const { id } = plain(await add('apple', { imageUrl: oldImage.imageUrl }));
+
+      const word = plain(
+        await dictionaryService.updateWord(id, { english: 'apple', translation: 'alma', imageUrl: newImage.imageUrl }),
+      );
+
+      expect(word.imageUrl).toBe(newImage.imageUrl);
+      expect(fs.existsSync(oldImage.file)).toBe(false);
+      expect(fs.existsSync(newImage.file)).toBe(true);
+    });
+
+    // PUT imageUrl-siz: in-memory şəkli sözdən çıxarır, MongoDB saxlayır (#29). Hər iki halda
+    // fayl yalnız heç bir söz ona istinad etmədikdə silinir
+    it('keeps the file exactly as long as the updated word still references it', async () => {
+      const image = makeImage();
+      const { id } = plain(await add('apple', { imageUrl: image.imageUrl }));
+
+      const word = plain(await dictionaryService.updateWord(id, { english: 'apple', translation: 'alma' }));
+
+      expect(fs.existsSync(image.file)).toBe(word.imageUrl === image.imageUrl);
+    });
+
+    it('keeps the image when an update keeps the same one', async () => {
+      const image = makeImage();
+      const { id } = plain(await add('apple', { imageUrl: image.imageUrl }));
+
+      await dictionaryService.updateWord(id, { english: 'apple', translation: 'alma', imageUrl: image.imageUrl });
+
+      expect(fs.existsSync(image.file)).toBe(true);
+    });
+
+    it('keeps the old image when another word still uses it', async () => {
+      const shared = makeImage();
+      const { id } = plain(await add('apple', { imageUrl: shared.imageUrl }));
+      await add('pear', { imageUrl: shared.imageUrl });
+
+      await dictionaryService.updateWord(id, { english: 'apple', translation: 'alma', imageUrl: makeImage().imageUrl });
+
+      expect(fs.existsSync(shared.file)).toBe(true);
+    });
+
+    it('deletes the new image when the update is rejected as a duplicate', async () => {
+      const appleImage = makeImage();
+      await add('apple', { imageUrl: appleImage.imageUrl });
+      const { id } = plain(await add('pear'));
+      const newImage = makeImage();
+
+      await expect(
+        dictionaryService.updateWord(id, { english: 'Apple', translation: 'alma', imageUrl: newImage.imageUrl }),
+      ).rejects.toBeInstanceOf(DuplicateWordError);
+
+      expect(fs.existsSync(newImage.file)).toBe(false);
+      expect(fs.existsSync(appleImage.file)).toBe(true);
+    });
+
+    it("keeps the word's own image when its update is rejected", async () => {
+      await add('apple');
+      const image = makeImage();
+      const { id } = plain(await add('pear', { imageUrl: image.imageUrl }));
+
+      await expect(
+        dictionaryService.updateWord(id, { english: 'apple', translation: 'x', imageUrl: image.imageUrl }),
+      ).rejects.toBeInstanceOf(DuplicateWordError);
+
+      expect(fs.existsSync(image.file)).toBe(true);
+    });
+
+    it('deletes the new image when the word to update does not exist', async () => {
+      const image = makeImage();
+
+      await expect(
+        dictionaryService.updateWord('missing', { english: 'apple', translation: 'alma', imageUrl: image.imageUrl }),
+      ).rejects.toBeInstanceOf(WordNotFoundError);
+
+      expect(fs.existsSync(image.file)).toBe(false);
+    });
+
+    it('never deletes files outside the uploads directory on a failed add (#1)', async () => {
+      await add('apple');
+      const outsideDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lt-outside-'));
+      const sentinel = path.join(outsideDir, 'sentinel.txt');
+      fs.writeFileSync(sentinel, 'keep me');
+
+      await expect(
+        add('apple', { imageUrl: `/uploads/${path.relative(uploadPath, sentinel)}` }),
+      ).rejects.toBeInstanceOf(DuplicateWordError);
+
+      expect(fs.existsSync(sentinel)).toBe(true);
+      fs.rmSync(outsideDir, { recursive: true, force: true });
+    });
   });
 });
 
@@ -474,6 +612,20 @@ describe('dictionaryService (mongodb only)', () => {
 
       expect(result).toBeInstanceOf(StorageUnavailableError);
       expect((await dictionaryService.getAllWords()).total).toBe(0);
+    });
+
+    // #11: istinadları yoxlamaq mümkün deyil — şəkil silinmir (bəlkə başqa söz onu işlədir)
+    it('keeps the submitted image when the database is unavailable', async () => {
+      const { id } = plain(await add('apple'));
+      const image = makeImage();
+      await mongoose.disconnect();
+
+      await expect(add('pear', { imageUrl: image.imageUrl })).rejects.toBeInstanceOf(StorageUnavailableError);
+      await expect(
+        dictionaryService.updateWord(id, { english: 'apple', translation: 'x', imageUrl: image.imageUrl }),
+      ).rejects.toBeInstanceOf(StorageUnavailableError);
+
+      expect(fs.existsSync(image.file)).toBe(true);
     });
 
     it('works again after reconnecting', async () => {

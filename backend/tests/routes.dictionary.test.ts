@@ -329,6 +329,31 @@ describe('POST /api/dictionary/upload-image', () => {
     expect(res.headers['x-content-type-options']).toBe('nosniff');
   });
 
+  // #11: söz saxlanmasa yüklənmiş şəkil diskdə qalmamalıdır
+  it('upload → duplicate save (409) removes the uploaded file', async () => {
+    await addWord('apple');
+    const { body: uploaded } = await upload(PNG, 'a.png', 'image/png');
+    expect(uploadedFiles()).toHaveLength(1);
+
+    const res = await addWord('Apple', { imageUrl: uploaded.imageUrl });
+
+    expect(res.status).toBe(409);
+    expect(uploadedFiles()).toEqual([]);
+  });
+
+  it('replacing the image on PUT removes the old file', async () => {
+    const { body: first } = await upload(PNG, 'a.png', 'image/png');
+    const { body: created } = await addWord('apple', { imageUrl: first.imageUrl });
+    const { body: second } = await upload(PNG, 'b.png', 'image/png');
+
+    const res = await api()
+      .put(`/api/dictionary/words/${created.word.id}`)
+      .send({ english: 'apple', translation: 'alma', imageUrl: second.imageUrl });
+
+    expect(res.status).toBe(200);
+    expect(uploadedFiles()).toEqual([path.basename(second.imageUrl)]);
+  });
+
   it('upload → save → delete removes the file again', async () => {
     const { body: uploaded } = await upload(PNG, 'a.png', 'image/png');
     const { body: created } = await addWord('apple', { imageUrl: uploaded.imageUrl });

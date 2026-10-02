@@ -19,6 +19,12 @@ export interface GenerateTextBody {
   customPrompt?: string;
 }
 
+export interface ValidateKeyBody {
+  apiToken: string;
+  provider: AIProvider;
+  model?: string;
+}
+
 export interface TranslateWordBody {
   word: string;
   targetLanguage: string;
@@ -49,6 +55,11 @@ export interface ExampleSentencesBody {
 export interface AITextResponse {
   success: boolean;
   text?: string;
+  error?: string;
+}
+
+export interface ValidateKeyResponse {
+  success: boolean;
   error?: string;
 }
 

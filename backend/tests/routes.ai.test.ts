@@ -8,6 +8,7 @@ const service = vi.hoisted(() => ({
   translateWord: vi.fn(),
   getPronunciation: vi.fn(),
   generateExampleSentences: vi.fn(),
+  validateKey: vi.fn(),
 }));
 
 vi.mock('../src/services/aiContentService', () => ({ aiContentService: service }));
@@ -69,6 +70,79 @@ describe('POST /api/ai/generate-text', () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('Validation failed');
     expect(service.generateReadingText).not.toHaveBeenCalled();
+  });
+});
+
+// #9: açar yoxlaması mətn generasiya etmir
+describe('POST /api/ai/validate-key', () => {
+  const body = { apiToken: 'sk-1', provider: 'mistral', model: 'mistral-small-latest' };
+
+  it('responds 200 for a working key', async () => {
+    service.validateKey.mockResolvedValue({ success: true });
+
+    const res = await post('/validate-key', body);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ success: true });
+    expect(service.validateKey).toHaveBeenCalledWith({ provider: 'mistral', apiToken: 'sk-1', model: 'mistral-small-latest' });
+    expect(service.generateReadingText).not.toHaveBeenCalled();
+  });
+
+  it('works without a model', async () => {
+    service.validateKey.mockResolvedValue({ success: true });
+
+    await post('/validate-key', { apiToken: 'sk-1', provider: 'openai' });
+
+    expect(service.validateKey).toHaveBeenCalledWith({ provider: 'openai', apiToken: 'sk-1', model: undefined });
+  });
+
+  it('responds 400 with the provider reason for a rejected key', async () => {
+    service.validateKey.mockResolvedValue({ success: false, error: 'Invalid MISTRAL API key.' });
+
+    const res = await post('/validate-key', body);
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ success: false, error: 'Invalid MISTRAL API key.' });
+  });
+
+  it('falls back to a generic reason when the service gives none', async () => {
+    service.validateKey.mockResolvedValue({ success: false });
+
+    const res = await post('/validate-key', body);
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ success: false, error: 'API key could not be verified.' });
+  });
+
+  it('responds 500 when the service throws', async () => {
+    service.validateKey.mockRejectedValue(new Error('boom'));
+
+    const res = await post('/validate-key', body);
+
+    expect(res.status).toBe(500);
+    expect(res.body).toEqual({ success: false, error: 'An unexpected error occurred on the server.' });
+  });
+
+  it.each([
+    ['a missing apiToken', { provider: 'openai' }, 'apiToken'],
+    ['an empty apiToken', { apiToken: '', provider: 'openai' }, 'apiToken'],
+    ['a missing provider', { apiToken: 'sk-1' }, 'provider'],
+    ['an unknown provider', { apiToken: 'sk-1', provider: 'claude' }, 'provider'],
+  ])('responds 400 for %s without calling the service', async (_case, invalidBody, field) => {
+    const res = await post('/validate-key', invalidBody);
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Validation failed');
+    expect(res.body.details.join()).toContain(field);
+    expect(service.validateKey).not.toHaveBeenCalled();
+  });
+
+  it('counts toward the AI rate limit', async () => {
+    service.validateKey.mockResolvedValue({ success: true });
+
+    for (let i = 0; i < 30; i++) await post('/validate-key', body);
+
+    expect((await post('/validate-key', body)).status).toBe(429);
   });
 });
 

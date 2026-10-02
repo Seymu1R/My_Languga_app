@@ -3,7 +3,7 @@ import { aiContentService } from '../src/services/aiContentService';
 import { PROFICIENCY_LEVELS } from '../src/schemas';
 
 // AIService mock olunur: hər çağırışın config və parametrlərini yazırıq
-const mocks = vi.hoisted(() => ({ configs: [] as any[], generateText: vi.fn() }));
+const mocks = vi.hoisted(() => ({ configs: [] as any[], generateText: vi.fn(), validateKey: vi.fn() }));
 
 vi.mock('../src/services/aiService', () => ({
   AIService: class {
@@ -12,6 +12,9 @@ vi.mock('../src/services/aiService', () => ({
     }
     generateText(params: any) {
       return mocks.generateText(params);
+    }
+    validateKey() {
+      return mocks.validateKey();
     }
   },
 }));
@@ -285,5 +288,23 @@ describe('generateExampleSentences', () => {
       success: false,
       error: 'Example sentences error: boom',
     });
+  });
+});
+
+describe('validateKey (#9)', () => {
+  it('checks the key with the user AI config and returns the result unchanged', async () => {
+    mocks.validateKey.mockResolvedValue({ success: false, error: 'Invalid key' });
+
+    expect(await aiContentService.validateKey(config)).toEqual({ success: false, error: 'Invalid key' });
+
+    expect(mocks.configs).toEqual([{ provider: 'openai', apiKey: 'sk-test', model: 'gpt-4o' }]);
+  });
+
+  it('does not generate any text', async () => {
+    mocks.validateKey.mockResolvedValue({ success: true });
+
+    expect(await aiContentService.validateKey(config)).toEqual({ success: true });
+
+    expect(mocks.generateText).not.toHaveBeenCalled();
   });
 });

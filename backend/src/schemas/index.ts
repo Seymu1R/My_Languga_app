@@ -23,6 +23,13 @@ export const generateTextSchema = z.object({
   customPrompt: z.string().max(2000, 'customPrompt must not exceed 2000 characters').optional(),
 });
 
+// Açar yoxlaması (#9): mətn generasiya olunmur, ona görə level/prompt lazım deyil
+export const validateKeySchema = z.object({
+  apiToken: z.string().min(1, 'apiToken is required'),
+  provider: z.enum(AI_PROVIDERS),
+  model: z.string().optional(),
+});
+
 export const translateWordSchema = z.object({
   word: wordSchema,
   targetLanguage: z.string().min(1, 'targetLanguage is required'),

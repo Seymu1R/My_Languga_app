@@ -136,16 +136,10 @@ const AITokenModal = ({ isOpen, onClose }: AITokenModalProps) => {
     setError(null);
 
     try {
-      // Send greeting to AI
-      const greetingResponse = await aiService.generateText(
-        'Elementary',
-        normalizedToken,
-        selectedProvider,
-        selectedModel,
-        'Salam! Mən sizin şagirdinizəm və ingilis dili öyrənmək istəyirəm. Özünüzü təqdim edə bilərsinizmi?'
-      );
+      // Açar və model 1 tokenlik sorğu ilə yoxlanılır — tam mətn generasiya olunmur (#9)
+      const validation = await aiService.validateKey(normalizedToken, selectedProvider, selectedModel);
 
-      if (greetingResponse.success) {
+      if (validation.success) {
         dispatch(actions.setAiToken(normalizedToken));
         dispatch(actions.setAiProvider(selectedProvider));
         dispatch(actions.setAiModel(selectedModel));
@@ -154,7 +148,7 @@ const AITokenModal = ({ isOpen, onClose }: AITokenModalProps) => {
 
         onClose();
       } else {
-        setError(greetingResponse.error || 'AI ilə əlaqə qurula bilmədi. API açarınızı yoxlayın.');
+        setError(validation.error || 'AI ilə əlaqə qurula bilmədi. API açarınızı yoxlayın.');
       }
     } catch (err) {
       console.error('Token validation error:', err);

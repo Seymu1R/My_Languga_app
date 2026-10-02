@@ -26,6 +26,15 @@ const DEFAULT_GROK_MODEL = 'grok-3-mini';
 const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
 const DEFAULT_DEEPSEEK_MODEL = 'deepseek-chat';
 const DEFAULT_MISTRAL_MODEL = 'mistral-small-latest';
+const PROVIDER_NAMES: Record<AIServiceConfig['provider'], string> = {
+  openai: 'OpenAI',
+  grok: 'Grok',
+  gemini: 'Gemini',
+  deepseek: 'DeepSeek',
+  mistral: 'Mistral',
+};
+const KEY_CHECK_PROMPT = 'Reply with OK.';
+const KEY_CHECK_MAX_TOKENS = 1;
 const OPENAI_MASKED_CHAR_PATTERN = /[•●◦▪·]/;
 const NON_ASCII_PATTERN = /[^\x20-\x7E]/;
 
@@ -195,6 +204,31 @@ export class AIService {
   }
 
   async generateText(params: TextGenerationParams): Promise<AIServiceResponse> {
+    const result = await this.request(params);
+
+    if (result.success && !result.text) {
+      return { success: false, error: `No text generated from ${PROVIDER_NAMES[this.config.provider] ?? this.config.provider}` };
+    }
+
+    return result;
+  }
+
+  // Açarı (və seçilmiş modeli) tam mətn generasiya etmədən yoxlayır: 1 tokenlik cavab (#9).
+  // Thinking/reasoning modelləri (gemini-2.5-flash, deepseek-reasoner) 1 tokenlə boş mətn
+  // qaytara bilər — provider sorğunu qəbul edibsə, açar işləyir
+  async validateKey(): Promise<AIServiceResponse> {
+    const result = await this.request({
+      level: 'Elementary',
+      prompt: KEY_CHECK_PROMPT,
+      maxTokens: KEY_CHECK_MAX_TOKENS,
+      temperature: 0,
+    });
+
+    return result.success ? { success: true } : result;
+  }
+
+  // Provider-ə bir sorğu göndərir; uğurlu cavabda mətn boş ola bilər
+  private async request(params: TextGenerationParams): Promise<AIServiceResponse> {
     try {
       switch (this.config.provider) {
         case 'openai':
@@ -296,11 +330,7 @@ export class AIService {
       });
 
       const text = response.choices[0]?.message?.content;
-      if (!text) {
-        return { success: false, error: 'No text generated from OpenAI' };
-      }
-
-      return { success: true, text };
+      return { success: true, text: text ?? '' };
     } catch (error: any) {
       // Handle OpenAI-specific errors
       if (error?.status === 401) {
@@ -374,11 +404,7 @@ export class AIService {
       });
 
       const text = response.choices[0]?.message?.content;
-      if (!text) {
-        return { success: false, error: 'No text generated from Grok' };
-      }
-
-      return { success: true, text };
+      return { success: true, text: text ?? '' };
     } catch (error: any) {
       if (error?.status === 401) {
         return { 
@@ -450,11 +476,7 @@ export class AIService {
       const response = await result.response;
       const text = response.text();
 
-      if (!text) {
-        return { success: false, error: 'No text generated from Gemini' };
-      }
-
-      return { success: true, text };
+      return { success: true, text: text ?? '' };
     } catch (error: any) {
       // Handle Gemini-specific errors
       if (error?.status === 400 && error?.message?.includes('API key not valid')) {
@@ -528,11 +550,7 @@ export class AIService {
       });
 
       const text = response.choices[0]?.message?.content;
-      if (!text) {
-        return { success: false, error: 'No text generated from DeepSeek' };
-      }
-
-      return { success: true, text };
+      return { success: true, text: text ?? '' };
     } catch (error: any) {
       if (error?.status === 401) {
         return {
@@ -604,11 +622,7 @@ export class AIService {
       });
 
       const text = response.choices[0]?.message?.content;
-      if (!text) {
-        return { success: false, error: 'No text generated from Mistral' };
-      }
-
-      return { success: true, text };
+      return { success: true, text: text ?? '' };
     } catch (error: any) {
       if (error?.status === 401) {
         return {

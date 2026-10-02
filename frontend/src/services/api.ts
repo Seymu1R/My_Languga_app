@@ -103,6 +103,18 @@ export const aiService = {
     return response.data;
   },
 
+  // Açarı mətn generasiya etmədən yoxlayır (#9): backend provider-ə 1 tokenlik sorğu göndərir
+  async validateKey(apiToken: string, provider: string, model?: string): Promise<{ success: boolean; error?: string }> {
+    const resolvedProvider = provider as keyof typeof DEFAULT_MODELS;
+
+    const response = await api.post('/ai/validate-key', {
+      apiToken,
+      provider: resolvedProvider,
+      model: model || DEFAULT_MODELS[resolvedProvider],
+    });
+    return response.data;
+  },
+
   async translateWord(
     word: string,
     targetLanguage: string,

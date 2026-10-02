@@ -6,6 +6,7 @@ import {
   exampleSentencesSchema,
   addWordSchema,
   learningStatusSchema,
+  validateKeySchema,
   PROFICIENCY_LEVELS,
 } from '../src/schemas';
 
@@ -39,6 +40,28 @@ describe('generateTextSchema', () => {
   it('rejects a missing apiToken', () => {
     const { apiToken: _omit, ...body } = valid;
     expect(generateTextSchema.safeParse(body).success).toBe(false);
+  });
+});
+
+describe('validateKeySchema (#9)', () => {
+  const valid = { apiToken: 'sk-1', provider: 'openai' };
+
+  it.each(PROVIDERS)('accepts provider %s with or without a model', (provider) => {
+    expect(validateKeySchema.safeParse({ ...valid, provider }).success).toBe(true);
+    expect(validateKeySchema.safeParse({ ...valid, provider, model: 'm' }).success).toBe(true);
+  });
+
+  it.each([
+    ['empty apiToken', { apiToken: '' }],
+    ['missing apiToken', { apiToken: undefined }],
+    ['unknown provider', { provider: 'claude' }],
+    ['missing provider', { provider: undefined }],
+  ])('rejects %s', (_name, override) => {
+    expect(validateKeySchema.safeParse({ ...valid, ...override }).success).toBe(false);
+  });
+
+  it('does not require level or prompt fields', () => {
+    expect(validateKeySchema.parse(valid)).toEqual(valid);
   });
 });
 

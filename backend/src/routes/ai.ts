@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import { validate } from '../middleware/validate';
 import {
   generateTextSchema,
+  validateKeySchema,
   translateWordSchema,
   pronunciationSchema,
   exampleSentencesSchema,
@@ -10,10 +11,12 @@ import { aiContentService } from '../services/aiContentService';
 import { logger } from '../utils/logger';
 import type {
   GenerateTextBody,
+  ValidateKeyBody,
   TranslateWordBody,
   PronunciationBody,
   ExampleSentencesBody,
   AITextResponse,
+  ValidateKeyResponse,
   TranslateResponse,
   PronunciationResponse,
   ExampleSentencesResponse,
@@ -44,6 +47,33 @@ aiRouter.post('/generate-text', validate(generateTextSchema), async (req: Reques
     });
   } catch (error) {
     logger.error({ err: error }, 'Unhandled text generation error');
+    return res.status(500).json({
+      success: false,
+      error: 'An unexpected error occurred on the server.'
+    });
+  }
+});
+
+// Açar yoxlaması (#9): əvvəl modal tam mətn generasiya edirdi (~500 token), indi 1 token.
+// AI rate limit-inə yenə daxildir — hər sorğu xarici provider-ə gedir
+aiRouter.post('/validate-key', validate(validateKeySchema), async (req: Request, res: Response<ValidateKeyResponse>) => {
+  try {
+    const { apiToken, provider, model }: ValidateKeyBody = req.body;
+    logger.info({ provider, model }, 'Validating AI key');
+
+    const result = await aiContentService.validateKey({ provider, apiToken, model });
+
+    if (result.success) {
+      return res.json({ success: true });
+    }
+
+    logger.warn({ provider, error: result.error }, 'AI key validation failed');
+    return res.status(400).json({
+      success: false,
+      error: result.error || 'API key could not be verified.'
+    });
+  } catch (error) {
+    logger.error({ err: error }, 'Unhandled key validation error');
     return res.status(500).json({
       success: false,
       error: 'An unexpected error occurred on the server.'

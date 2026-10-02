@@ -268,3 +268,95 @@ describe('AIService generic error handling', () => {
     });
   });
 });
+
+// #9: açar tam mətn generasiya etmədən, 1 tokenlik sorğu ilə yoxlanılır
+const validateKey = (config: Partial<AIServiceConfig>) =>
+  new AIService({ provider: 'openai', apiKey: 'sk-test', ...config } as AIServiceConfig).validateKey();
+
+describe.each([
+  { provider: 'openai', name: 'OpenAI', defaultModel: 'gpt-4o-mini' },
+  { provider: 'grok', name: 'Grok', defaultModel: 'grok-3-mini' },
+  { provider: 'deepseek', name: 'DeepSeek', defaultModel: 'deepseek-chat' },
+  { provider: 'mistral', name: 'Mistral', defaultModel: 'mistral-small-latest' },
+] as const)('AIService.validateKey with $provider (#9)', ({ provider, name, defaultModel }) => {
+  it('sends a single request limited to 1 token at temperature 0', async () => {
+    mocks.create.mockResolvedValue(completion('OK'));
+
+    expect(await validateKey({ provider })).toEqual({ success: true });
+
+    expect(mocks.create).toHaveBeenCalledTimes(1);
+    expect(mocks.create.mock.calls[0][0]).toMatchObject({ model: defaultModel, max_tokens: 1, temperature: 0 });
+  });
+
+  it('checks the selected model, not only the key', async () => {
+    mocks.create.mockResolvedValue(completion('OK'));
+    await validateKey({ provider, model: 'custom-model' });
+    expect(mocks.create.mock.calls[0][0].model).toBe('custom-model');
+  });
+
+  it('accepts a key whose 1-token answer is empty (reasoning models)', async () => {
+    mocks.create.mockResolvedValue(completion(null));
+    expect(await validateKey({ provider })).toEqual({ success: true });
+  });
+
+  it('reports an invalid key (401)', async () => {
+    mocks.create.mockRejectedValue(apiError(401));
+
+    const result = await validateKey({ provider });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(new RegExp(`^Invalid ${name} API key`));
+  });
+
+  it('reports an exhausted quota (429)', async () => {
+    mocks.create.mockRejectedValue(apiError(429, 'You exceeded your current quota'));
+    expect((await validateKey({ provider })).error).toContain(`${name} quota or billing limit reached`);
+  });
+
+  it('rejects a masked key without sending a request', async () => {
+    const result = await validateKey({ provider, apiKey: 'sk-••••' });
+
+    expect(result.error).toContain(`${name} API key appears masked`);
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('AIService.validateKey with gemini (#9)', () => {
+  it('limits the output to 1 token at temperature 0', async () => {
+    mocks.generateContent.mockResolvedValue(geminiResult('OK'));
+
+    expect(await validateKey({ provider: 'gemini' })).toEqual({ success: true });
+
+    expect(mocks.getGenerativeModel).toHaveBeenCalledWith({
+      model: 'gemini-2.5-flash',
+      generationConfig: { temperature: 0, maxOutputTokens: 1 },
+    });
+  });
+
+  it('accepts a key whose 1-token answer is empty (thinking models)', async () => {
+    mocks.generateContent.mockResolvedValue(geminiResult(''));
+    expect(await validateKey({ provider: 'gemini' })).toEqual({ success: true });
+  });
+
+  it('reports an invalid key', async () => {
+    mocks.generateContent.mockRejectedValue(apiError(400, 'API key not valid. Please pass a valid API key.'));
+    expect((await validateKey({ provider: 'gemini' })).error).toContain('Invalid Gemini API key');
+  });
+});
+
+describe('AIService.validateKey generic errors (#9)', () => {
+  it('turns a network failure into a user-friendly message', async () => {
+    mocks.create.mockRejectedValue(new Error('Connection error.'));
+    expect(await validateKey({ provider: 'openai' })).toEqual({
+      success: false,
+      error: 'Network error connecting to OPENAI. Please check your internet connection.',
+    });
+  });
+
+  it('rejects an unsupported provider', async () => {
+    expect(await validateKey({ provider: 'claude' as any })).toEqual({
+      success: false,
+      error: 'Unsupported AI provider: claude',
+    });
+  });
+});

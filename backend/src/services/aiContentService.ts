@@ -179,6 +179,11 @@ const parseSentences = (text: string, word: string): string[] => {
 };
 
 export const aiContentService = {
+  // Açar yoxlaması — mətn generasiya etmir, 1 tokenlik sorğu göndərir (#9)
+  async validateKey(config: AIRequestConfig): Promise<AIServiceResponse> {
+    return createAIService(config).validateKey();
+  },
+
   async generateReadingText(
     config: AIRequestConfig,
     level: ProficiencyLevel,

@@ -6,7 +6,7 @@
 
 ## 2026-10-02 — #2 + #5: frontend serverin xəta mesajlarını göstərir, xəta mətni tərcümə kimi saxlanmır
 
-Branch: `fix/ai-error-messages` (`main`-dən). Commit-lər: `30c2add` (`fix:`), sonra `docs:`.
+Branch: `fix/ai-error-messages` (`main`-dən). Commit-lər: `30c2add` (`fix:`), `abcfeb6` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi. Merge-dən sonra `main`-də frontend və backend type-check, həmçinin 317 backend testi keçdi. Push olunmayıb.
 
 **Problem:** axios interceptor (`services/api.ts`) hər HTTP xətasını serverin mesajı ilə `ApiError`-a çevirir. Lakin komponentlərin `catch` blokları bu mesajı atıb ümumi mətn göstərirdi. Bu, #2-nin özüdür:
 - `HomePage` → "Network error. Please check your connection.";

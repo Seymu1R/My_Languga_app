@@ -35,7 +35,7 @@ ona görə hər sessiyanın əvvəlində avtomatik oxunur. Ətraflı fayllar laz
   - Commit-lər (köhnədən yeniyə): #1 (`fix:`), sənədlər (`docs:`), #8 + #7 (`fix:`), refaktor (`refactor:`), testlər (`test:`), sənəd yeniləmələri (`docs:`).
   - `fix/upload-path-traversal` branch-ı hələ silinməyib.
   - Növbəti iş üçün `main`-dən yeni branch açılır.
-- **Cari branch:** `fix/ai-error-messages` (#2 + #5). Commit olunub: `30c2add` (`fix:`) və sənədlər (`docs:`). `main`-ə birləşdirilməyib, push olunmayıb.
+- `fix/ai-error-messages` (#2 + #5) 2026-10-02-də `main`-ə fast-forward ilə birləşdirildi (`30c2add` `fix:`, `abcfeb6` `docs:`). Push olunmayıb. Branch silinməyib.
   - Commit yalnız istifadəçi istəyəndə edilir. İstifadəçi ayrı-ayrı commit-lərə üstünlük verir: kod `fix:`/`feat:`, testlər `test:`, sənədlər `docs:`.
 
 ## İş qaydaları

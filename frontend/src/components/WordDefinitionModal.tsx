@@ -71,8 +71,16 @@ const WordDefinitionModal = ({
     setImageUrl(null);
     setSelectedImageFile(null);
     setImageError(null);
+    // Əvvəlki açılışın köhnəlmiş sorğuları bu flag-ləri artıq sıfırlamır (bax: isStale)
+    setIsLoadingTranslation(false);
+    setIsLoadingPronunciation(false);
+    setIsLoadingSentences(false);
 
     if (!word || !state.isAiReady || !state.aiToken || !state.aiProvider) return;
+
+    // Söz tez dəyişdiriləndə (və ya modal bağlananda) bu effektin sorğuları köhnəlir:
+    // gec gələn cavab artıq yeni sözün state-inə yazılmamalıdır (#6)
+    let isStale = false;
 
     const aiToken = state.aiToken;
     const aiProvider = state.aiProvider;
@@ -93,15 +101,17 @@ const WordDefinitionModal = ({
           aiModel,
           contextSentence,
         );
+        if (isStale) return;
         if (response.success && response.translation) {
           setAiTranslation(response.translation);
         } else {
           setTranslationError(response.error || "AI translation is not available.");
         }
       } catch (error) {
+        if (isStale) return;
         setTranslationError(getErrorMessage(error, "AI translation failed. Please try again."));
       } finally {
-        setIsLoadingTranslation(false);
+        if (!isStale) setIsLoadingTranslation(false);
       }
     };
 
@@ -109,13 +119,14 @@ const WordDefinitionModal = ({
       setIsLoadingPronunciation(true);
       try {
         const response = await aiService.getPronunciation(word, aiToken, aiProvider, aiModel);
+        if (isStale) return;
         setAiPronunciation(
           response.success && response.pronunciation ? response.pronunciation : "",
         );
       } catch {
-        setAiPronunciation("");
+        if (!isStale) setAiPronunciation("");
       } finally {
-        setIsLoadingPronunciation(false);
+        if (!isStale) setIsLoadingPronunciation(false);
       }
     };
 
@@ -129,6 +140,7 @@ const WordDefinitionModal = ({
           aiProvider,
           aiModel,
         );
+        if (isStale) return;
         if (response.success && response.sentences?.length > 0) {
           setExampleSentences(response.sentences);
           setSelectedSentenceIndex(0);
@@ -136,15 +148,19 @@ const WordDefinitionModal = ({
           setExampleSentences([]);
         }
       } catch {
-        setExampleSentences([]);
+        if (!isStale) setExampleSentences([]);
       } finally {
-        setIsLoadingSentences(false);
+        if (!isStale) setIsLoadingSentences(false);
       }
     };
 
     fetchTranslation();
     fetchPronunciation();
     fetchExampleSentences();
+
+    return () => {
+      isStale = true;
+    };
   }, [isOpen, word, contextSentence, state.isAiReady, state.aiToken, state.aiProvider, state.aiModel, state.nativeLanguage, state.nativeLanguageCode, state.selectedLevel]);
 
   const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {

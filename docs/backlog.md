@@ -13,7 +13,7 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 | 3 | 🔴 Kritik | MongoDB qoşulması gözlənilmir, yazılar in-memory-yə düşür | açıq |
 | 4 | 🟠 Yüksək | SRS: interval vaxtı çatmadan böyüyür | açıq (`it.fails` testi var) |
 | 5 | 🟠 Yüksək | "Translation not available" tərcümə kimi saxlanır | **bağlanıb** (2026-10-02) |
-| 6 | 🟠 Yüksək | Modalda race condition: köhnə AI cavabları yeni sözə yazılır | açıq |
+| 6 | 🟠 Yüksək | Modalda race condition: köhnə AI cavabları yeni sözə yazılır | **bağlanıb** (2026-10-02, testsiz) |
 | 7 | 🟠 Yüksək | Multer xətaları 500 qaytarır (400/413 əvəzinə) | **bağlanıb** (2026-10-02) |
 | 8 | 🟠 Yüksək | Yüklənən faylın tipi əslində yoxlanmır (html/svg) | **bağlanıb** (2026-10-02) |
 | 9 | 🟠 Yüksək | Açar yoxlaması tam mətn generasiya edir (pul, limit) | açıq |
@@ -39,7 +39,7 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 ## Təklif olunan iş sırası
 
 1. Təhlükəsizlik: ~~#1~~, ~~#8~~
-2. İstifadəçinin gördüyü buglar: ~~#2~~, ~~#5~~, #6, ~~#7~~
+2. İstifadəçinin gördüyü buglar: ~~#2~~, ~~#5~~, ~~#6~~, ~~#7~~
 3. Data bütövlüyü: #3, #4, #10, #27, #26
 4. Səmərəlilik: #9, #12, #13
 5. İnfrastruktur: ~~backend testləri~~, frontend testləri, lint, `.gitignore`
@@ -75,7 +75,8 @@ Həll: `translationError` ayrı state-dir, bax: changelog "#2 + #5". İlkin təs
 `WordDefinitionModal.tsx`: uğursuzluqda `aiTranslation = "Translation not available"`. `handleSubmit` isə `translation.trim() || aiTranslation` götürür.
 **Həll:** xəta mesajını ayrıca state-də saxlamaq.
 
-### 6. Modalda race condition
+### 6. Modalda race condition — **bağlanıb** (testsiz)
+Həll: effektdə `isStale` flag-i, bax: changelog "#6". Avtomatik test yoxdur; frontend testləri qurulanda ilk yazılacaq testdir (#19). İlkin təsvir:
 `WordDefinitionModal.tsx`-dəki fetch effekti 3 AI sorğusu göndərir, amma onları ləğv etmir.
 **Həll:** `AbortController` və ya `cancelled` flag.
 
@@ -135,7 +136,7 @@ Söz saxlanarkən "Generate Text" düyməsi "Generating Text..." göstərir (`Ap
 API-yə çata bilən hər kəs bütün lüğəti silə və fayl yükləyə bilər. Lokal istifadə üçün qəbul ediləndir.
 
 ### 19. Test və lint — qismən
-- ~~Test framework-u yoxdur.~~ Backend: Vitest + supertest + mongodb-memory-server, 317 test (bax: changelog 2026-10-02). Frontend testləri hələ yoxdur.
+- ~~Test framework-u yoxdur.~~ Backend: Vitest + supertest + mongodb-memory-server, 317 test (bax: changelog 2026-10-02). Frontend testləri hələ yoxdur; istifadəçi 2026-10-02-də onları sonraya saxladı. Qurulanda ilk testlər: #6 (köhnəlmiş cavablar), #2/#5 (`getErrorMessage`, `translationError`).
 - `biome.json` 1.x formatındadır, quraşdırılmış Biome isə 2.4-dür, ona görə `npx biome check` konfiqurasiya xətası verir.
 - Frontend-də ESLint config faylı yoxdur.
 

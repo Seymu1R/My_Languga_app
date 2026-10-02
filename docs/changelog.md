@@ -4,6 +4,23 @@
 
 ---
 
+## 2026-10-02 — #6: söz modalında köhnəlmiş AI cavabları artıq yeni sözə yazılmır
+
+Branch: `fix/word-modal-stale-responses` (`main`-dən). Commit-lər: `d1a5c42` (`fix:`), sonra `docs:`.
+
+**Problem:** `WordDefinitionModal`-ın effekti modal hər açılanda 3 AI sorğusu göndərir: tərcümə, tələffüz və nümunə cümlələr. Sorğular heç vaxt "köhnəlmiş" kimi işarələnmirdi. İstifadəçi A sözünü açıb tez bağlayır və B sözünü açırsa, A-nın gec gələn cavabları B-nin tərcüməsinin, tələffüzünün, cümlələrinin və loading spinner-lərinin üstünə yazılırdı. Save isə B sözünü A-nın tərcüməsi ilə saxlayardı.
+
+**Dəyişiklik** (`frontend/src/components/WordDefinitionModal.tsx`, yalnız bu fayl):
+- Effektdə `let isStale = false`. Effektin cleanup-ı onu `true` edir. Cleanup söz və ya kontekst dəyişəndə, modal bağlananda və AI ayarları dəyişəndə işləyir.
+- Hər `await`-dən sonra bütün state yazıları (nəticə, xəta və `finally`-dəki loading flag-ləri) `isStale` yoxlayır.
+- Effektin əvvəlində üç loading flag-i sıfırlanır. Əks halda modal yükləmə zamanı bağlanarsa və növbəti açılışda AI sorğusu göndərilməzsə (məsələn, AI hazır deyil), spinner əbədi qalardı.
+- Sorğular ləğv edilmir (`AbortController` yoxdur). Server AI-ı onsuz da çağırır, ona görə ləğvetmə xərc qənaəti vermirdi, yalnız UI-ı qoruyur.
+
+**Yoxlama:**
+- `cd frontend && npx tsc --noEmit` və `vite build` keçdi.
+- **Avtomatik test və ya brauzer yoxlaması YOXDUR.** İstifadəçi qərar verdi: hələlik yalnız type-check, frontend testləri sonraya saxlanılır (#19). Race condition-ı brauzerdə təkrarlamaq üçün işləyən AI açarı və Chrome extension-u lazımdır, ikisi də mövcud deyildi.
+- Frontend testləri qurulanda bu hal üçün ilk test belə olmalıdır: AI cavabını gecikdir → sözü dəyiş → köhnə cavabı ver → yeni sözün state-inin dəyişmədiyini yoxla.
+
 ## 2026-10-02 — #2 + #5: frontend serverin xəta mesajlarını göstərir, xəta mətni tərcümə kimi saxlanmır
 
 Branch: `fix/ai-error-messages` (`main`-dən). Commit-lər: `30c2add` (`fix:`), `abcfeb6` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi. Merge-dən sonra `main`-də frontend və backend type-check, həmçinin 317 backend testi keçdi. Push olunmayıb.

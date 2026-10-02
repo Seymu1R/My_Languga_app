@@ -2,7 +2,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 
-const uploadPath = path.join(__dirname, '../../uploads');
+export const uploadPath = path.join(__dirname, '../../uploads');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {

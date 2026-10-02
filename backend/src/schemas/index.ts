@@ -61,7 +61,13 @@ export const addWordSchema = z.object({
     .transform((s) => s.trim()),
   pronunciation: z.string().max(200).optional(),
   referenceSentence: z.string().max(1000).optional(),
-  imageUrl: z.string().max(500).optional(),
+  // Yalnız /upload-image endpoint-inin qaytardığı formata icazə ver.
+  // Fayl adı nöqtə ilə başlaya bilməz → "/uploads/.." kimi dəyərlər rədd olunur
+  imageUrl: z
+    .string()
+    .max(500)
+    .regex(/^\/uploads\/\w[\w.-]*$/, 'imageUrl must be a path returned by /upload-image')
+    .optional(),
 });
 
 export const learningStatusSchema = z.object({

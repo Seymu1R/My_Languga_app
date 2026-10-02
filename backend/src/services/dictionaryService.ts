@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { Word } from '../models/Word';
 import { logger } from '../utils/logger';
+import { uploadPath } from '../middleware/upload';
 import type { AddWordBody } from '../types';
 
 // Custom domain errors — router bunları HTTP status-lara map edir
@@ -38,7 +39,14 @@ let memoryId = 1;
 const deleteLocalImage = (imageUrl?: string) => {
   if (!imageUrl || !imageUrl.startsWith('/uploads/')) return;
 
-  const imagePath = path.join(__dirname, '../..', imageUrl);
+  // "../" seqmentləri ilə uploads qovluğundan kənara çıxmağın qarşısını al:
+  // həll olunmuş yol birbaşa uploads qovluğunun içində olmalıdır
+  const imagePath = path.resolve(uploadPath, imageUrl.slice('/uploads/'.length));
+  if (path.dirname(imagePath) !== uploadPath) {
+    logger.warn({ imageUrl }, 'Refusing to delete file outside uploads directory');
+    return;
+  }
+
   if (fs.existsSync(imagePath)) {
     try {
       fs.unlinkSync(imagePath);

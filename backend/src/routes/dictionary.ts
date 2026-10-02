@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import type { AddWordBody, LearningStatusBody, DictionaryResponse } from '../types';
 import { validate } from '../middleware/validate';
-import { upload } from '../middleware/upload';
+import { uploadImage } from '../middleware/upload';
 import { addWordSchema, learningStatusSchema } from '../schemas';
 import { logger } from '../utils/logger';
 import {
@@ -164,7 +164,7 @@ dictionaryRouter.put('/words/:id', validate(addWordSchema), async (req: Request,
 });
 
 // Upload image endpoint
-dictionaryRouter.post('/upload-image', upload.single('image'), (req: Request, res: Response<DictionaryResponse>) => {
+dictionaryRouter.post('/upload-image', uploadImage, (req: Request, res: Response<DictionaryResponse>) => {
   try {
     if (!req.file) {
       return res.status(400).json({

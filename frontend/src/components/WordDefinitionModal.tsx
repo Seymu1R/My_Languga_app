@@ -1,6 +1,9 @@
 import { useState, useEffect, type ChangeEvent, type FormEvent } from "react";
 import { useApp } from "../context/AppContext";
-import { aiService, dictionaryService, resolveAssetUrl } from "../services/api";
+import { aiService, dictionaryService, resolveAssetUrl, ApiError } from "../services/api";
+
+// Backend-in qəbul etdiyi tiplərlə eyni (backend/src/middleware/upload.ts)
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 interface WordDefinitionModalProps {
   isOpen: boolean;
@@ -145,6 +148,11 @@ const WordDefinitionModal = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      setImageError("Only JPEG, PNG, WebP and GIF images are allowed");
+      return;
+    }
+
     if (file.size > 5 * 1024 * 1024) {
       setImageError("Image size must be less than 5MB");
       return;
@@ -188,7 +196,9 @@ const WordDefinitionModal = ({
       } catch (error: any) {
         console.error("Error uploading image:", error);
         setImageError(
-          "Failed to upload image. Please try again without it or choose another one.",
+          error instanceof ApiError
+            ? error.message
+            : "Failed to upload image. Please try again without it or choose another one.",
         );
         setIsSubmitting(false);
         return;
@@ -548,7 +558,7 @@ const WordDefinitionModal = ({
                     </span>
                     <input
                       type="file"
-                      accept="image/*"
+                      accept={ALLOWED_IMAGE_TYPES.join(",")}
                       className="hidden"
                       onChange={handleImageUpload}
                     />

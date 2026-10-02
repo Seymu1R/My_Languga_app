@@ -76,11 +76,15 @@ const wordSchema = new Schema<IWord>({
 // Index for faster lookups
 wordSchema.index({ english: 1 });
 
+// Hərf böyüklüyünü nəzərə almayan, aksentləri isə fərqləndirən müqayisə. english üzrə
+// sorğular index-dən istifadə etsin deyə eyni collation-ı verməlidir (#13)
+export const ENGLISH_COLLATION = { locale: 'en', strength: 2 } as const;
+
 // Eyni söz hərf böyüklüyündən asılı olmayaraq iki dəfə saxlanmasın. Servisin öz yoxlamasından
 // eyni anda keçən sorğulara qarşı son müdafiə (#10). Ayrı ad: köhnə bazalardakı english_1 ilə toqquşmasın
 wordSchema.index(
   { english: 1 },
-  { unique: true, collation: { locale: 'en', strength: 2 }, name: 'english_unique_ci' },
+  { unique: true, collation: ENGLISH_COLLATION, name: 'english_unique_ci' },
 );
 
 // Learning queue sorğusu status + nextReviewDate üzrə filter edir —

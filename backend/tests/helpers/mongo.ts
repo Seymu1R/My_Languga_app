@@ -49,3 +49,10 @@ export const clearMongo = async () => {
   const { collections } = mongoose.connection;
   await Promise.all(Object.values(collections).map((c) => c.deleteMany({})));
 };
+
+// Index neçə sorğuda istifadə olunub ($indexStats) — sorğunun həqiqətən həmin index-dən
+// keçdiyini yoxlamaq üçün: əməliyyatdan əvvəl və sonra müqayisə et
+export const indexUses = async (collection: string, indexName: string) => {
+  const stats = await mongoose.connection.collection(collection).aggregate([{ $indexStats: {} }]).toArray();
+  return Number(stats.find((s) => s.name === indexName)?.accesses?.ops ?? 0);
+};

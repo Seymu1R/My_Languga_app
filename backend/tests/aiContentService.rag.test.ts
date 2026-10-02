@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import { aiContentService } from '../src/services/aiContentService';
 import { dictionaryService } from '../src/services/dictionaryService';
-import { startMongo, stopMongo, clearMongo } from './helpers/mongo';
+import { Word } from '../src/models/Word';
+import { startMongo, stopMongo, clearMongo, indexUses } from './helpers/mongo';
 
 // RAG layer 1: istifadəçinin MongoDB-dəki əvvəlki tərcümələri
 const mocks = vi.hoisted(() => ({ generateText: vi.fn() }));
@@ -22,7 +23,10 @@ const translate = (word: string, contextSentence?: string) =>
   aiContentService.translateWord(config, { word, targetLanguage: 'Azerbaijani', contextSentence });
 
 describe('translateWord with saved translations (MongoDB)', () => {
-  beforeAll(startMongo);
+  beforeAll(async () => {
+    await startMongo();
+    await Word.init(); // english_unique_ci index-i qurulsun
+  });
   afterAll(stopMongo);
 
   beforeEach(async () => {
@@ -64,6 +68,35 @@ describe('translateWord with saved translations (MongoDB)', () => {
 
     expect(lastPrompt()).not.toContain('wrong');
     expect(fetchMock).toHaveBeenCalled();
+  });
+
+  // #13: regex (^word$, 'i') index-dən istifadə etmirdi; collation sorğusu english_unique_ci-dən keçir
+  it('looks the saved word up through the english_unique_ci index (#13)', async () => {
+    await dictionaryService.addWord({ english: 'Bank', translation: 'bank' });
+    const before = await indexUses('words', 'english_unique_ci');
+
+    await translate('BANK', 'I went to the bank.');
+
+    expect(await indexUses('words', 'english_unique_ci')).toBe(before + 1);
+    expect(lastPrompt()).toContain(': 1. bank.');
+  });
+
+  it('matches non-ASCII letters case-insensitively but keeps accents distinct', async () => {
+    await dictionaryService.addWord({ english: 'Café', translation: 'kafe' });
+
+    await translate('CAFÉ', 'A small café.');
+    expect(lastPrompt()).toContain(': 1. kafe.');
+
+    await translate('cafe', 'A small cafe.');
+    expect(lastPrompt()).not.toContain('kafe');
+  });
+
+  it('finds a saved word that contains regex characters', async () => {
+    await dictionaryService.addWord({ english: 'C++', translation: 'si plus plus' });
+
+    await translate('c++', 'I write C++ code.');
+
+    expect(lastPrompt()).toContain(': 1. si plus plus.');
   });
 
   it('falls back to the dictionary API when nothing is saved', async () => {

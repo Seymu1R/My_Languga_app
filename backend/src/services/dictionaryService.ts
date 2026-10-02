@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import fs from 'fs';
 import path from 'path';
-import { Word } from '../models/Word';
+import { Word, ENGLISH_COLLATION } from '../models/Word';
 import { logger } from '../utils/logger';
 import { uploadPath } from '../middleware/upload';
 import { getStorageMode } from '../config/storage';
@@ -30,8 +30,6 @@ export class StorageUnavailableError extends Error {
   }
 }
 
-const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
 // Rejim açılışda seçilir (config/storage). MongoDB rejimində bağlantı yoxdursa xəta atırıq —
 // əvvəl yazılar səssizcə in-memory-yə düşür və bağlantı qayıdanda itirdi (#3)
 const useMongo = () => {
@@ -43,12 +41,15 @@ const useMongo = () => {
 // Unique index (english_unique_ci) pozulanda MongoDB 11000 qaytarır (#10)
 const isDuplicateKeyError = (error: unknown) => (error as { code?: number })?.code === 11000;
 
-// Hərf böyüklüyündən asılı olmayaraq eyni sözü tap; excludeId — redaktə olunan sözün özü
+// Hərf böyüklüyündən asılı olmayaraq eyni sözü tap; excludeId — redaktə olunan sözün özü.
+// Collation unique index-inki ilə eynidir: sorğu english_unique_ci-dən keçir və
+// yoxlama index-in qaydası ilə tam üst-üstə düşür (#13)
 const findWordByEnglish = (english: string, excludeId?: string) =>
-  Word.findOne({
-    english: { $regex: new RegExp(`^${escapeRegex(english)}$`, 'i') },
-    ...(excludeId ? { _id: { $ne: excludeId } } : {}),
-  });
+  Word.findOne(
+    { english, ...(excludeId ? { _id: { $ne: excludeId } } : {}) },
+    null,
+    { collation: ENGLISH_COLLATION },
+  );
 
 const hasMemoryDuplicate = (english: string, excludeId?: string) =>
   memoryDictionary.some(

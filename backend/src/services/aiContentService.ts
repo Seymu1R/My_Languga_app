@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { AIService, AIServiceResponse } from './aiService';
-import { Word } from '../models/Word';
+import { Word, ENGLISH_COLLATION } from '../models/Word';
 import { logger } from '../utils/logger';
 import type {
   AIProvider,
@@ -58,10 +58,10 @@ const lookupSavedSenses = async (word: string): Promise<string[]> => {
   try {
     if (mongoose.connection.readyState !== 1) return [];
 
-    const safeWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const savedEntries = await Word.find({
-      english: { $regex: new RegExp(`^${safeWord}$`, 'i') }
-    }).select('translation').lean();
+    // Regex (^word$, 'i') index-dən istifadə etmirdi; collation sorğusu english_unique_ci-dən keçir (#13)
+    const savedEntries = await Word.find({ english: word }, null, { collation: ENGLISH_COLLATION })
+      .select('translation')
+      .lean();
 
     const senses = [...new Set(savedEntries.map((e: any) => e.translation).filter(Boolean))];
     if (senses.length > 0) {

@@ -11,7 +11,7 @@ import {
 } from '../src/services/dictionaryService';
 import { Word } from '../src/models/Word';
 import { uploadPath } from '../src/middleware/upload';
-import { startMongo, stopMongo, clearMongo, reconnectMongo } from './helpers/mongo';
+import { startMongo, stopMongo, clearMongo, reconnectMongo, indexUses } from './helpers/mongo';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -386,6 +386,36 @@ describe('dictionaryService (mongodb only)', () => {
     const word = plain(await dictionaryService.updateLearningStatus('legacy-known', true));
 
     expect(word.reviewIntervalDays).toBe(28);
+  });
+
+  // #13: dublikat yoxlaması regex əvəzinə collation ilə english_unique_ci index-indən keçir
+  it('checks duplicates on add through the english_unique_ci index (#13)', async () => {
+    await add('apple');
+    const before = await indexUses('words', 'english_unique_ci');
+
+    await expect(add('APPLE')).rejects.toBeInstanceOf(DuplicateWordError);
+
+    expect(await indexUses('words', 'english_unique_ci')).toBeGreaterThan(before);
+  });
+
+  it('checks duplicates on update through the english_unique_ci index (#13)', async () => {
+    await add('apple');
+    const { id } = plain(await add('pear'));
+    const before = await indexUses('words', 'english_unique_ci');
+
+    await expect(
+      dictionaryService.updateWord(id, { english: 'Apple', translation: 'alma' }),
+    ).rejects.toBeInstanceOf(DuplicateWordError);
+
+    expect(await indexUses('words', 'english_unique_ci')).toBeGreaterThan(before);
+  });
+
+  // Servisin yoxlaması index ilə eyni qaydanı işlədir: hərf böyüklüyü fərq etmir, aksent edir
+  it('treats accented and unaccented words as different, like the index', async () => {
+    await add('café');
+
+    await expect(add('CAFÉ')).rejects.toBeInstanceOf(DuplicateWordError);
+    await expect(add('cafe')).resolves.toBeDefined();
   });
 
   it('enforces case-insensitive uniqueness in the database itself (#10)', async () => {

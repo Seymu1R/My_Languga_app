@@ -102,7 +102,7 @@ MongoDB rejimində `connected: false` görünürsə, baza müvəqqəti əlçatan
 
 ### İstifadə
 
-1. Yuxarı sağdakı **Add AI Token** düyməsi ilə provider, model və API açarı seçin.
+1. Yuxarı sağdakı **Add AI Token** düyməsi ilə provider, model və API açarı seçin. Açar 1 tokenlik qısa sorğu ilə yoxlanılır, mətn generasiya olunmur.
 2. Ana dilinizi və ingilis dili səviyyənizi seçin.
 3. **Generate Text** düyməsini basın.
 4. Bilmədiyiniz sözlərə klik edib lüğətə əlavə edin.
@@ -128,6 +128,7 @@ Bütün cavablar `{ success, ..., error? }` formatındadır. Validasiya xətası
 | Metod | Endpoint | Təsvir |
 |---|---|---|
 | GET | `/api/health` | Server və baza vəziyyəti |
+| POST | `/api/ai/validate-key` | Açar və modelin işlədiyini yoxlayır (1 token) |
 | POST | `/api/ai/generate-text` | Səviyyəyə uyğun oxu mətni |
 | POST | `/api/ai/translate-word` | Kontekstə uyğun tərcümə |
 | POST | `/api/ai/pronunciation` | IPA tələffüzü |

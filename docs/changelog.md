@@ -4,6 +4,40 @@
 
 ---
 
+## 2026-10-02 — #9: açar yoxlaması 1 tokenlik sorğu ilə, tam mətn generasiyası olmadan
+
+Branch: `fix/validate-key` (`main`-dən). Commit-lər: `b1b08df` (`fix:` + testlər), ardınca `docs:`. Hələ `main`-ə birləşdirilməyib.
+
+**Problem:** "Add AI Token" modalı açarı yoxlamaq üçün `generateText` çağırırdı: tam oxu mətni (~500 token) generasiya olunurdu və istifadəçinin pulu xərclənirdi. Cavab gec gəlirdi.
+
+**Həll:**
+- `services/aiService.ts`:
+  - Yeni `validateKey()`: provider-ə bir sorğu, `max_tokens`/`maxOutputTokens: 1`, `temperature: 0`, prompt "Reply with OK.". Uğurda `{ success: true }` qaytarır, mətn yox.
+  - Thinking/reasoning modelləri (`gemini-2.5-flash`, `deepseek-reasoner`, `grok-3-mini`) 1 tokenlə boş mətn qaytara bilər. Provider sorğunu qəbul edibsə açar işləyir, ona görə boş cavab da uğur sayılır.
+  - Bunun üçün `switch` və ümumi xəta işlənməsi private `request()`-ə köçdü. "No text generated from X" yoxlaması 5 provider metodundan çıxarılıb bir dəfə `generateText`-də edilir (`PROVIDER_NAMES`). `generateText`-in davranışı və mesajları dəyişmədi, köhnə testlər dəyişmədən keçir.
+  - Açar formatı yoxlaması (maskalı/gizli simvollar), 401/404/429 izahları və şəbəkə xətaları `validateKey`-də də eynidir. Seçilmiş model də yoxlanılır (404 → "model is unavailable").
+- `services/aiContentService.ts`: `validateKey(config)`.
+- `schemas/index.ts`: `validateKeySchema` (`apiToken`, `provider`, istəyə bağlı `model`; `level`/prompt lazım deyil). `types/index.ts`: `ValidateKeyBody`, `ValidateKeyResponse`.
+- `routes/ai.ts`: `POST /api/ai/validate-key` → 200 `{ success: true }`, rədd edilən açar → 400 `{ success: false, error }` (generate-text kimi), gözlənilməz xəta → 500.
+- Frontend: `services/api.ts`-də `aiService.validateKey()`, `AITokenModal` onu çağırır. Frontend testləri yoxdur: type-check və `npm run build` ilə yoxlanıldı.
+- `README.md`: endpoint cədvəli və "İstifadə" bölməsi. `CLAUDE.md`: AI bölməsi.
+
+**Qeyd:** endpoint `/api/ai` altındadır, yəni 15 dəqiqədə 30 sorğuluq AI limitinə yenə 1 sorğu kimi daxildir. Bu qəsdəndir: hər yoxlama xarici provider-ə gedir və limit serverin açar yoxlayıcı proxy kimi istifadə olunmasının qarşısını alır. Əsas xərc (~500 token) aradan qalxdı.
+
+**Testlər** (əvvəl yazıldı; köhnə kodda 51 yeni testdən 50-si düşdü. Rate limit testi köhnə kodda da keçir, çünki 404 də limitə sayılır; o, bug-ı yox, davranışı qoruyur):
+- `aiService.test.ts`:
+  - 4 OpenAI-uyğun provider üçün: 1 sorğu, `max_tokens: 1`, `temperature: 0`, default və seçilmiş model; boş cavab → uğur; 401 → "Invalid … API key"; kvota (429); maskalı açarda sorğu göndərilmir.
+  - Gemini: `maxOutputTokens: 1`, boş cavab → uğur, səhv açar.
+  - Şəbəkə xətası və dəstəklənməyən provider.
+- `aiContentService.test.ts`: config `AIService`-ə ötürülür, nəticə dəyişmədən qaytarılır, `generateText` çağırılmır.
+- `routes.ai.test.ts`: 200, modelsiz sorğu, 400 (provider səbəbi və ümumi fallback), 500, 4 validasiya halı (400, servis çağırılmır), AI rate limit (31-ci → 429).
+- `schemas.test.ts`: `validateKeySchema`: hər provider modelli/modelsiz, boş/olmayan `apiToken`, naməlum/olmayan provider.
+- Mutasiya yoxlaması: `validateKey` `request` əvəzinə `generateText` istifadə etsə 5 "boş cavab" testi düşür; `KEY_CHECK_MAX_TOKENS = 500` olsa 5 test düşür.
+- Nəticə: 426 test (375 + 51), `npm run type-check` təmiz. Lokal serverdə curl ilə: maskalı açar → 400 (provider-ə sorğu getmədən), provider yoxdur → 400 `details`.
+- **Yoxlanılmayıb:** real provider-lərlə (açar yoxdur). Xüsusilə real `gemini-2.5-flash`/`grok-3-mini` 1 tokenlik limitə necə cavab verir — kod boş cavabı da qəbul edir, amma provider bu limitə xəta qaytararsa, açar səhv kimi görünə bilər. Brauzerdə də yoxlanılmayıb.
+
+---
+
 ## 2026-10-02 — #3: saxlama rejimi açılışda seçilir, MongoDB qopanda data səssizcə itmir
 
 Branch: `fix/storage-mode` (`main`-dən). Commit-lər: `ec75b51` (`fix:` + testlər), `e339d4f` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi. Merge-dən sonra `main`-də frontend və backend type-check, həmçinin 375 backend testi keçdi. Sonra `main` GitHub-a push olundu, `fix/storage-mode` lokalda silindi (heç vaxt push olunmamışdı). Yalnız `main` qaldı.

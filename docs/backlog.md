@@ -16,7 +16,7 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 | 6 | 🟠 Yüksək | Modalda race condition: köhnə AI cavabları yeni sözə yazılır | **bağlanıb** (2026-10-02, testsiz) |
 | 7 | 🟠 Yüksək | Multer xətaları 500 qaytarır (400/413 əvəzinə) | **bağlanıb** (2026-10-02) |
 | 8 | 🟠 Yüksək | Yüklənən faylın tipi əslində yoxlanmır (html/svg) | **bağlanıb** (2026-10-02) |
-| 9 | 🟠 Yüksək | Açar yoxlaması tam mətn generasiya edir (pul, limit) | açıq |
+| 9 | 🟠 Yüksək | Açar yoxlaması tam mətn generasiya edir (pul, limit) | **bağlanıb** (2026-10-02) |
 | 10 | 🟡 Orta | Dublikat yoxlaması natamamdır (update, unique index) | **bağlanıb** (2026-10-02) |
 | 11 | 🟡 Orta | Yetim şəkil faylları | açıq |
 | 12 | 🟡 Orta | dictionaryapi.dev fetch-də timeout yoxdur | açıq |
@@ -42,7 +42,7 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 1. Təhlükəsizlik: ~~#1~~, ~~#8~~
 2. İstifadəçinin gördüyü buglar: ~~#2~~, ~~#5~~, ~~#6~~, ~~#7~~
 3. Data bütövlüyü: ~~#3~~, ~~#4~~, ~~#10~~, ~~#27~~, ~~#26~~, ~~#28~~
-4. Səmərəlilik: #9, #12, #13
+4. Səmərəlilik: ~~#9~~, #12, #13
 5. İnfrastruktur: ~~backend testləri~~, frontend testləri, lint, `.gitignore`
 6. Refaktor: `aiService` təkrarları, ortaq tiplər
 
@@ -94,7 +94,8 @@ Həll: [changelog.md](changelog.md), "2026-10-02 — #8 + #7" qeydi. İlkin təs
 Əlaqəli problem: uzantıda boşluq və ya qeyri-latın simvol olsa, #1-dən sonrakı Zod regex-i sözü saxlayarkən 400 qaytarır.
 **Həll:** icazəli uzantılar (jpg/jpeg/png/webp/gif) və uzantını mimetype-dan törətmək, SVG olmadan.
 
-### 9. Açar yoxlaması bahadır
+### 9. Açar yoxlaması bahadır — **bağlanıb**
+Həll: `POST /api/ai/validate-key` → `AIService.validateKey()` (1 token, temperature 0). Modal artıq mətn generasiya etmir. Bax: changelog "#9". İlkin təsvir:
 `AITokenModal.tsx` → `handleSubmit` açarı yoxlamaq üçün `generateText` çağırır (~500 token). Bu, 15 dəqiqədə 30 sorğuluq AI limitindən də yer tutur.
 **Həll:** `/ai/validate-key` endpoint-i, `max_tokens: 1`.
 

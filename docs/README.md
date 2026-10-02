@@ -41,7 +41,7 @@ ona görə hər sessiyanın əvvəlində avtomatik oxunur. Ətraflı fayllar laz
 - `fix/ai-error-messages` (#2 + #5) 2026-10-02-də `main`-ə fast-forward ilə birləşdirildi (`30c2add` `fix:`, `abcfeb6` `docs:`). Push olunmayıb. Branch silinməyib.
 - `fix/word-modal-stale-responses` (#6) 2026-10-02-də `main`-ə fast-forward ilə birləşdirildi (`d1a5c42` `fix:`, `b17dab9` `docs:`). Push olunmayıb. Branch silinməyib.
 - `fix/whitespace-only-words` (#27) 2026-10-02-də `main`-ə fast-forward ilə birləşdirildi (`fcfdaf7` `fix:` + testlər, `7381174` `docs:`). Push olunmayıb. Branch silinməyib.
-- **Cari branch:** `fix/whitespace-only-ai-word` (#28). Commit olunub: `85fb0a3` (`fix:`, testlərlə birlikdə) və sənədlər (`docs:`). `main`-ə birləşdirilməyib, push olunmayıb.
+- `fix/whitespace-only-ai-word` (#28) 2026-10-02-də `main`-ə fast-forward ilə birləşdirildi (`85fb0a3` `fix:` + testlər, `ec7ba53` `docs:`). Push olunmayıb. Branch silinməyib.
 - Frontend testləri: istifadəçi 2026-10-02-də sonraya saxladı. Frontend dəyişiklikləri hələlik type-check və build ilə yoxlanılır, bu da changelog-da açıq yazılır.
   - Commit yalnız istifadəçi istəyəndə edilir. İstifadəçi ayrı-ayrı commit-lərə üstünlük verir: kod `fix:`/`feat:`, testlər `test:`, sənədlər `docs:`.
 

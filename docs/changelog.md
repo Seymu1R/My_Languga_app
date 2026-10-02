@@ -6,7 +6,7 @@
 
 ## 2026-10-02 — #28: AI endpoint-ləri yalnız boşluqdan ibarət sözü rədd edir
 
-Branch: `fix/whitespace-only-ai-word` (`main`-dən). Commit-lər: `85fb0a3` (`fix:` + testlər), sonra `docs:`.
+Branch: `fix/whitespace-only-ai-word` (`main`-dən). Commit-lər: `85fb0a3` (`fix:` + testlər), `ec7ba53` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi. Merge-dən sonra `main`-də frontend və backend type-check, həmçinin 340 backend testi keçdi. Push olunmayıb.
 
 **Problem:** `translateWordSchema`, `pronunciationSchema` və `exampleSentencesSchema`-da `word: z.string().min(1).max(200)` boşluqları silmirdi. Nəticədə `"   "` qəbul olunub AI-a göndərilirdi (#27 ilə eyni səbəb), kənar boşluqlar da sözlə birlikdə AI-a gedirdi.
 

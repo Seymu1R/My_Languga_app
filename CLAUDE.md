@@ -22,18 +22,21 @@ npm run dev                  # backend (:7001) + frontend (:5173) together
 npm run dev:backend          # ts-node-dev --respawn --transpile-only src/server.ts
 npm run dev:frontend         # vite
 
-cd backend && npm run type-check   # tsc --noEmit (dev server skips type checking)
+cd backend && npm test             # Vitest, all backend tests (~3s)
+cd backend && npx vitest run tests/dictionaryService.test.ts   # one file
+cd backend && npx vitest run -t "pagination"                  # tests whose name matches
+cd backend && npm run type-check   # tsc on src + tests (dev server and Vitest skip type checking)
 cd backend && npm run build        # tsc -> backend/dist
 cd frontend && npm run build       # tsc && vite build
 ```
 
-- There is no test framework and there are no tests. To verify a change, type-check both packages and exercise the API directly, for example `curl localhost:7001/api/health`. The health response reports whether storage is `mongodb` or `in-memory`.
+- Backend tests live in `backend/tests/`; the frontend has no tests. Run `npm test` and `npm run type-check` after backend changes. The health endpoint (`/api/health`) reports whether storage is `mongodb` or `in-memory`.
 - Linting is currently broken. Root `biome.json` uses the Biome 1.x config format (`organizeImports`), but Biome 2.4 is installed, so `npx biome check` exits with a configuration error. `frontend`'s `npm run lint` calls ESLint, but no ESLint config file exists.
 - `README.md` (Azerbaijani) was rewritten from the code on 2026-10-02. Keep it in sync when features, env vars, ports, or endpoints change.
 
 ## Configuration
 
-`backend/.env` is loaded by dotenv. It supports `MONGODB_URI`, `PORT` (default 7001), `FRONTEND_URL` (extra CORS origin), `LOG_LEVEL`, and `NODE_ENV`. `NODE_ENV=production` switches pino from pretty output to raw JSON and hides error messages in 500 responses. If you use `start.sh`, `MONGODB_URI` must point at port 27018. The frontend reads `VITE_API_ORIGIN` (default `http://localhost:7001`).
+`backend/.env` is loaded by `import 'dotenv/config'`, which must stay the first import in `server.ts` because `logger.ts` and `upload.ts` read env at import time. It supports `MONGODB_URI`, `PORT` (default 7001), `FRONTEND_URL` (extra CORS origin), `LOG_LEVEL`, `NODE_ENV`, and `UPLOAD_DIR` (default `backend/uploads`). `NODE_ENV=production` switches pino from pretty output to raw JSON and hides error messages in 500 responses. If you use `start.sh`, `MONGODB_URI` must point at port 27018. The frontend reads `VITE_API_ORIGIN` (default `http://localhost:7001`).
 
 ## Architecture
 
@@ -43,7 +46,7 @@ cd frontend && npm run build       # tsc && vite build
 - Services throw domain errors (`DuplicateWordError`, `WordNotFoundError`), and routes map them to 409/404.
 - Every response has the shape `{ success, ... , error? }`. These shapes are typed in `types/index.ts`.
 
-`server.ts` sets up helmet, CORS, rate limits (200 requests per 15 minutes on `/api`, plus a stricter 30 per 15 minutes on `/api/ai`), static `/uploads`, the health check, and graceful shutdown.
+`app.ts` exports `createApp()`, which builds the Express app without listening: helmet, CORS, rate limits (200 requests per 15 minutes on `/api`, plus a stricter 30 per 15 minutes on `/api/ai`), static `/uploads` (served from `uploadPath`), routes, the health check, and the error/404 handlers. `server.ts` loads env, calls `connectDB()`, listens, and handles graceful shutdown.
 
 ### Dual storage: MongoDB or in-memory
 If `MONGODB_URI` is missing or the connection fails, the server keeps running. Every `dictionaryService` method branches on `mongoose.connection.readyState === 1`, using either the `Word` model or a module-level `memoryDictionary` array. **Any change to dictionary behavior must be made in both branches.**
@@ -61,13 +64,32 @@ There are no server-side AI keys. The user's provider, key, and model are stored
 - **Adding a provider or model touches several places that must stay in sync:** `AI_PROVIDERS` in `backend/src/schemas/index.ts`, `AIServiceConfig` and the switch in `aiService.ts`, `AIProvider` in `backend/src/types` and `frontend/src/types`, and `DEFAULT_MODELS` in `frontend/src/services/api.ts`. The proficiency levels are duplicated the same way.
 
 ### Image uploads
-`POST /api/dictionary/upload-image` (multer, images only, 5MB limit) saves files to `backend/uploads/` and returns `/uploads/<file>`. Deleting a word also deletes its local image. On the frontend, `resolveAssetUrl` prefixes relative paths with `API_ORIGIN`.
+`POST /api/dictionary/upload-image` goes through the `uploadImage` middleware (`middleware/upload.ts`), which saves the file to `uploadPath` and returns `/uploads/<file>`. The middleware:
+- allows only JPEG/PNG/WebP/GIF (no SVG);
+- takes the file extension from the MIME type, never from the original filename;
+- checks the file's magic bytes after writing and deletes files that don't match;
+- maps multer errors to 400/413 instead of letting them reach the global 500 handler.
+
+`addWordSchema` accepts only `imageUrl` values of the form `/uploads/<file>`. Deleting a word also deletes its local image. On the frontend, `resolveAssetUrl` prefixes relative paths with `API_ORIGIN`.
 
 ### Frontend (`frontend/src`)
 React 18, react-router (`/`, `/dictionary`, `/learnings`), and Tailwind. Global state is one `useReducer` context (`AppContext`) whose reducer also writes to browser storage. All HTTP calls go through `services/api.ts`: an axios instance with a 30s timeout and an interceptor that turns every error into an `ApiError` with a user-facing message. Frontend and backend types are separate copies, not a shared package.
 
+### Tests (`backend/tests`)
+- **Tools:** Vitest 3 + supertest. Vitest 5 needs `@types/node` 22+, which the project does not use yet.
+- **Setup:** `tests/setup.ts` silences logs, unsets `MONGODB_URI`, and points `UPLOAD_DIR` at a temporary directory. Tests never touch the real database or `backend/uploads`.
+- **MongoDB:** `tests/helpers/mongo.ts` starts mongodb-memory-server (Node 20.19+), using the system `mongod` when one is installed. `dictionaryService.test.ts` runs the same suite against both storage modes with `describe.each`; keep that when changing dictionary behavior.
+- **Isolation:** AI SDKs (`openai`, `@google/generative-ai`), `AIService`, `aiContentService`, and `fetch` are mocked with `vi.mock`/`vi.stubGlobal`, so tests make no network calls. Use `createApp()` per test when rate-limit counters must start fresh.
+- **Known bugs:** they are pinned with `it.fails(...)`, and the test name includes the backlog ID (e.g. `(#4)`). When you fix one, the test starts failing as "unexpectedly passed"; remove `.fails` then.
+
 ## Conventions
 
+- **Backend tests are mandatory (user requirement).** Every backend function, route, or middleware you add or change gets tests in `backend/tests/` in the same change. This applies to private helpers too, tested through the exported function that uses them. The tests cover:
+  - the success path, error paths, and edge cases;
+  - for `dictionaryService`, both storage modes;
+  - for routes, supertest checks of 2xx, validation 400, domain 404/409, and 500.
+
+  For a bug fix, write the failing test first; if an `it.fails` test exists for it, remove `.fails`. Do not report backend work as done until `npm test` and `npm run type-check` pass, and list the added tests in the changelog entry.
 - Code comments are often written in Azerbaijani. Match the language of the comments around your edit.
 - Backend logging uses `logger` (pino) with a context object first: `logger.info({ word, provider }, 'msg')`. Do not use `console.*`.
-- Commits follow Conventional Commits (`feat:`, `perf:`, ...).
+- Commits follow Conventional Commits (`feat:`, `fix:`, `test:`, `docs:`, `perf:`, ...). Keep code, tests, and docs in separate commits.

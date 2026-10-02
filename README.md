@@ -11,7 +11,7 @@
     - Model bu məlumatlardan cümləyə uyğun mənanı seçir.
   - **IPA tələffüzü** göstərilir, məsələn `/əˈpɑːrt/`.
   - **3 nümunə cümlə** təklif olunur, biri istinad cümləsi kimi saxlanır.
-  - Sözə **şəkil** əlavə etmək olar (5MB-a qədər).
+  - Sözə **şəkil** əlavə etmək olar: JPEG, PNG, WebP və ya GIF, 5MB-a qədər.
 - **Şəxsi lüğət.** Bütün sözlər tərcümə, tələffüz, cümlə və şəkillə birlikdə saxlanır.
 - **Flashcard-lar (My Learnings).** Kartı sağa sürüşdürmək "bilirəm", sola sürüşdürmək "bilmirəm" deməkdir.
   - Bilinən söz 7 gündən sonra yenidən soruşulur. Hər növbəti "bilirəm" cavabında interval 4 dəfə artır, ən çox 30 günə qədər.
@@ -37,7 +37,7 @@
 
 ## Tələblər
 
-- Node.js **18+**: backend qlobal `fetch`-dən istifadə edir
+- Node.js **18+**: backend qlobal `fetch`-dən istifadə edir. Backend testləri üçün **20.19+** lazımdır (mongodb-memory-server).
 - npm
 - MongoDB: məcburi deyil, amma məlumatların saxlanması üçün tövsiyə olunur
 - Dəstəklənən providerlərdən birinin API açarı
@@ -62,6 +62,7 @@ PORT=7001                         # default: 7001
 FRONTEND_URL=http://localhost:5173  # CORS üçün əlavə origin
 LOG_LEVEL=info                    # pino log səviyyəsi
 NODE_ENV=development              # production → JSON loglar, xəta detalları gizlədilir
+UPLOAD_DIR=                       # şəkillərin qovluğu; default: backend/uploads
 ```
 
 Frontend API ünvanını `VITE_API_ORIGIN`-dən oxuyur, default dəyər `http://localhost:7001`-dir. Lazım olsa `frontend/.env`-də dəyişin.
@@ -133,7 +134,7 @@ Bütün cavablar `{ success, ..., error? }` formatındadır. Validasiya xətası
 | PUT | `/api/dictionary/words/:id` | Sözü yenilə |
 | PATCH | `/api/dictionary/words/:id/learning-status` | Flashcard nəticəsi: `{ known: boolean }` |
 | DELETE | `/api/dictionary/words/:id` | Sözü və onun şəklini sil |
-| POST | `/api/dictionary/upload-image` | Şəkil yüklə (`multipart`, sahə: `image`, ≤ 5MB) |
+| POST | `/api/dictionary/upload-image` | Şəkil yüklə (`multipart`, sahə: `image`; JPEG/PNG/WebP/GIF, ≤ 5MB; səhv tip → 400, böyük fayl → 413) |
 
 Rate limit: `/api` üçün 15 dəqiqədə 200 sorğu, `/api/ai` üçün əlavə olaraq 15 dəqiqədə 30 sorğu.
 
@@ -147,7 +148,9 @@ Rate limit: `/api` üçün 15 dəqiqədə 200 sorğu, `/api/ai` üçün əlavə 
 │   │   ├── models/       # Mongoose modelləri
 │   │   ├── schemas/      # Zod sxemləri
 │   │   ├── middleware/   # validate, upload
-│   │   └── server.ts     # Express qurulması, rate limit, health, graceful shutdown
+│   │   ├── app.ts        # Express qurulması (createApp): middleware, rate limit, route-lar, health
+│   │   └── server.ts     # .env, DB qoşulması, listen, graceful shutdown
+│   ├── tests/            # Vitest testləri
 │   └── uploads/          # yüklənmiş şəkillər
 ├── frontend/src/
 │   ├── pages/            # Home, Dictionary, Learnings
@@ -165,18 +168,32 @@ Rate limit: `/api` üçün 15 dəqiqədə 200 sorğu, `/api/ai` üçün əlavə 
   - [backlog.md](docs/backlog.md): məlum problemlər və onların statusu;
   - [changelog.md](docs/changelog.md): edilən dəyişikliklər;
   - [architecture/](docs/architecture/): axınların izahı.
+- **Testlər** (backend, Vitest):
+  ```bash
+  cd backend
+  npm test                                   # bütün testlər
+  npx vitest run tests/routes.ai.test.ts     # bir fayl
+  npx vitest run -t "pagination"             # adına görə
+  npm run test:watch                         # dəyişikliklərdə avtomatik
+  ```
+  Testlər real API-lərə, real verilənlər bazasına və `backend/uploads`-a toxunmur:
+  - AI SDK-lar mock olunur;
+  - MongoDB testləri müvəqqəti server qaldırır (sistemdə `mongod` varsa onu işlədir);
+  - şəkillər müvəqqəti qovluğa yazılır.
+
+  Məlum, hələ düzəldilməmiş bug-lar `it.fails` ilə qeyd olunub; testin adında backlog ID-si var.
 - **Tip yoxlaması:**
   ```bash
-  cd backend && npm run type-check
+  cd backend && npm run type-check   # src + tests
   cd frontend && npx tsc --noEmit
   ```
 - **Hazırkı məhdudiyyətlər:**
-  - avtomatlaşdırılmış testlər yoxdur;
+  - frontend üçün avtomatik testlər yoxdur;
   - lint konfiqurasiyası sınıqdır: `biome.json` Biome 2.x ilə uyğun deyil, frontend-də ESLint config yoxdur;
   - autentifikasiya yoxdur, tətbiq lokal, tək istifadəçi üçün nəzərdə tutulub.
 
   Ətraflı: [docs/backlog.md](docs/backlog.md).
-- **Commit mesajları** [Conventional Commits](https://www.conventionalcommits.org/) formatındadır: `feat:`, `fix:`, `perf:`, ...
+- **Commit mesajları** [Conventional Commits](https://www.conventionalcommits.org/) formatındadır: `feat:`, `fix:`, `test:`, `docs:`, `perf:`, ...
 
 ## Lisenziya
 

@@ -4,6 +4,116 @@
 
 ---
 
+## 2026-10-02 — İş qaydası: hər backend funksiyası testlə birlikdə yazılır
+
+İstifadəçinin tələbi: bundan sonra yazılan və ya dəyişdirilən **hər backend funksiyası** üçün test yazılmalıdır, eyni dəyişiklikdə.
+
+Qayda `CLAUDE.md`-yə (Conventions → "Backend tests are mandatory") və `docs/README.md`-yə (İş qaydaları, 6-cı bənd) yazıldı. Qısaca:
+- **Yeni və ya dəyişən funksiya:** `backend/tests/`-də testi olmalıdır. Uğurlu yol, xəta yolları və kənar hallar yoxlanılır.
+- **`dictionaryService`:** testlər hər iki saxlama rejimində (`describe.each`) işləməlidir.
+- **Yeni route:** supertest ilə yoxlanılır: uğurlu cavab, validasiya (400), domain xətaları (404/409) və 500.
+- **Bug fix:** əvvəlcə bug-ı göstərən test yazılır. `it.fails` testi varsa, `.fails` silinir.
+- **"Hazırdır" deməzdən əvvəl:** `npm test` və `npm run type-check` keçməlidir.
+
+## 2026-10-02 — Git: `fix/upload-path-traversal` branch-ı
+
+- `main`-də deyil, yeni `fix/upload-path-traversal` branch-ında işlənir.
+- Commit-lər:
+  - `96bcda6` — `fix:` #1;
+  - `8528332` — `docs:` (`CLAUDE.md`, `docs/`, README). Bu commit-ə `docs/README.md` vəziyyət yeniləməsi `--amend` ilə əlavə olundu; commit push olunmamışdı.
+- Sonrakı commit-lər (istifadəçinin istəyi ilə ayrı-ayrı):
+  - `86b0d14` — `fix:` #8 + #7 (`upload.ts`, `routes/dictionary.ts`, `WordDefinitionModal.tsx`). `upload.ts`-dəki `UPLOAD_DIR` dəyişikliyi bu commit-ə daxil edilmədi;
+  - `fbb40e1` — `refactor:` `app.ts`, `dotenv/config`, `UPLOAD_DIR`, `loggerOptions` (#21, #25);
+  - `cc62e8e` — `test:` testlər, Vitest konfiqurasiyası, `package.json`;
+  - `docs:` — bu sənəd yeniləmələri.
+- Push edilməyib, `main`-ə birləşdirilməyib.
+- `.idea/` istifadəçinindir, commit-lərə daxil edilmir.
+
+## 2026-10-02 — #19 (qismən): backend üçün avtomatik testlər; #21 və #25 bağlandı
+
+**Nə:** backend-in bütün modulları üçün 12 test faylı, cəmi **317 test**. İşə salma: `cd backend && npm test` (~2–3 san).
+
+**Alətlər:**
+- Vitest 3. Vitest 5 Node 22.12+ və `@types/node` 22+ tələb edir, layihə isə `@types/node` 20 istifadə edir, ona görə 3.x seçildi.
+- HTTP testləri üçün supertest.
+- mongodb-memory-server 11 (Node 20.19+ tələb edir). Helper sistemdəki `mongod`-u (8.0) tapır və onu işlədir, binary yüklənmir. Sistemdə `mongod` yoxdursa, ilk işə salmada binary avtomatik yüklənir.
+
+| Fayl | Nəyi yoxlayır |
+|---|---|
+| `schemas.test.ts` | Bütün Zod sxemləri: limitlər, enum-lar, trim, naməlum sahələrin atılması, `imageUrl` regex-i (#1) |
+| `validate.test.ts` | `validate` middleware-i: 400 formatı, `details`, `req.body`-nin əvəzlənməsi |
+| `Word.model.test.ts` | Default-lar (UUID, SRS), trim, `toJSON`, validasiya, index-lər |
+| `logger.test.ts` | `apiToken`/`aiToken`/`apiKey` redaction-ı |
+| `database.test.ts` | `connectDB`: URI yoxdur / uğurlu / uğursuz |
+| `dictionaryService.test.ts` | Bütün funksiyalar **həm in-memory, həm MongoDB rejimində eyni testlərlə**: SRS (7 → 28 → 30), learning queue, səhifələmə, dublikatlar, şəkil silmə, #1 regressiyası |
+| `aiService.test.ts` | 5 provider (SDK-lar mock olunur): model alias-ları, açar validasiyası, 401/404/429 mesajları, ümumi xəta təsnifatı |
+| `aiContentService.test.ts` | Mətn ölçüləri, tərcümə promptunun qatları, cavabın təmizlənməsi, cümlələrin seçilməsi (`AIService` və `fetch` mock olunur) |
+| `aiContentService.rag.test.ts` | RAG layer 1: MongoDB-dəki saxlanmış tərcümələr |
+| `routes.dictionary.test.ts` | Bütün lüğət endpoint-ləri və status kodları; şəkil yükləmə (#7, #8, #21); "yüklə → saxla → sil" axını |
+| `routes.ai.test.ts` | Bütün AI endpoint-ləri (servis mock olunur), 400/502/500, AI rate limit (30) |
+| `app.test.ts` | Health (iki rejim), 404, error handler, helmet, CORS, ümumi rate limit (200) |
+
+**Test edilə bilmək üçün kodda edilən dəyişikliklər:**
+- `src/app.ts` (yeni): Express tətbiqi `createApp()` ilə qurulur, port açılmır. `server.ts` yalnız `.env`-i yükləyir, DB-yə qoşulur, `listen` edir və shutdown-u idarə edir.
+- `server.ts`-in ilk sətri `import 'dotenv/config'` oldu. Bu, **#25**-i düzəltdi: əvvəl logger `.env` yüklənməmişdən əvvəl yaradılırdı.
+- `upload.ts`: `uploadPath` `UPLOAD_DIR` env dəyişəni ilə dəyişdirilə bilir (testlər müvəqqəti qovluq verir).
+- `app.ts`: `express.static(uploadPath)`. Bu, **#21**-i bağladı.
+- `logger.ts`: `loggerOptions` export olunur (redaction testi üçün).
+- `tsconfig.test.json`: `npm run type-check` indi `src` ilə birlikdə `tests`-i də yoxlayır. Build (`tsc`) testləri `dist`-ə daxil etmir.
+
+**Testlərin tapdığı və `it.fails` ilə qeyd olunan bug-lar:**
+- #4 və #10: hər iki saxlama rejimində təsdiqləndi.
+- Yeni **#26**: səhv JSON və >10kb body 400/413 əvəzinə 500 qaytarır.
+- Yeni **#27**: yalnız boşluqdan ibarət söz validasiyadan keçir. Mongo rejimində bu 500 ilə nəticələnir (mongoose `required`).
+
+Bug düzələndə uyğun test "gözlənilmədən keçdi" kimi düşür, onda `.fails` silinməlidir.
+
+**Testlərin həqiqətən bug tutduğunun yoxlanması (mutation check):** #1 (`deleteLocalImage`-dəki yol yoxlaması) və #8 (magic bytes) müvəqqəti söndürüldü. Nəticədə 4 test düşdü, sonra kod bərpa olundu. #26 testlərinin həqiqətən 500 aldığı ayrıca yoxlanıldı.
+
+**Digər yoxlamalar:**
+- `npm run type-check` (src + tests) və `npm run build` keçdi.
+- Real server (`server.ts`) işə düşür, `/uploads` faylları verir və SIGTERM-də düzgün dayanır (exit 0).
+
+**Qalanlar (#19):** frontend testləri yoxdur, lint hələ sınıqdır.
+
+## 2026-10-02 — #8 + #7: yüklənən şəklin tipi yoxlanılır, multer xətaları düzgün status qaytarır
+
+**Problem (düzəlişdən əvvəl real serverdə təkrarlandı):**
+- #8: `image/png` kimi göndərilmiş HTML faylı `.html` uzantısı ilə saxlanılırdı (200), SVG də qəbul olunurdu (200). Uzantı müştərinin fayl adından, tip isə müştərinin bildirdiyi `mimetype`-dan götürülürdü. Nəticədə skriptli fayl `/uploads`-dan API origin-i altında açıla bilərdi.
+- #7: səhv tip, 5MB-dan böyük fayl və səhv sahə adı global error handler-ə düşürdü və 500 "Something went wrong!" qaytarırdı.
+- #1-dən qalan problem: adı `şəkil.jp g` olan fayl `.jp g` uzantısı ilə saxlanılırdı, sonra söz saxlananda Zod regex-i 400 qaytarırdı.
+
+**Dəyişikliklər:**
+- `backend/src/middleware/upload.ts` yenidən yazıldı:
+  - `ALLOWED_IMAGE_TYPES`: yalnız `image/jpeg|png|webp|gif`. Uzantı bu xəritədən götürülür, `originalname`-dən yox. SVG bilərəkdən yoxdur.
+  - Magic bytes yoxlaması (`hasImageSignature`): multer faylı yazdıqdan sonra ilk 12 bayt oxunur və bildirilən tiplə müqayisə olunur. Uyğun gəlmirsə fayl silinir, 400 qaytarılır və `logger.warn` yazılır.
+  - Köhnə `upload` export-u yerinə `uploadImage` middleware-i gəldi:
+    - multer xətaları burada status koduna çevrilir: `LIMIT_FILE_SIZE` → 413, digər `MulterError`-lar (məsələn, `Unexpected field`) → 400, `UnsupportedImageTypeError` → 400;
+    - fayl göndərilməyibsə route-un öz 400 cavabı qalır.
+- `backend/src/routes/dictionary.ts`: `upload.single('image')` → `uploadImage`.
+- `frontend/src/components/WordDefinitionModal.tsx`:
+  - `accept` yalnız 4 icazəli tipi göstərir;
+  - seçim zamanı tip yoxlanılır;
+  - yükləmə xətasında serverin mesajı (`ApiError.message`) göstərilir, əvvəl həmişə ümumi mətn çıxırdı.
+
+**Yoxlama:** backend və frontend `tsc --noEmit` keçdi. API testi (7099 portunda, in-memory, `upload-test.sh`):
+
+| Hal | Əvvəl | Sonra |
+|---|---|---|
+| Real PNG / JPEG | 200 | 200 (`.png` / `.jpg`) |
+| Adı `şəkil.jp g` olan JPEG, sonra həmin `imageUrl` ilə söz saxlamaq | 200 `.jp g`, sonra **400** | 200 `.jpg`, sonra **201** |
+| HTML, `image/png` kimi göstərilib | **200, `.html` saxlanıldı** | 400, fayl silindi, log yazıldı |
+| JPEG məzmun, `image/png` kimi göstərilib | — | 400 |
+| SVG | **200, `.svg` saxlanıldı** | 400 |
+| `text/html` | 500 | 400 |
+| 6MB JPEG | 500 | 413, diskdə yarımçıq fayl qalmadı |
+| Səhv sahə adı | 500 | 400 |
+| GIF / WebP | — | 200 |
+
+Testlərin yaratdığı fayllar silindi, `backend/uploads/` ilkin vəziyyətindədir.
+
+**Yoxlanılmayanlar:** frontend dəyişikliyi brauzerdə sınanmadı, yalnız type-check edildi. Köhnə, artıq yüklənmiş faylların məzmunu yoxlanılmadı. İkisi də (`.jpg`, `.png`) həqiqi şəkildir.
+
 ## 2026-10-02 — #24 (qismən): kök `README.md` yenidən yazıldı
 
 - Köhnə README-də səhv məlumatlar var idi: backend portu 3001 yazılmışdı (əslində 7001), provider siyahısında Claude və Cohere var idi (əslində OpenAI/Grok/Gemini/DeepSeek/Mistral).
@@ -48,7 +158,7 @@
   - `../`, `/uploads/..`, `/uploads/.hidden`, `/uploads/a/b.jpg` və `http://...` → 400;
   - `/uploads/1773770091190-854503861.jpg` → 201.
 
-**Qalan məsələ:** uzantısında boşluq və ya qeyri-latın simvol olan fayl yüklənir, amma söz saxlananda 400 alınır. Bu, #8 ilə birlikdə həll olunacaq.
+**Qalan məsələ:** uzantısında boşluq və ya qeyri-latın simvol olan fayl yüklənir, amma söz saxlananda 400 alınır. → #8 ilə həll olundu: uzantı artıq tipdən götürülür.
 
 **Mühit:** backend-də `pino`, `pino-pretty`, `zod` və `express-rate-limit` quraşdırılmamışdı, backend işə düşmürdü. `cd backend && npm install` edildi, `package-lock.json` dəyişmədi.
 
@@ -61,6 +171,8 @@
 
 ## Yoxlama üçün faydalı üsullar
 
+- **Avtomatik testlər:** `cd backend && npm test`. Tək fayl: `npx vitest run tests/<fayl>.test.ts`. Ada görə filtr: `npx vitest run -t "pagination"`. Aşağıdakı əl üsulları yalnız avtomatik testlərin əhatə etmədiyi hallar üçündür.
+
 - **Servisi route-suz test etmək:** scratchpad-də `.ts` skript yazıb backend-in tsconfig-i ilə işə salmaq:
   ```bash
   cd backend && MONGODB_URI= LOG_LEVEL=silent npx ts-node --transpile-only --project tsconfig.json <skript.ts>
@@ -68,7 +180,12 @@
   `--project` vacibdir: skript `backend/`-dən kənarda olanda ts-node səhv tsconfig götürür.
 - **API-ni real bazaya toxunmadan test etmək:**
   ```bash
-  MONGODB_URI= PORT=7099 npx ts-node --transpile-only src/server.ts
+  cd backend && MONGODB_URI= PORT=7099 LOG_LEVEL=warn node -r ts-node/register/transpile-only src/server.ts &
+  PID=$!   # ... testlər ...
+  kill $PID
   ```
-  `MONGODB_URI=` (boş) verildikdə dotenv onu `.env`-dən üzərinə yazmır, server in-memory rejimdə işləyir.
-- **Test serverini dayandırmaq:** `pkill -f "src/server.ts"` öz shell əmrinə də uyğun gələ bilər (exit 144). PID ilə dayandırmaq daha etibarlıdır.
+  - `MONGODB_URI=` (boş) verildikdə dotenv onu `.env`-dən üzərinə yazmır, server in-memory rejimdə işləyir.
+  - Serveri `npx ts-node` ilə **işə salma**: `kill $!` yalnız `npx`-i dayandırır, node prosesi portda işləməyə davam edir.
+  - `pkill -f "src/server.ts"` isə öz shell əmrinə də uyğun gəlir (exit 144).
+  - Qalıq proses olarsa: `ss -ltnp | grep 7099` ilə PID-i tapıb onu dayandır.
+- **Yükləmə testləri:** #8/#7 üçün istifadə olunan əl skripti (`upload-test.sh`, scratchpad-də idi) artıq lazım deyil. Bütün halları `tests/routes.dictionary.test.ts` avtomatik yoxlayır.

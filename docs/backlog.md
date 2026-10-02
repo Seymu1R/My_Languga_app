@@ -2,6 +2,7 @@
 
 Mənbə: 2026-10-02 tarixli tam kod analizi. ID-lər sabitdir, istifadəçi onlara nömrə ilə istinad edir.
 Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı ilə verilir, çünki sətir nömrələri dəyişir.
+**Test:** bəzi açıq bug-lar üçün `backend/tests/`-də `it.fails(...)` testi var (adında backlog ID-si yazılıb). Bug düzələndə həmin test "gözlənilmədən keçdi" deyə düşəcək; onda `.fails` silinməlidir.
 
 ## Xülasə
 
@@ -10,13 +11,13 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 | 1 | 🔴 Kritik | Path traversal ilə ixtiyari faylın silinməsi | **bağlanıb** (2026-10-02) |
 | 2 | 🔴 Kritik | AI xəta mesajları istifadəçiyə çatmır ("Network error") | açıq |
 | 3 | 🔴 Kritik | MongoDB qoşulması gözlənilmir, yazılar in-memory-yə düşür | açıq |
-| 4 | 🟠 Yüksək | SRS: interval vaxtı çatmadan böyüyür | açıq |
+| 4 | 🟠 Yüksək | SRS: interval vaxtı çatmadan böyüyür | açıq (`it.fails` testi var) |
 | 5 | 🟠 Yüksək | "Translation not available" tərcümə kimi saxlanır | açıq |
 | 6 | 🟠 Yüksək | Modalda race condition: köhnə AI cavabları yeni sözə yazılır | açıq |
-| 7 | 🟠 Yüksək | Multer xətaları 500 qaytarır (400/413 əvəzinə) | açıq |
-| 8 | 🟠 Yüksək | Yüklənən faylın tipi əslində yoxlanmır (html/svg) | açıq |
+| 7 | 🟠 Yüksək | Multer xətaları 500 qaytarır (400/413 əvəzinə) | **bağlanıb** (2026-10-02) |
+| 8 | 🟠 Yüksək | Yüklənən faylın tipi əslində yoxlanmır (html/svg) | **bağlanıb** (2026-10-02) |
 | 9 | 🟠 Yüksək | Açar yoxlaması tam mətn generasiya edir (pul, limit) | açıq |
-| 10 | 🟡 Orta | Dublikat yoxlaması natamamdır (update, unique index) | açıq |
+| 10 | 🟡 Orta | Dublikat yoxlaması natamamdır (update, unique index) | açıq (`it.fails` testi var) |
 | 11 | 🟡 Orta | Yetim şəkil faylları | açıq |
 | 12 | 🟡 Orta | dictionaryapi.dev fetch-də timeout yoxdur | açıq |
 | 13 | 🟡 Orta | RAG layer 1 regex index işlətmir (full scan) | açıq |
@@ -25,20 +26,23 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 | 16 | 🟡 Orta | Bir ümumi `isLoading` hər şeyə təsir edir | açıq |
 | 17 | 🟡 Orta | Zod sxemləri handler-lərlə uyğun deyil | açıq |
 | 18 | 🟢 Aşağı | Autentifikasiya yoxdur | açıq |
-| 19 | 🟢 Aşağı | Test yoxdur, lint sınıqdır | açıq |
+| 19 | 🟢 Aşağı | ~~Test yoxdur~~, lint sınıqdır | qismən (backend testləri 2026-10-02) |
 | 20 | 🟢 Aşağı | `aiService.ts` təkrarları, siyahılar 5 yerdə | açıq |
-| 21 | 🟢 Aşağı | uploads yolu iki cür hesablanır (cwd vs `__dirname`) | açıq |
+| 21 | 🟢 Aşağı | uploads yolu iki cür hesablanır (cwd vs `__dirname`) | **bağlanıb** (2026-10-02) |
 | 22 | 🟢 Aşağı | uploads git-də, `.gitignore` natamam, `@types/mongoose` artıq | açıq |
 | 23 | 🟢 Aşağı | `start.sh` problemləri | açıq |
 | 24 | 🟢 Aşağı | ~~README köhnədir~~, shuffle qeyri-bərabərdir | qismən (README 2026-10-02) |
+| 25 | 🟡 Orta | Logger `.env`-dən əvvəl yaradılırdı (`LOG_LEVEL`/`NODE_ENV` nəzərə alınmırdı) | **bağlanıb** (2026-10-02) |
+| 26 | 🟡 Orta | Səhv JSON və >10kb body 400/413 əvəzinə 500 qaytarır | açıq (`it.fails` testi var) |
+| 27 | 🟡 Orta | Yalnız boşluqdan ibarət `english`/`translation` validasiyadan keçir | açıq (`it.fails` testi var) |
 
 ## Təklif olunan iş sırası
 
-1. Təhlükəsizlik: ~~#1~~, #8
-2. İstifadəçinin gördüyü buglar: #2, #5, #6 (+ #7 #8 ilə birlikdə)
-3. Data bütövlüyü: #3, #4, #10
+1. Təhlükəsizlik: ~~#1~~, ~~#8~~
+2. İstifadəçinin gördüyü buglar: #2, #5, #6, ~~#7~~
+3. Data bütövlüyü: #3, #4, #10, #27, #26
 4. Səmərəlilik: #9, #12, #13
-5. İnfrastruktur: lint, `dictionaryService` və SRS üçün testlər (Vitest), `.gitignore`
+5. İnfrastruktur: ~~backend testləri~~, frontend testləri, lint, `.gitignore`
 6. Refaktor: `aiService` təkrarları, ortaq tiplər
 
 ---
@@ -73,11 +77,13 @@ Backend AI xətasında 400/502 qaytarır, axios interceptor (`frontend/src/servi
 `WordDefinitionModal.tsx`-dəki fetch effekti 3 AI sorğusu göndərir, amma onları ləğv etmir.
 **Həll:** `AbortController` və ya `cancelled` flag.
 
-### 7. Multer xətaları → 500
+### 7. Multer xətaları → 500 — **bağlanıb**
+Həll: [changelog.md](changelog.md), "2026-10-02 — #8 + #7" qeydi. İlkin təsvir:
 `fileFilter` xətası və `LIMIT_FILE_SIZE` global error handler-ə (`server.ts`) düşür.
 **Həll:** upload route-unda multer xətalarını tutub 400/413 qaytarmaq.
 
-### 8. Fayl tipi yoxlanmır
+### 8. Fayl tipi yoxlanmır — **bağlanıb**
+Həll: [changelog.md](changelog.md), "2026-10-02 — #8 + #7" qeydi. İlkin təsvir:
 `upload.ts`: `mimetype`-ı müştəri bildirir, uzantı `path.extname(originalname)`-dən gəlir. `.html` və skriptli `.svg` faylları `/uploads`-dan API origin-i altında yayımlana bilər.
 Əlaqəli problem: uzantıda boşluq və ya qeyri-latın simvol olsa, #1-dən sonrakı Zod regex-i sözü saxlayarkən 400 qaytarır.
 **Həll:** icazəli uzantılar (jpg/jpeg/png/webp/gif) və uzantını mimetype-dan törətmək, SVG olmadan.
@@ -126,8 +132,8 @@ Söz saxlanarkən "Generate Text" düyməsi "Generating Text..." göstərir (`Ap
 ### 18. Autentifikasiya yoxdur
 API-yə çata bilən hər kəs bütün lüğəti silə və fayl yükləyə bilər. Lokal istifadə üçün qəbul ediləndir.
 
-### 19. Test və lint
-- Test framework-u yoxdur.
+### 19. Test və lint — qismən
+- ~~Test framework-u yoxdur.~~ Backend: Vitest + supertest + mongodb-memory-server, 317 test (bax: changelog 2026-10-02). Frontend testləri hələ yoxdur.
 - `biome.json` 1.x formatındadır, quraşdırılmış Biome isə 2.4-dür, ona görə `npx biome check` konfiqurasiya xətası verir.
 - Frontend-də ESLint config faylı yoxdur.
 
@@ -140,9 +146,8 @@ Provider siyahısı bu yerlərdə təkrarlanır:
 - frontend tipləri
 - `frontend/src/services/api.ts` → `DEFAULT_MODELS`
 
-### 21. uploads yolu
-`server.ts`-də `express.static('uploads')` cwd-yə görədir, `upload.ts`-dəki `uploadPath` isə `__dirname`-ə görə.
-**Həll:** `express.static(uploadPath)` (`uploadPath` artıq export olunur).
+### 21. uploads yolu — bağlanıb
+~~`server.ts`-də `express.static('uploads')` cwd-yə görə idi, `uploadPath` isə `__dirname`-ə görə.~~ İndi `app.ts` `express.static(uploadPath)` istifadə edir (test: `serves the uploaded file from /uploads (#21)`).
 
 ### 22. Repo səliqəsi
 - `backend/uploads/*.jpg/png` commit olunub.
@@ -156,3 +161,18 @@ Provider siyahısı bu yerlərdə təkrarlanır:
 ### 24. Digər — qismən
 - ~~README port 3001 yazır və provider siyahısı səhvdir.~~ README 2026-10-02-də yenidən yazıldı (bax: changelog).
 - `LearningsPage` → `initQueue` `sort(() => Math.random() - 0.5)` ilə qarışdırır. Bu, qeyri-bərabər paylanma verir; Fisher–Yates istifadə etmək lazımdır.
+
+### 25. Logger `.env`-dən əvvəl yaradılırdı — bağlanıb
+Köhnə `server.ts`-də `dotenv.config()` bütün import-lardan **sonra** çağırılırdı, `logger.ts` isə `LOG_LEVEL` və `NODE_ENV`-i import zamanı oxuyurdu. Nəticədə `.env`-dəki bu dəyərlər logger-ə təsir etmirdi.
+Həll: `server.ts`-in ilk sətri `import 'dotenv/config'` oldu.
+Davranış dəyişikliyi: `.env`-də `LOG_LEVEL` və ya `NODE_ENV=production` varsa, logger artıq onlara əməl edir.
+
+### 26. Body-parser xətaları → 500
+Səhv JSON (`{"english":`) və 10kb-dan böyük body `express.json` tərəfindən 400/413 statuslu xəta kimi atılır. `app.ts`-dəki global error handler isə həmişə 500 qaytarır.
+**Həll:** handler-də `err.status`/`err.type`-a baxmaq (`entity.parse.failed` → 400, `entity.too.large` → 413).
+Testlər: `app.test.ts` → `responds 400 for malformed JSON (#26)`, `responds 413 for a JSON body over 10kb (#26)` (`it.fails`).
+
+### 27. Boşluqdan ibarət söz validasiyadan keçir
+`addWordSchema`: `z.string().min(1).max(300).transform(trim)` — `min(1)` trim-dən **əvvəl** yoxlanılır. `"   "` keçir və boş sətrə çevrilir. In-memory rejimdə boş söz saxlanılır, Mongo rejimində isə mongoose `required` xətası 500 verir.
+**Həll:** `z.string().trim().min(1).max(300)`. `translation` üçün də eyni.
+Test: `schemas.test.ts` → `rejects whitespace-only english (#27)` (`it.fails`).

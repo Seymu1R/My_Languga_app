@@ -4,6 +4,36 @@
 
 ---
 
+## 2026-10-02 — #17: AI sxemləri route-ların həqiqi tələblərinə uyğunlaşdırıldı
+
+Branch: `fix/ai-schemas` (`fix/loading-state`-dən açılıb; #15 → #16 → #17 ardıcıl fast-forward ilə birləşə bilər). Commit-lər: `c1ecf2c` (`fix:` + testlər), ardınca `docs:`. Hələ `main`-ə birləşdirilməyib.
+
+**Problem** (`backend/src/schemas/index.ts`):
+1. `translate-word`, `pronunciation`, `example-sentences` sxemlərində `aiToken` və `provider` optional idi, amma hər üç handler onları ayrıca `if` ilə tələb edirdi. Qayda iki yerdə idi, xəta formatı da fərqli idi (`details` yox idi). Tiplər (`aiToken?`) handler-in həqiqətən nə aldığını göstərmirdi.
+2. `translate-word`-də `languageCode` məcburi idi (`min(2).max(10)`), amma heç yerdə işlənmirdi: route yalnız loglayırdı, servis istifadə etmirdi.
+3. `example-sentences`-də `level` sərbəst mətn idi, uzunluq limiti də yox idi. Servis onu prompta birbaşa yazır (`Level: ${level}.`), yəni istənilən mətn prompta düşə bilərdi.
+
+**Həll:**
+- `schemas/index.ts`:
+  - ortaq `aiCredentials` (`aiToken: z.string().min(1, 'aiToken is required')`, `provider: z.enum(AI_PROVIDERS)`, istəyə bağlı `model`), üç sxemdə spread olunur;
+  - `translateWordSchema`-dan `languageCode` silindi. Zod naməlum sahələri atır, ona görə köhnə klient onu göndərsə də sorğu keçir;
+  - `exampleSentencesSchema.level` → `z.enum(PROFICIENCY_LEVELS).optional()`.
+- `routes/ai.ts`: üç handler-dən `if (!aiToken || !provider)` blokları silindi. Çatışmayan sahə indi digər validasiya xətaları kimi 400 + `details` qaytarır (məs. `aiToken: ...`). `languageCode` artıq loglanmır.
+- `types/index.ts`: `TranslateWordBody`, `PronunciationBody`, `ExampleSentencesBody` — `aiToken`/`provider` məcburi, `languageCode` yoxdur, `level?: ProficiencyLevel`.
+- Frontend: `services/api.ts` → `aiService.translateWord` `languageCode` parametrini artıq qəbul etmir və göndərmir, `WordDefinitionModal` uyğun dəyişdi (effekt asılılıqlarından `nativeLanguageCode` çıxdı; state dil seçicisi üçün qalır). Frontend `aiToken`/`provider` olmadan bu endpoint-ləri onsuz da çağırmırdı, `level` də həmişə 5 səviyyədən biridir.
+- `CLAUDE.md`: məcburi sahələr sxemdə olmalıdır, handler-də yox.
+
+**Testlər** (əvvəl yazıldı; köhnə kodda 25 test düşdü):
+- `schemas.test.ts`:
+  - hər üç sxem üçün (`AI credentials (#17)`): token, provider, istəyə bağlı model qəbul olunur; olmayan və boş `aiToken`, olmayan və naməlum `provider` rədd edilir, xəta yalnız həmin sahədədir;
+  - `translateWordSchema`: `languageCode` tələb olunmur və nəticədən atılır;
+  - `exampleSentencesSchema.level`: 5 səviyyənin hamısı qəbul, olmaması qəbul; `Beginner`, prompt mətni, kiçik hərflə `advanced` rədd edilir;
+  - #28 testləri yeni məcburi sahələrlə yeniləndi.
+- `routes.ai.test.ts`: tokensiz/provider-siz sorğular 400 `Validation failed` + `details`, servis çağırılmır; `languageCode`-suz və səhv `languageCode` ilə tərcümə 200; naməlum `level` 400; `level`-siz sorğu servisə `undefined` ötürür.
+- Nəticə: 483 test (461 + 22), `npm run type-check` təmiz. Frontend type-check və `npm run build` keçdi.
+
+---
+
 ## 2026-10-02 — #16: qlobal yükləmə vəziyyəti yalnız mətn generasiyası üçündür
 
 Branch: `fix/loading-state` (`fix/learnings-page`-dən açılıb, çünki #15 hələ `main`-də deyil; hər ikisi ardıcıl fast-forward ilə birləşə bilər). Commit-lər: `7d49a1e` (`fix:`), ardınca `docs:`. Hələ `main`-ə birləşdirilməyib.

@@ -42,7 +42,7 @@ cd frontend && npm run build       # tsc && vite build
 
 ### Backend layering (`backend/src`)
 `routes/` → `services/` → `models/`. Routes are thin:
-- Request bodies are validated with `validate(zodSchema)` from `middleware/validate.ts`, using schemas in `schemas/index.ts`. The middleware replaces `req.body` with the parsed, trimmed data. On failure it returns 400 with `details[]`.
+- Request bodies are validated with `validate(zodSchema)` from `middleware/validate.ts`, using schemas in `schemas/index.ts`. Required fields belong in the schema, not in a handler `if` (the word-based AI schemas share `aiCredentials`, so `aiToken`/`provider` are required there). The middleware replaces `req.body` with the parsed, trimmed data. On failure it returns 400 with `details[]`.
 - Services throw domain errors (`DuplicateWordError`, `WordNotFoundError`), and routes map them to 409/404.
 - Every response has the shape `{ success, ... , error? }`. These shapes are typed in `types/index.ts`.
 

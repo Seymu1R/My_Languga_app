@@ -24,7 +24,7 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 | 14 | 🟡 Orta | `cleanWord` apostrof/tireni silir, əyri dırnaqları saxlayır | **bağlanıb** (2026-10-02, testsiz) |
 | 15 | 🟡 Orta | Flashcard status xətası udulur; "Review Again" dublikatlarla | **bağlanıb** (2026-10-02, testsiz) |
 | 16 | 🟡 Orta | Bir ümumi `isLoading` hər şeyə təsir edir | **bağlanıb** (2026-10-02, testsiz) |
-| 17 | 🟡 Orta | Zod sxemləri handler-lərlə uyğun deyil | açıq |
+| 17 | 🟡 Orta | Zod sxemləri handler-lərlə uyğun deyil | **bağlanıb** (2026-10-02) |
 | 18 | 🟢 Aşağı | Autentifikasiya yoxdur | açıq |
 | 19 | 🟢 Aşağı | ~~Test yoxdur~~, lint sınıqdır | qismən (backend testləri 2026-10-02) |
 | 20 | 🟢 Aşağı | `aiService.ts` təkrarları, siyahılar 5 yerdə | açıq |
@@ -144,7 +144,8 @@ Həll: xəta kartın üstündə göstərilir və kart yerində qalır; "Review A
 Həll: qlobal sahə `isGeneratingText` adlandırıldı və yalnız mətn generasiyası üçündür; söz saxlanması onu artıq dəyişmir (modalın `isSubmitting`-i var). Bax: changelog "#16". İlkin təsvir:
 Söz saxlanarkən "Generate Text" düyməsi "Generating Text..." göstərir (`AppContext` → `isLoading`).
 
-### 17. Sxem uyğunsuzluqları
+### 17. Sxem uyğunsuzluqları — **bağlanıb**
+Həll: ortaq `aiCredentials` (`aiToken`/`provider` məcburi), `languageCode` silindi, `level` → `z.enum(PROFICIENCY_LEVELS)`. Bax: changelog "#17". İlkin təsvir:
 `schemas/index.ts`:
 - `aiToken` və `provider` optional-dır, amma handler-lər onları tələb edir;
 - `languageCode` istifadə olunmur;

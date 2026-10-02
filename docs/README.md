@@ -33,7 +33,8 @@ ona görə hər sessiyanın əvvəlində avtomatik oxunur. Ətraflı fayllar laz
   - **#13**: tərcümədə saxlanmış sözün axtarışı və dublikat yoxlaması regex əvəzinə collation ilə `english_unique_ci` index-indən keçir;
   - **#14**: kliklənən söz düzgün təmizlənir (`don't`, `well-known`, `“Hello,”` → `hello`). Testsizdir, frontend testləri yoxdur;
   - **#15**: flashcard cavabı saxlanmasa xəta göstərilir və kart yerində qalır; "Review Again" sözləri təkrarsız göstərir. Testsizdir;
-  - **#16**: söz saxlanarkən "Generate Text" düyməsi artıq bloklanmır (qlobal `isGeneratingText` yalnız generasiya üçündür). Testsizdir.
+  - **#16**: söz saxlanarkən "Generate Text" düyməsi artıq bloklanmır (qlobal `isGeneratingText` yalnız generasiya üçündür). Testsizdir;
+  - **#17**: AI sxemləri route-larla uyğundur: `aiToken`/`provider` məcburidir, `languageCode` yoxdur, `level` yalnız 5 səviyyədən biridir.
 
   Qismən:
   - **#11**: uğursuz saxlama/redaktədə və şəkil dəyişəndə köhnə fayl silinir, başqa sözün şəkli toxunulmaz qalır; restart və "yüklənib, saxlanmayıb" halları qalır;
@@ -41,12 +42,13 @@ ona görə hər sessiyanın əvvəlində avtomatik oxunur. Ətraflı fayllar laz
   - **#24**: kök README yenidən yazılıb, shuffle qalır.
 
   Qalanları açıqdır.
-- **Testlər:** `cd backend && npm test` (Vitest, 461 test, ~8 san; ən yavaşı `server.test.ts`). Hər backend dəyişikliyindən sonra işə sal.
+- **Testlər:** `cd backend && npm test` (Vitest, 483 test, ~8 san; ən yavaşı `server.test.ts`). Hər backend dəyişikliyindən sonra işə sal.
   - Hazırda heç bir `it.fails` testi yoxdur.
 - Kök `README.md` Azərbaycan dilindədir. Funksiya, env, port və ya endpoint dəyişəndə onu da yenilə.
-- Kritik maddə qalmayıb. İstifadəçi 2026-10-02-də orta ciddilikli maddələri (#15, #16, #17) seçdi, aşağılar hələlik qalır. Növbəti: **#17** (sxem/route uyğunsuzluğu).
+- Kritik maddə qalmayıb. Orta ciddilikli maddələr (#15, #16, #17) bağlandı; istifadəçi aşağı ciddilikliləri 2026-10-02-də hələlik saxladı. Qalanlar: #11 və #19, #24 (qismən), #18, #20, #22, #23, #29.
 - **Git / GitHub** (remote: `origin` = https://github.com/Seymu1R/My_Languga_app):
   - **#14** `main`-ə birləşdirilib (`0884017`, `fffa3c0`), amma hələ push olunmayıb. `fix/clean-word` branch-ı hələ lokalda var.
+  - **#17** `fix/ai-schemas` branch-ındadır (`fix/loading-state`-dən açılıb), commit olunub (`c1ecf2c` + `docs:`), hələ `main`-ə birləşdirilməyib.
   - **#16** `fix/loading-state` branch-ındadır (`fix/learnings-page`-dən açılıb, çünki #15 hələ `main`-də deyil), commit olunub (`7d49a1e` + `docs:`), hələ `main`-ə birləşdirilməyib.
   - **#15** `fix/learnings-page` branch-ında commit olunub (`e8f6521` + `docs:`), hələ `main`-ə birləşdirilməyib.
   - Lokalda və GitHub-da yalnız **`main`** branch-ı var. İstifadəçinin istəyi ilə 2026-10-02-də bütün iş `main`-ə birləşdirildi, `main` push olundu, digər branch-lar (lokal 6, remote 1) silindi.

@@ -1,113 +1,183 @@
-# Language Learning Application 🎓
+# Language Teacher 🎓
 
-AI-powered English learning application with translation, pronunciation, and vocabulary building features.
+İngilis dili öyrənmək üçün AI dəstəkli tətbiq. Səviyyənizə uyğun oxu mətni yaradır. Bilmədiyiniz sözə klik edəndə kontekstə uyğun tərcümə, IPA tələffüzü və nümunə cümlələr göstərir. Sözləri şəxsi lüğətinizə yığır və flashcard-larla aralıqlı təkrar (spaced repetition) üsulu ilə öyrədir.
 
-## 🚀 Quick Start
+## Funksiyalar
 
-### Start the application (Recommended - with MongoDB)
-```bash
-./start.sh
-```
-This will automatically:
-- Start MongoDB on port 27018
-- Start backend server on port 7001
-- Start frontend on port 5173
-- All vocabulary data will be saved permanently
+- **Səviyyəyə uyğun oxu mətnləri.** 5 səviyyə var: Elementary, Pre-Intermediate, Intermediate, Upper-Intermediate, Advanced. Mətnin uzunluğu səviyyəyə görə 170–440 söz olur.
+- **İnteraktiv oxu.** Mətndəki istənilən sözə klik etdikdə:
+  - **Kontekstə uyğun tərcümə** ana dilinizə göstərilir. 13 dil dəstəklənir: Azərbaycan, Türk, Rus, İspan, Fransız, Alman, Çin, Yapon, Ərəb, Polyak, Ukrayna, İtalyan, Portuqal.
+    - Tərcümədən əvvəl iki mənbəyə baxılır: lüğətinizdə həmin söz üçün saxladığınız əvvəlki tərcümələr və [Free Dictionary API](https://dictionaryapi.dev/) tərifləri.
+    - Model bu məlumatlardan cümləyə uyğun mənanı seçir.
+  - **IPA tələffüzü** göstərilir, məsələn `/əˈpɑːrt/`.
+  - **3 nümunə cümlə** təklif olunur, biri istinad cümləsi kimi saxlanır.
+  - Sözə **şəkil** əlavə etmək olar (5MB-a qədər).
+- **Şəxsi lüğət.** Bütün sözlər tərcümə, tələffüz, cümlə və şəkillə birlikdə saxlanır.
+- **Flashcard-lar (My Learnings).** Kartı sağa sürüşdürmək "bilirəm", sola sürüşdürmək "bilmirəm" deməkdir.
+  - Bilinən söz 7 gündən sonra yenidən soruşulur. Hər növbəti "bilirəm" cavabında interval 4 dəfə artır, ən çox 30 günə qədər.
+- **Öz AI açarınızla işləyir.** OpenAI, Grok (xAI), Google Gemini, DeepSeek və Mistral dəstəklənir.
+  - Açar serverdə saxlanmır. O, brauzerin `sessionStorage`-ında qalır və hər sorğu ilə göndərilir.
+  - Server loglarında açar avtomatik maskalanır.
+- **MongoDB və ya in-memory.** MongoDB yoxdursa tətbiq yenə işləyir, amma məlumatlar server yenidən başlayanda itir.
 
-### Stop the application
-```bash
-./stop.sh
-```
-This will stop both the app and MongoDB cleanly.
+| Provider | Modellər |
+|---|---|
+| OpenAI | `gpt-4o-mini`, `gpt-4o` |
+| Grok | `grok-3-mini`, `grok-3-fast` |
+| Gemini | `gemini-2.5-flash`, `gemini-2.5-flash-lite` |
+| DeepSeek | `deepseek-chat`, `deepseek-reasoner` |
+| Mistral | `mistral-small-latest`, `open-mistral-nemo` |
 
-### Alternative: Run without MongoDB
-```bash
-npm run dev
-```
-App will work with in-memory storage (data lost on restart).
+## Texnologiyalar
 
-## ✨ Features
+- **Frontend:** React 18, TypeScript, Vite, Tailwind CSS, React Router, Framer Motion
+- **Backend:** Node.js, Express, TypeScript, Mongoose, Zod (validasiya), Multer (şəkil yükləmə), Pino (loglama), Helmet, express-rate-limit
+- **AI:** `openai` SDK (OpenAI, Grok, DeepSeek və Mistral üçün OpenAI-uyğun API ilə), `@google/generative-ai`
+- **Verilənlər bazası:** MongoDB (məcburi deyil)
 
-✅ **AI Provider Selection**: OpenAI, Claude, Gemini, Cohere  
-✅ **13 Language Support**: Azerbaijani, Turkish, Russian, Spanish, French, German, Chinese, Japanese, Arabic, Polish, Ukrainian, Italian, Portuguese  
-✅ **AI Translation**: Click any word → get instant translation in your native language  
-✅ **AI Pronunciation**: IPA format pronunciation (e.g., /əˈpɑːrt/ for "apart")  
-✅ **Persistent Storage**: MongoDB integration for permanent vocabulary storage  
-✅ **In-Memory Fallback**: Works without MongoDB if needed  
-✅ **Interactive Reading**: Click words in AI-generated texts to add to dictionary  
-✅ **5 Proficiency Levels**: Elementary to Advanced
+## Tələblər
 
-## 📋 Technology Stack
-
-- **Frontend**: React with TypeScript, Vite, Tailwind CSS
-- **Backend**: Node.js with Express.js and TypeScript
-- **Database**: MongoDB (with in-memory fallback)
-- **AI Integration**: OpenAI, Anthropic Claude, Google Gemini, Cohere
-
-## 🎯 Getting Started
-
-### Prerequisites
-
-- Node.js (v18 or higher)
+- Node.js **18+**: backend qlobal `fetch`-dən istifadə edir
 - npm
+- MongoDB: məcburi deyil, amma məlumatların saxlanması üçün tövsiyə olunur
+- Dəstəklənən providerlərdən birinin API açarı
 
-### Installation
+## Quraşdırma
 
-1. Clone the repository
-2. Install all dependencies:
-   ```bash
-   npm run install:all
-   ```
-
-### Development
-
-Run both frontend and backend in development mode:
 ```bash
-npm run dev
+npm run install:all
 ```
 
-This will start:
-- Frontend on http://localhost:5173
-- Backend on http://localhost:3001
+Bu əmr kök qovluğun, `frontend/` və `backend/` qovluqlarının dependency-lərini quraşdırır. Hər paketin öz `node_modules`-u var.
 
-### Individual Services
+### Konfiqurasiya
 
-Run only frontend:
+`backend/.env` faylı:
+
+```env
+# MongoDB. Verilməsə server in-memory rejimdə işləyir
+MONGODB_URI=mongodb://localhost:27018/language_learning   # start.sh ilə 27018 portu
+
+PORT=7001                         # default: 7001
+FRONTEND_URL=http://localhost:5173  # CORS üçün əlavə origin
+LOG_LEVEL=info                    # pino log səviyyəsi
+NODE_ENV=development              # production → JSON loglar, xəta detalları gizlədilir
+```
+
+Frontend API ünvanını `VITE_API_ORIGIN`-dən oxuyur, default dəyər `http://localhost:7001`-dir. Lazım olsa `frontend/.env`-də dəyişin.
+
+AI açarı `.env`-ə **yazılmır**. Onu tətbiqin içində "Add AI Token" düyməsi ilə daxil edirsiniz.
+
+## İşə salma
+
+### MongoDB ilə (tövsiyə olunur)
+
 ```bash
-npm run dev:frontend
+./start.sh   # mongod-u 27018 portunda işə salır (məlumatlar ~/mongodb_data), sonra tətbiqi
+./stop.sh    # MongoDB-ni dayandırır
 ```
 
-Run only backend:
+`start.sh` sistemdə `mongod` və `mongosh`-un quraşdırılmasını tələb edir. Bu halda `backend/.env`-dəki `MONGODB_URI` 27018 portuna yönəlməlidir. Başqa üsullar üçün (systemd, Docker) bax: [backend/MONGODB_SETUP.md](backend/MONGODB_SETUP.md).
+
+### MongoDB olmadan
+
 ```bash
-npm run dev:backend
+npm run dev            # backend + frontend birlikdə
+npm run dev:backend    # yalnız backend
+npm run dev:frontend   # yalnız frontend
 ```
 
-### Production Build
+| Servis | Ünvan |
+|---|---|
+| Frontend | http://localhost:5173 |
+| Backend API | http://localhost:7001/api |
+| Health check | http://localhost:7001/api/health |
 
-Build the frontend for production:
+Health check uptime-ı və bazanın vəziyyətini qaytarır, o cümlədən `storageMode: "mongodb" | "in-memory"`. Server hansı rejimdə işlədiyini buradan görmək olar.
+
+### İstifadə
+
+1. Yuxarı sağdakı **Add AI Token** düyməsi ilə provider, model və API açarı seçin.
+2. Ana dilinizi və ingilis dili səviyyənizi seçin.
+3. **Generate Text** düyməsini basın.
+4. Bilmədiyiniz sözlərə klik edib lüğətə əlavə edin.
+5. **My Learnings** bölməsində flashcard-larla təkrar edin.
+
+## Production build
+
 ```bash
-npm run build
+cd backend && npm run build   # TypeScript → backend/dist
+npm run build                 # yalnız frontend → frontend/dist
+npm start                     # backend/dist/server.js-i işə salır
 ```
 
-Start the production server:
-```bash
-npm start
+Qeydlər:
+- Kökdəki `npm run build` **yalnız frontend-i** build edir, backend-i ayrıca build etmək lazımdır.
+- Backend frontend fayllarını vermir. `frontend/dist`-i ayrıca bir statik serverlə (nginx və s.) yayımlamaq lazımdır.
+- Production-da `NODE_ENV=production` qoyun. Əks halda logger devDependency olan `pino-pretty`-ni axtarır.
+
+## API
+
+Bütün cavablar `{ success, ..., error? }` formatındadır. Validasiya xətası 400 qaytarır, `details[]` sahəsində hansı sahənin səhv olduğu göstərilir.
+
+| Metod | Endpoint | Təsvir |
+|---|---|---|
+| GET | `/api/health` | Server və baza vəziyyəti |
+| POST | `/api/ai/generate-text` | Səviyyəyə uyğun oxu mətni |
+| POST | `/api/ai/translate-word` | Kontekstə uyğun tərcümə |
+| POST | `/api/ai/pronunciation` | IPA tələffüzü |
+| POST | `/api/ai/example-sentences` | 3 nümunə cümlə |
+| GET | `/api/dictionary/words` | Bütün sözlər (`?page=&limit=` ilə səhifələmə, limit ≤ 100) |
+| GET | `/api/dictionary/words/learnings` | Öyrənilən və təkrar vaxtı çatmış sözlər |
+| POST | `/api/dictionary/words` | Söz əlavə et (dublikat → 409) |
+| PUT | `/api/dictionary/words/:id` | Sözü yenilə |
+| PATCH | `/api/dictionary/words/:id/learning-status` | Flashcard nəticəsi: `{ known: boolean }` |
+| DELETE | `/api/dictionary/words/:id` | Sözü və onun şəklini sil |
+| POST | `/api/dictionary/upload-image` | Şəkil yüklə (`multipart`, sahə: `image`, ≤ 5MB) |
+
+Rate limit: `/api` üçün 15 dəqiqədə 200 sorğu, `/api/ai` üçün əlavə olaraq 15 dəqiqədə 30 sorğu.
+
+## Layihənin strukturu
+
+```
+├── backend/
+│   ├── src/
+│   │   ├── routes/       # HTTP qatı: validasiya + domain xətalarını status kodlarına çevirmək
+│   │   ├── services/     # biznes məntiqi (lüğət, SRS, AI providerlər, promptlar)
+│   │   ├── models/       # Mongoose modelləri
+│   │   ├── schemas/      # Zod sxemləri
+│   │   ├── middleware/   # validate, upload
+│   │   └── server.ts     # Express qurulması, rate limit, health, graceful shutdown
+│   └── uploads/          # yüklənmiş şəkillər
+├── frontend/src/
+│   ├── pages/            # Home, Dictionary, Learnings
+│   ├── components/       # modallar, flashcard, interaktiv mətn
+│   ├── context/          # qlobal state (useReducer)
+│   └── services/api.ts   # bütün HTTP sorğuları
+├── docs/                 # dəyişiklik tarixçəsi, backlog, arxitektura qeydləri
+├── start.sh / stop.sh
+└── CLAUDE.md             # Claude Code üçün təlimatlar
 ```
 
-## Project Structure
+## İnkişaf
 
-```
-language-learning-app/
-├── frontend/          # React TypeScript app
-├── backend/           # Express.js TypeScript server
-├── package.json       # Root package configuration
-└── README.md          # This file
-```
+- **Sənədlər:** [docs/](docs/README.md)
+  - [backlog.md](docs/backlog.md): məlum problemlər və onların statusu;
+  - [changelog.md](docs/changelog.md): edilən dəyişikliklər;
+  - [architecture/](docs/architecture/): axınların izahı.
+- **Tip yoxlaması:**
+  ```bash
+  cd backend && npm run type-check
+  cd frontend && npx tsc --noEmit
+  ```
+- **Hazırkı məhdudiyyətlər:**
+  - avtomatlaşdırılmış testlər yoxdur;
+  - lint konfiqurasiyası sınıqdır: `biome.json` Biome 2.x ilə uyğun deyil, frontend-də ESLint config yoxdur;
+  - autentifikasiya yoxdur, tətbiq lokal, tək istifadəçi üçün nəzərdə tutulub.
 
-## Usage
+  Ətraflı: [docs/backlog.md](docs/backlog.md).
+- **Commit mesajları** [Conventional Commits](https://www.conventionalcommits.org/) formatındadır: `feat:`, `fix:`, `perf:`, ...
 
-1. Enter your AI API token using the "Add AI Token" button
-2. Select your English proficiency level
-3. Generate text appropriate for your level
-4. Click on unknown words to add them to your dictionary
-5. View your saved words in the "My Dictionary" section
+## Lisenziya
+
+MIT

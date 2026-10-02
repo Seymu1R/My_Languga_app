@@ -26,7 +26,7 @@ Qayda `CLAUDE.md`-yə (Conventions → "Backend tests are mandatory") və `docs/
   - `fbb40e1` — `refactor:` `app.ts`, `dotenv/config`, `UPLOAD_DIR`, `loggerOptions` (#21, #25);
   - `cc62e8e` — `test:` testlər, Vitest konfiqurasiyası, `package.json`;
   - `docs:` — bu sənəd yeniləmələri.
-- Push edilməyib, `main`-ə birləşdirilməyib.
+- **Merge:** istifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi. `main` artıq `27df908`-dir. Merge-dən sonra `main`-də type-check və 317 test keçdi. Push edilməyib.
 - `.idea/` istifadəçinindir, commit-lərə daxil edilmir.
 
 ## 2026-10-02 — #19 (qismən): backend üçün avtomatik testlər; #21 və #25 bağlandı

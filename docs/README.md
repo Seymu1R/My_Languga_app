@@ -30,8 +30,10 @@ ona görə hər sessiyanın əvvəlində avtomatik oxunur. Ətraflı fayllar laz
   - #4, #10, #26 və #27 üçün `it.fails` testləri var.
 - Kök `README.md` Azərbaycan dilindədir. Funksiya, env, port və ya endpoint dəyişəndə onu da yenilə.
 - Təklif olunan növbəti iş: **#2** (AI xəta mesajları), sonra **#5** və **#6** (`WordDefinitionModal`). Testlərlə tez bağlana bilənlər: **#4**, **#10**, **#26**, **#27**.
-- Branch: `fix/upload-path-traversal`, hələ `main`-ə birləşdirilməyib və push olunmayıb.
-  - Commit-lər (köhnədən yeniyə): #1 (`fix:`), sənədlər (`docs:`), #8 + #7 (`fix:`), refaktor (`refactor:`), testlər (`test:`), sənəd yeniləmələri (`docs:`). Hamısı commit olunub.
+- Git: `fix/upload-path-traversal` branch-ı 2026-10-02-də `main`-ə **fast-forward** ilə birləşdirildi (`main` = `27df908`), merge commit-i yaranmadı. Push olunmayıb.
+  - Commit-lər (köhnədən yeniyə): #1 (`fix:`), sənədlər (`docs:`), #8 + #7 (`fix:`), refaktor (`refactor:`), testlər (`test:`), sənəd yeniləmələri (`docs:`).
+  - `fix/upload-path-traversal` branch-ı hələ silinməyib.
+  - Növbəti iş üçün `main`-dən yeni branch açılır.
   - Commit yalnız istifadəçi istəyəndə edilir. İstifadəçi ayrı-ayrı commit-lərə üstünlük verir: kod `fix:`/`feat:`, testlər `test:`, sənədlər `docs:`.
 
 ## İş qaydaları

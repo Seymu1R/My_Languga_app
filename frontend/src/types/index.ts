@@ -30,6 +30,7 @@ export interface AppState {
   selectedLevel: ProficiencyLevel | null;
   generatedText: string | null;
   dictionary: Word[];
-  isLoading: boolean;
+  // Yalnız oxu mətninin generasiyası üçün — digər yükləmələrin öz lokal state-i var (#16)
+  isGeneratingText: boolean;
   error: string | null;
 }

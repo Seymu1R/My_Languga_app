@@ -48,7 +48,7 @@ const HomePage = () => {
   const handleGenerateText = async () => {
     if (!state.selectedLevel || !state.aiToken || !state.aiProvider) return;
 
-    dispatch(actions.setLoading(true));
+    dispatch(actions.setGeneratingText(true));
     dispatch(actions.setError(null));
 
     try {
@@ -68,7 +68,7 @@ const HomePage = () => {
       dispatch(actions.setError(getErrorMessage(error, 'Failed to generate text. Please try again.')));
       console.error('Text generation error:', error);
     } finally {
-      dispatch(actions.setLoading(false));
+      dispatch(actions.setGeneratingText(false));
     }
   };
 
@@ -175,10 +175,10 @@ const HomePage = () => {
         <div className="text-center">
           <button
             onClick={handleGenerateText}
-            disabled={state.isLoading}
+            disabled={state.isGeneratingText}
             className="btn-primary text-lg px-8 py-3"
           >
-            {state.isLoading ? (
+            {state.isGeneratingText ? (
               <span className="flex items-center space-x-2">
                 <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
                   <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>

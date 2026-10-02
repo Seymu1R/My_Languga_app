@@ -12,7 +12,7 @@ type AppAction =
   | { type: 'ADD_WORD'; payload: Word }
   | { type: 'REMOVE_WORD'; payload: string }
   | { type: 'SET_DICTIONARY'; payload: Word[] }
-  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_GENERATING_TEXT'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null };
 
 // Initial state
@@ -26,7 +26,7 @@ const initialState: AppState = {
   selectedLevel: (localStorage.getItem('selectedLevel') as ProficiencyLevel) || null,
   generatedText: localStorage.getItem('generatedText') || null,
   dictionary: [],
-  isLoading: false,
+  isGeneratingText: false,
   error: null,
 };
 
@@ -100,10 +100,10 @@ function appReducer(state: AppState, action: AppAction): AppState {
         ...state,
         dictionary: action.payload,
       };
-    case 'SET_LOADING':
+    case 'SET_GENERATING_TEXT':
       return {
         ...state,
-        isLoading: action.payload,
+        isGeneratingText: action.payload,
       };
     case 'SET_ERROR':
       return {
@@ -189,9 +189,9 @@ export const actions = {
     type: 'SET_DICTIONARY',
     payload: words,
   }),
-  setLoading: (loading: boolean): AppAction => ({
-    type: 'SET_LOADING',
-    payload: loading,
+  setGeneratingText: (isGenerating: boolean): AppAction => ({
+    type: 'SET_GENERATING_TEXT',
+    payload: isGenerating,
   }),
   setError: (error: string | null): AppAction => ({
     type: 'SET_ERROR',

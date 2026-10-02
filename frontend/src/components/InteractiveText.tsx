@@ -46,17 +46,14 @@ const InteractiveText = ({ text }: InteractiveTextProps) => {
 
   // Function to save word to dictionary.
   // Xəta burada tutulmur: WordDefinitionModal onu modalın içində göstərir
-  // (əvvəl səhifədə, modalın arxasında görünürdü)
+  // (əvvəl səhifədə, modalın arxasında görünürdü).
+  // Saxlama vəziyyətini modal özü göstərir ("Adding..."); qlobal state-ə toxunulmur —
+  // əvvəl "Generate Text" düyməsi bu müddətdə "Generating Text..." göstərirdi (#16)
   const handleSaveWord = async (english: string, translation: string, pronunciation?: string, referenceSentence?: string, imageUrl?: string) => {
-    try {
-      dispatch(actions.setLoading(true));
-      const newWord = await dictionaryService.addWord(english, translation, pronunciation, referenceSentence, imageUrl);
-      dispatch(actions.addWord(newWord));
-      setIsModalOpen(false);
-      setSelectedWord(null);
-    } finally {
-      dispatch(actions.setLoading(false));
-    }
+    const newWord = await dictionaryService.addWord(english, translation, pronunciation, referenceSentence, imageUrl);
+    dispatch(actions.addWord(newWord));
+    setIsModalOpen(false);
+    setSelectedWord(null);
   };
 
   // Function to split text into clickable words

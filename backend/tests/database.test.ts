@@ -3,11 +3,13 @@ import mongoose from 'mongoose';
 import connectDB from '../src/config/database';
 import { logger } from '../src/utils/logger';
 import { Word } from '../src/models/Word';
+import { getStorageMode, setStorageMode } from '../src/config/storage';
 
 describe('connectDB', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     delete process.env.MONGODB_URI;
+    setStorageMode('in-memory');
   });
 
   it('skips connecting and warns when MONGODB_URI is not set', async () => {
@@ -18,6 +20,7 @@ describe('connectDB', () => {
 
     expect(connect).not.toHaveBeenCalled();
     expect(warn).toHaveBeenCalledOnce();
+    expect(getStorageMode()).toBe('in-memory');
   });
 
   it('connects to the language_learning database and builds the word indexes', async () => {
@@ -27,8 +30,22 @@ describe('connectDB', () => {
 
     await connectDB();
 
-    expect(connect).toHaveBeenCalledWith('mongodb://example:27017', { dbName: 'language_learning' });
+    expect(connect).toHaveBeenCalledWith('mongodb://example:27017', {
+      dbName: 'language_learning',
+      serverSelectionTimeoutMS: 5000,
+    });
     expect(init).toHaveBeenCalledOnce();
+  });
+
+  // #3: rejim açılışda bir dəfə seçilir
+  it('switches to mongodb storage after a successful connection (#3)', async () => {
+    process.env.MONGODB_URI = 'mongodb://example:27017';
+    vi.spyOn(mongoose, 'connect').mockResolvedValue(mongoose);
+    vi.spyOn(Word, 'init').mockResolvedValue(undefined as any);
+
+    await connectDB();
+
+    expect(getStorageMode()).toBe('mongodb');
   });
 
   it('keeps running and explains when the word indexes cannot be built (#10)', async () => {
@@ -50,5 +67,6 @@ describe('connectDB', () => {
     await expect(connectDB()).resolves.toBeUndefined();
     expect(error).toHaveBeenCalledOnce();
     expect(init).not.toHaveBeenCalled();
+    expect(getStorageMode()).toBe('in-memory');
   });
 });

@@ -1,6 +1,7 @@
 import { execSync } from 'child_process';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { setStorageMode } from '../../src/config/storage';
 
 let server: MongoMemoryServer | undefined;
 
@@ -24,17 +25,25 @@ export const createMongoServer = () => {
   return MongoMemoryServer.create(binary ? { binary } : undefined);
 };
 
-// Müvəqqəti, təmiz MongoDB qaldırır və mongoose-u ona qoşur
+const TEST_DB_NAME = 'language_learning_test';
+
+// Müvəqqəti, təmiz MongoDB qaldırır, mongoose-u ona qoşur və saxlama rejimini 'mongodb' edir
+// (connectDB-nin uğurlu qoşulmada etdiyi kimi)
 export const startMongo = async () => {
   server = await createMongoServer();
-  await mongoose.connect(server.getUri(), { dbName: 'language_learning_test' });
+  await mongoose.connect(server.getUri(), { dbName: TEST_DB_NAME });
+  setStorageMode('mongodb');
 };
 
 export const stopMongo = async () => {
   await mongoose.disconnect();
   await server?.stop();
   server = undefined;
+  setStorageMode('in-memory');
 };
+
+// İş zamanı bağlantının qopub-qayıtmasını simulyasiya etmək üçün (server işləməyə davam edir)
+export const reconnectMongo = () => mongoose.connect(server!.getUri(), { dbName: TEST_DB_NAME });
 
 export const clearMongo = async () => {
   const { collections } = mongoose.connection;

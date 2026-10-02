@@ -8,9 +8,14 @@ import {
   dictionaryService,
   DuplicateWordError,
   WordNotFoundError,
+  StorageUnavailableError,
 } from '../services/dictionaryService';
 
 export const dictionaryRouter = express.Router();
+
+// MongoDB rejimində bağlantı müvəqqəti yoxdur (#3) — bütün lüğət route-ları üçün eyni cavab
+const sendStorageUnavailable = (res: Response<DictionaryResponse>, error: StorageUnavailableError) =>
+  res.status(503).json({ success: false, error: error.message });
 
 const MAX_PAGE_LIMIT = 100;
 const DEFAULT_PAGE_LIMIT = 20;
@@ -49,6 +54,7 @@ dictionaryRouter.get('/words', async (req: Request, res: Response<DictionaryResp
       },
     });
   } catch (error) {
+    if (error instanceof StorageUnavailableError) return sendStorageUnavailable(res, error);
     logger.error({ err: error }, 'Get words error');
     return res.status(500).json({
       success: false,
@@ -63,6 +69,7 @@ dictionaryRouter.get('/words/learnings', async (req: Request, res: Response<Dict
     const words = await dictionaryService.getLearningWords();
     return res.json({ success: true, words });
   } catch (error) {
+    if (error instanceof StorageUnavailableError) return sendStorageUnavailable(res, error);
     logger.error({ err: error }, 'Get learning words error');
     return res.status(500).json({
       success: false,
@@ -82,6 +89,7 @@ dictionaryRouter.post('/words', validate(addWordSchema), async (req: Request, re
       message: 'Word added successfully',
     });
   } catch (error) {
+    if (error instanceof StorageUnavailableError) return sendStorageUnavailable(res, error);
     if (error instanceof DuplicateWordError) {
       return res.status(409).json({ success: false, error: error.message });
     }
@@ -106,6 +114,7 @@ dictionaryRouter.patch('/words/:id/learning-status', validate(learningStatusSche
       message: known ? 'Word marked as known' : 'Word moved back to learning',
     });
   } catch (error) {
+    if (error instanceof StorageUnavailableError) return sendStorageUnavailable(res, error);
     if (error instanceof WordNotFoundError) {
       return res.status(404).json({ success: false, error: error.message });
     }
@@ -128,6 +137,7 @@ dictionaryRouter.delete('/words/:id', async (req: Request, res: Response<Diction
       message: 'Word deleted successfully',
     });
   } catch (error) {
+    if (error instanceof StorageUnavailableError) return sendStorageUnavailable(res, error);
     if (error instanceof WordNotFoundError) {
       return res.status(404).json({ success: false, error: error.message });
     }
@@ -151,6 +161,7 @@ dictionaryRouter.put('/words/:id', validate(addWordSchema), async (req: Request,
       message: 'Word updated successfully',
     });
   } catch (error) {
+    if (error instanceof StorageUnavailableError) return sendStorageUnavailable(res, error);
     if (error instanceof WordNotFoundError) {
       return res.status(404).json({ success: false, error: error.message });
     }

@@ -7,10 +7,11 @@ import {
   dictionaryService,
   DuplicateWordError,
   WordNotFoundError,
+  StorageUnavailableError,
 } from '../src/services/dictionaryService';
 import { Word } from '../src/models/Word';
 import { uploadPath } from '../src/middleware/upload';
-import { startMongo, stopMongo, clearMongo } from './helpers/mongo';
+import { startMongo, stopMongo, clearMongo, reconnectMongo } from './helpers/mongo';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -406,6 +407,52 @@ describe('dictionaryService (mongodb only)', () => {
       dictionaryService.updateWord(id, { english: 'APPLE', translation: 'alma' }),
     ).rejects.toBeInstanceOf(DuplicateWordError);
     vi.restoreAllMocks();
+  });
+
+  // #3: MongoDB rejimində bağlantı qopanda yazılar səssizcə in-memory-yə düşməməlidir
+  describe('when MongoDB disconnects at runtime (#3)', () => {
+    afterEach(async () => {
+      if (mongoose.connection.readyState !== 1) await reconnectMongo();
+    });
+
+    it('rejects every operation with StorageUnavailableError', async () => {
+      const { id } = plain(await add('apple'));
+      await mongoose.disconnect();
+
+      const operations = [
+        () => dictionaryService.getAllWords(),
+        () => dictionaryService.getAllWords({ page: 1, limit: 10 }),
+        () => dictionaryService.getLearningWords(),
+        () => add('pear'),
+        () => dictionaryService.updateWord(id, { english: 'apple', translation: 'x' }),
+        () => dictionaryService.updateLearningStatus(id, true),
+        () => dictionaryService.deleteWord(id),
+      ];
+      for (const operation of operations) {
+        await expect(operation()).rejects.toBeInstanceOf(StorageUnavailableError);
+      }
+    });
+
+    // Köhnə davranış: söz "uğurla" qəbul edilirdi (in-memory-yə), bağlantı qayıdanda isə yox olurdu
+    it('reports a write during the outage instead of silently accepting it', async () => {
+      await mongoose.disconnect();
+      const result = await add('lost').then(
+        () => 'accepted',
+        (error) => error,
+      );
+      await reconnectMongo();
+
+      expect(result).toBeInstanceOf(StorageUnavailableError);
+      expect((await dictionaryService.getAllWords()).total).toBe(0);
+    });
+
+    it('works again after reconnecting', async () => {
+      await mongoose.disconnect();
+      await reconnectMongo();
+
+      await add('apple');
+      expect((await dictionaryService.getAllWords()).total).toBe(1);
+    });
   });
 
   it('stores words as UUID string ids', async () => {

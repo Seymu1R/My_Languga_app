@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit';
 import mongoose from 'mongoose';
 import { logger } from './utils/logger';
 import { uploadPath } from './middleware/upload';
+import { getStorageMode } from './config/storage';
 import { aiRouter } from './routes/ai';
 import { dictionaryRouter } from './routes/dictionary';
 
@@ -79,7 +80,8 @@ export const createApp = () => {
       database: {
         status: MONGO_STATES[mongoState] ?? 'unknown',
         connected: dbConnected,
-        storageMode: dbConnected ? 'mongodb' : 'in-memory',
+        // Açılışda seçilmiş rejim; MongoDB rejimində bağlantı qopsa da 'mongodb' qalır (#3)
+        storageMode: getStorageMode(),
       },
     });
   });

@@ -4,6 +4,7 @@ import request from 'supertest';
 import { createApp } from '../src/app';
 import { startMongo, stopMongo } from './helpers/mongo';
 import { PNG } from './helpers/images';
+import { setStorageMode } from '../src/config/storage';
 
 describe('GET /api/health', () => {
   it('reports in-memory storage when MongoDB is not connected', async () => {
@@ -16,6 +17,17 @@ describe('GET /api/health', () => {
     });
     expect(Number.isInteger(res.body.uptime)).toBe(true);
     expect(new Date(res.body.timestamp).toISOString()).toBe(res.body.timestamp);
+  });
+
+  // #3: rejim bağlantıdan yox, açılışdakı seçimdən gəlir
+  it('reports mongodb storage that is currently disconnected (#3)', async () => {
+    setStorageMode('mongodb');
+    try {
+      const res = await request(createApp()).get('/api/health');
+      expect(res.body.database).toEqual({ status: 'disconnected', connected: false, storageMode: 'mongodb' });
+    } finally {
+      setStorageMode('in-memory');
+    }
   });
 
   describe('with MongoDB connected', () => {

@@ -4,6 +4,7 @@ import path from 'path';
 import { Word } from '../models/Word';
 import { logger } from '../utils/logger';
 import { uploadPath } from '../middleware/upload';
+import { getStorageMode } from '../config/storage';
 import type { AddWordBody } from '../types';
 
 // Custom domain errors — router bunları HTTP status-lara map edir
@@ -21,9 +22,23 @@ export class WordNotFoundError extends Error {
   }
 }
 
+// MongoDB rejimində bağlantı (müvəqqəti) yoxdur — router 503-ə map edir (#3)
+export class StorageUnavailableError extends Error {
+  constructor() {
+    super('Database is temporarily unavailable. Please try again shortly.');
+    this.name = 'StorageUnavailableError';
+  }
+}
+
 const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-const isMongoConnected = () => mongoose.connection.readyState === 1;
+// Rejim açılışda seçilir (config/storage). MongoDB rejimində bağlantı yoxdursa xəta atırıq —
+// əvvəl yazılar səssizcə in-memory-yə düşür və bağlantı qayıdanda itirdi (#3)
+const useMongo = () => {
+  if (getStorageMode() !== 'mongodb') return false;
+  if (mongoose.connection.readyState !== 1) throw new StorageUnavailableError();
+  return true;
+};
 
 // Unique index (english_unique_ci) pozulanda MongoDB 11000 qaytarır (#10)
 const isDuplicateKeyError = (error: unknown) => (error as { code?: number })?.code === 11000;
@@ -109,7 +124,7 @@ export interface PaginationParams {
 export const dictionaryService = {
   // pagination verilməsə bütün sözlər qaytarılır (geriyə uyğunluq)
   async getAllWords(pagination?: PaginationParams) {
-    if (isMongoConnected()) {
+    if (useMongo()) {
       if (!pagination) {
         const words = await Word.find().sort({ dateAdded: -1 });
         return { words, total: words.length };
@@ -142,7 +157,7 @@ export const dictionaryService = {
   async getLearningWords() {
     const now = new Date();
 
-    if (isMongoConnected()) {
+    if (useMongo()) {
       return Word.find({
         $or: [
           { status: 'learning' },
@@ -164,7 +179,7 @@ export const dictionaryService = {
   async addWord(data: AddWordBody) {
     const fields = normalizeWordFields(data);
 
-    if (isMongoConnected()) {
+    if (useMongo()) {
       if (await findWordByEnglish(fields.english)) throw new DuplicateWordError();
 
       const newWord = new Word(fields);
@@ -195,7 +210,7 @@ export const dictionaryService = {
 
   // Flashcard nəticəsinə görə SRS statusunu yenilə
   async updateLearningStatus(id: string, known: boolean) {
-    if (isMongoConnected()) {
+    if (useMongo()) {
       const existingWord = await Word.findById(id);
       if (!existingWord) throw new WordNotFoundError();
 
@@ -253,7 +268,7 @@ export const dictionaryService = {
   },
 
   async deleteWord(id: string) {
-    if (isMongoConnected()) {
+    if (useMongo()) {
       const deletedWord = await Word.findByIdAndDelete(id);
       if (!deletedWord) throw new WordNotFoundError();
 
@@ -271,7 +286,7 @@ export const dictionaryService = {
   async updateWord(id: string, data: AddWordBody) {
     const fields = normalizeWordFields(data);
 
-    if (isMongoConnected()) {
+    if (useMongo()) {
       if (!(await Word.exists({ _id: id }))) throw new WordNotFoundError();
       // Sözü başqa mövcud sözün adına dəyişmək olmaz; öz adını saxlamaq və ya hərf böyüklüyünü dəyişmək olar (#10)
       if (await findWordByEnglish(fields.english, id)) throw new DuplicateWordError();

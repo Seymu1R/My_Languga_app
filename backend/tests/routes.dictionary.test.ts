@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import request from 'supertest';
 import { createApp } from '../src/app';
-import { dictionaryService } from '../src/services/dictionaryService';
+import { dictionaryService, StorageUnavailableError } from '../src/services/dictionaryService';
 import { uploadPath } from '../src/middleware/upload';
 import { PNG, JPEG, GIF, WEBP, HTML, SVG } from './helpers/images';
 
@@ -337,5 +337,24 @@ describe('POST /api/dictionary/upload-image', () => {
     await api().delete(`/api/dictionary/words/${created.word.id}`);
 
     expect(uploadedFiles()).toEqual([]);
+  });
+});
+
+// #3: MongoDB rejimində bağlantı yoxdursa 503 — data səssizcə in-memory-yə yazılmır
+describe('when the database is unavailable (#3)', () => {
+  it.each([
+    ['getAllWords', () => api().get('/api/dictionary/words')],
+    ['getLearningWords', () => api().get('/api/dictionary/words/learnings')],
+    ['addWord', () => addWord('apple')],
+    ['updateWord', () => api().put('/api/dictionary/words/x').send({ english: 'a', translation: 'b' })],
+    ['updateLearningStatus', () => api().patch('/api/dictionary/words/x/learning-status').send({ known: true })],
+    ['deleteWord', () => api().delete('/api/dictionary/words/x')],
+  ] as const)('%s responds 503', async (method, send) => {
+    vi.spyOn(dictionaryService, method).mockRejectedValue(new StorageUnavailableError());
+
+    const res = await send();
+
+    expect(res.status).toBe(503);
+    expect(res.body).toEqual({ success: false, error: 'Database is temporarily unavailable. Please try again shortly.' });
   });
 });

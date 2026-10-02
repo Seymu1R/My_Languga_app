@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { logger } from '../utils/logger';
 import { Word } from '../models/Word';
+import { setStorageMode } from './storage';
 
 const connectDB = async () => {
   const mongoURI = process.env.MONGODB_URI;
@@ -12,9 +13,13 @@ const connectDB = async () => {
 
   try {
     await mongoose.connect(mongoURI, {
-      dbName: 'language_learning'
+      dbName: 'language_learning',
+      // Server bu qoşulmanı gözləyib sonra port açır (#3) — MongoDB əlçatan deyilsə,
+      // default 30 san əvəzinə 5 san sonra in-memory rejimə keçirik
+      serverSelectionTimeoutMS: 5000,
     });
 
+    setStorageMode('mongodb');
     logger.info({ database: mongoose.connection.name }, 'MongoDB connected successfully');
   } catch (error) {
     logger.error({ err: error }, 'MongoDB connection error — continuing with in-memory storage');

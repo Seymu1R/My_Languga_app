@@ -33,7 +33,7 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 | 23 | 🟢 Aşağı | `start.sh` problemləri | açıq |
 | 24 | 🟢 Aşağı | ~~README köhnədir~~, shuffle qeyri-bərabərdir | qismən (README 2026-10-02) |
 | 25 | 🟡 Orta | Logger `.env`-dən əvvəl yaradılırdı (`LOG_LEVEL`/`NODE_ENV` nəzərə alınmırdı) | **bağlanıb** (2026-10-02) |
-| 26 | 🟡 Orta | Səhv JSON və >10kb body 400/413 əvəzinə 500 qaytarır | açıq (`it.fails` testi var) |
+| 26 | 🟡 Orta | Səhv JSON və >10kb body 400/413 əvəzinə 500 qaytarır | **bağlanıb** (2026-10-02) |
 | 27 | 🟡 Orta | Yalnız boşluqdan ibarət `english`/`translation` validasiyadan keçir | **bağlanıb** (2026-10-02) |
 | 28 | 🟢 Aşağı | AI sxemlərində `word` yalnız boşluqdan ibarət ola bilər | **bağlanıb** (2026-10-02) |
 
@@ -41,7 +41,7 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 
 1. Təhlükəsizlik: ~~#1~~, ~~#8~~
 2. İstifadəçinin gördüyü buglar: ~~#2~~, ~~#5~~, ~~#6~~, ~~#7~~
-3. Data bütövlüyü: #3, #4, #10, ~~#27~~, #26, ~~#28~~
+3. Data bütövlüyü: #3, #4, #10, ~~#27~~, ~~#26~~, ~~#28~~
 4. Səmərəlilik: #9, #12, #13
 5. İnfrastruktur: ~~backend testləri~~, frontend testləri, lint, `.gitignore`
 6. Refaktor: `aiService` təkrarları, ortaq tiplər
@@ -171,7 +171,8 @@ Köhnə `server.ts`-də `dotenv.config()` bütün import-lardan **sonra** çağ�
 Həll: `server.ts`-in ilk sətri `import 'dotenv/config'` oldu.
 Davranış dəyişikliyi: `.env`-də `LOG_LEVEL` və ya `NODE_ENV=production` varsa, logger artıq onlara əməl edir.
 
-### 26. Body-parser xətaları → 500
+### 26. Body-parser xətaları → 500 — **bağlanıb**
+Həll: error handler `expose: true` olan 4xx xətaları öz statusu ilə qaytarır, bax: changelog "#26". İlkin təsvir:
 Səhv JSON (`{"english":`) və 10kb-dan böyük body `express.json` tərəfindən 400/413 statuslu xəta kimi atılır. `app.ts`-dəki global error handler isə həmişə 500 qaytarır.
 **Həll:** handler-də `err.status`/`err.type`-a baxmaq (`entity.parse.failed` → 400, `entity.too.large` → 413).
 Testlər: `app.test.ts` → `responds 400 for malformed JSON (#26)`, `responds 413 for a JSON body over 10kb (#26)` (`it.fails`).

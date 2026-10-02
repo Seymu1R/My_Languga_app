@@ -46,7 +46,7 @@ cd frontend && npm run build       # tsc && vite build
 - Services throw domain errors (`DuplicateWordError`, `WordNotFoundError`), and routes map them to 409/404.
 - Every response has the shape `{ success, ... , error? }`. These shapes are typed in `types/index.ts`.
 
-`app.ts` exports `createApp()`, which builds the Express app without listening: helmet, CORS, rate limits (200 requests per 15 minutes on `/api`, plus a stricter 30 per 15 minutes on `/api/ai`), static `/uploads` (served from `uploadPath`), routes, the health check, and the error/404 handlers. `server.ts` loads env, calls `connectDB()`, listens, and handles graceful shutdown.
+`app.ts` exports `createApp()`, which builds the Express app without listening: helmet, CORS, rate limits (200 requests per 15 minutes on `/api`, plus a stricter 30 per 15 minutes on `/api/ai`), static `/uploads` (served from `uploadPath`), routes, the health check, and the error/404 handlers. The error handler returns errors that carry `expose: true` and a 4xx `status` (http-errors style, e.g. body-parser's malformed JSON 400 / body over 10kb 413) with that status as `{ success: false, error }`; everything else becomes a 500. `server.ts` loads env, calls `connectDB()`, listens, and handles graceful shutdown.
 
 ### Dual storage: MongoDB or in-memory
 If `MONGODB_URI` is missing or the connection fails, the server keeps running. Every `dictionaryService` method branches on `mongoose.connection.readyState === 1`, using either the `Word` model or a module-level `memoryDictionary` array. **Any change to dictionary behavior must be made in both branches.**

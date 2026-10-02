@@ -4,6 +4,40 @@
 
 ---
 
+## 2026-10-02 — #26: səhv və ya çox böyük request body artıq 500 yox, 400/413 qaytarır
+
+Branch: `fix/body-parser-errors` (`main`-dən). Commit-lər: `b1589d3` (`fix:` + testlər), sonra `docs:`.
+
+**Problem:** `express.json` xətaları `app.ts`-dəki global error handler-ə düşür, handler isə statusa baxmadan həmişə 500 "Something went wrong!" qaytarırdı:
+- səhv JSON (`entity.parse.failed`, status 400);
+- 10kb-dan böyük body (`entity.too.large`, status 413);
+- dəstəklənməyən charset (415).
+
+**Dəyişiklik** (`backend/src/app.ts`, error handler):
+- Xətada `expose: true` və 4xx `status` varsa (`http-errors` formatı, body-parser belə yaradır), həmin status `{ success: false, error }` formatında qaytarılır, log səviyyəsi `warn` olur.
+- `BODY_ERROR_MESSAGES` oxunaqlı mesajlar verir:
+  - `entity.parse.failed` → "Request body is not valid JSON";
+  - `entity.too.large` → "Request body is too large (max 10kb)".
+
+  Digər klient xətalarında xətanın öz mesajı qalır (`expose: true` mesajın klientə göstərilməsinin təhlükəsiz olduğunu bildirir).
+- Qalan bütün xətalar əvvəlki kimi 500 olur.
+
+**Testlər** (`app.test.ts`, əvvəl yazıldı, köhnə kodda 4/4 düşdü):
+- 4 yeni test (`request body errors (#26)`):
+  - səhv JSON → 400;
+  - >10kb → 413;
+  - dəstəklənməyən charset (`no-such-charset`) → 415 öz mesajı ilə;
+  - nəticə `NODE_ENV`-dən asılı deyil.
+- İki `it.fails` testi çıxarıldı (yeni testlərə daxil oldu).
+- "500 handler-i development-də mesajı göstərir və production-da gizlədir" testləri əvvəl səhv JSON-a əsaslanırdı. İndi həqiqi server xətası ilə qurulub: şəkil yükləməsində `fs.promises.open` uğursuz olur → `uploadImage` → `next(err)` → 500.
+- Test yazarkən səhv fərziyyə düzəldildi: UTF-7 iconv-lite tərəfindən dəstəklənir, 415 vermir.
+
+**Yoxlama:** `npm test` → 342/342 (əvvəl 340), `npm run type-check` keçdi.
+
+`CLAUDE.md`-yə (Architecture → Backend layering) error handler-in bu davranışı yazıldı.
+
+**Qeyd (düzəldilmədi):** frontend interceptor-u (`services/api.ts`) istənilən 413-də sabit "File is too large. Maximum size is 5MB." göstərir. JSON üçün bu yanlışdır, amma frontend 10kb-dan böyük JSON göndərmir (ən böyük sahə `customPrompt` ≤ 2000 simvoldur).
+
 ## 2026-10-02 — #28: AI endpoint-ləri yalnız boşluqdan ibarət sözü rədd edir
 
 Branch: `fix/whitespace-only-ai-word` (`main`-dən). Commit-lər: `85fb0a3` (`fix:` + testlər), `ec7ba53` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi. Merge-dən sonra `main`-də frontend və backend type-check, həmçinin 340 backend testi keçdi. Push olunmayıb.

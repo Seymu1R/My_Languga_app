@@ -4,7 +4,10 @@ import path from 'path';
 import fs from 'fs';
 import { logger } from '../utils/logger';
 
-export const uploadPath = path.join(__dirname, '../../uploads');
+// UPLOAD_DIR verilməsə backend/uploads (testlər müvəqqəti qovluq verir)
+export const uploadPath = process.env.UPLOAD_DIR
+  ? path.resolve(process.env.UPLOAD_DIR)
+  : path.join(__dirname, '../../uploads');
 
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 

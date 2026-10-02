@@ -11,9 +11,14 @@ const REDACT_PATHS = [
   '*.apiKey',
 ];
 
-export const logger = pino({
+// transport-dan ayrı saxlanılır ki, testlər eyni ayarlarla öz stream-inə yaza bilsin
+export const loggerOptions: pino.LoggerOptions = {
   level: process.env.LOG_LEVEL || 'info',
   redact: { paths: REDACT_PATHS, censor: '[REDACTED]' },
+};
+
+export const logger = pino({
+  ...loggerOptions,
   // Development-də oxunaqlı rəngli format, production-da xam JSON
   // (JSON formatı log aggregator-lar üçün lazımdır)
   transport:

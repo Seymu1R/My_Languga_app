@@ -36,11 +36,9 @@ ona görə hər sessiyanın əvvəlində avtomatik oxunur. Ətraflı fayllar laz
 - Kök `README.md` Azərbaycan dilindədir. Funksiya, env, port və ya endpoint dəyişəndə onu da yenilə.
 - Təklif olunan növbəti iş: `it.fails` testi hazır olan backend bug-ları: **#4**, **#10**. Sonra **#3** (Mongo qoşulmasını gözləmək). Testlərlə tez bağlana bilənlər: **#4**, **#10**, **#26**, **#27**.
 - **Git / GitHub** (remote: `origin` = https://github.com/Seymu1R/My_Languga_app):
-  - 2026-10-02-də **push olundu**: `main` (`298c70f`-ə qədər, 19 commit) və `fix/body-parser-errors`. Push zamanı `--force` lazım olmadı; göndəriləcək commit-lər məxfi fayl və açarlara görə yoxlandı.
-  - `main`-ə fast-forward ilə birləşdirilib (merge commit-i yoxdur): `fix/upload-path-traversal` (#1, #7, #8, testlər), `fix/ai-error-messages` (#2, #5), `fix/word-modal-stale-responses` (#6), `fix/whitespace-only-words` (#27), `fix/whitespace-only-ai-word` (#28).
-  - Bu 5 branch lokalda qalıb, silinməyib və push edilmədi: commit-ləri `main`-dədir.
-  - **Cari branch:** `fix/body-parser-errors` (#26): `b1589d3` (`fix:` + testlər), `84c42e7` (`docs:`). Push olunub, `main`-ə birləşdirilməyib.
-  - Növbəti iş üçün `main`-dən yeni branch açılır.
+  - Lokalda və GitHub-da yalnız **`main`** branch-ı var. İstifadəçinin istəyi ilə 2026-10-02-də bütün iş `main`-ə birləşdirildi, `main` push olundu, digər branch-lar (lokal 6, remote 1) silindi.
+  - Bütün işlər `main`-dədir: #1, #2, #5, #6, #7, #8, #21, #25, #26, #27, #28, backend testləri və sənədlər. Hamısı fast-forward ilə birləşdirildi, merge commit-i yoxdur.
+  - Növbəti iş üçün `main`-dən yeni branch açılır (bax: İş qaydaları, 7).
 - Frontend testləri: istifadəçi 2026-10-02-də sonraya saxladı. Frontend dəyişiklikləri hələlik type-check və build ilə yoxlanılır, bu da changelog-da açıq yazılır.
 
 ## İş qaydaları

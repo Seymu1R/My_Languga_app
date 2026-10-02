@@ -4,6 +4,18 @@
 
 ---
 
+## 2026-10-02 — #26 `main`-ə birləşdirildi, yalnız `main` branch-ı saxlanıldı
+
+İstifadəçinin istəyi ilə:
+1. **Commit:** `fix/body-parser-errors`-də `50063c3` (`docs:` push qeydi və git iş qaydası).
+2. **Merge:** `fix/body-parser-errors` (#26) `main`-ə `--ff-only` ilə birləşdirildi. `main`-də frontend və backend type-check, həmçinin 342 backend testi keçdi.
+3. **Lokal branch-lar silindi** (`git branch -d`): `fix/upload-path-traversal`, `fix/ai-error-messages`, `fix/word-modal-stale-responses`, `fix/whitespace-only-words`, `fix/whitespace-only-ai-word`, `fix/body-parser-errors`.
+   - `-d` birləşməmiş branch-ı silmir. Hamısı `main`-in içində olduğu yoxlanıldı.
+   - `fix/body-parser-errors` əvvəlcə silinmədi: remote kopyasında `50063c3` yox idi. `-D` istifadə edilmədi. Əvvəlcə `main` push olundu, remote branch silindi, sonra `-d` ilə silindi.
+4. **Remote:** `main` push olundu, `origin/fix/body-parser-errors` silindi.
+
+**Nəticə:** lokalda və GitHub-da yalnız `main` qaldı.
+
 ## 2026-10-02 — GitHub-a push
 
 İstifadəçinin istəyi ilə `origin`-ə (https://github.com/Seymu1R/My_Languga_app) push olundu:

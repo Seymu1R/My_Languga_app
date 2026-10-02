@@ -4,6 +4,54 @@
 
 ---
 
+## 2026-10-02 — #10: söz adları redaktədə və eyni anda gələn sorğularda da unikal qalır
+
+Branch: `fix/duplicate-words` (`main`-dən). Commit-lər: `062a5a2` (`fix:` + testlər), sonra `docs:`.
+
+**Problem:**
+1. `updateWord` dublikat yoxlamırdı: sözü başqa mövcud sözün adına (hərf böyüklüyündən asılı olmayaraq) dəyişmək mümkün idi.
+2. `addWord` "əvvəl yoxla, sonra yaz" edirdi, MongoDB-də isə unique index yox idi. Eyni anda gələn sorğular yoxlamadan birlikdə keçib dublikat yaradırdı. Testdə real təkrarlandı: 3 paralel `add` sorğusundan birdən çoxu saxlanıldı.
+
+**Dəyişikliklər:**
+- **`models/Word.ts`:** case-insensitive unique index `english_unique_ci` (`collation: { locale: 'en', strength: 2 }`).
+  - Ayrıca ad verildi ki, köhnə bazalardakı `english_1` index-i ilə toqquşmasın. `english_1` sxemdə saxlanıldı.
+  - Bu, müvəqqəti MongoDB-də əvvəlcədən sınandı: iki index yan-yana qurulur, `Apple` varkən `APPLE` 11000 ilə rədd edilir.
+- **`services/dictionaryService.ts`, hər iki rejimdə:**
+  - yeni köməkçi funksiyalar: `findWordByEnglish(english, excludeId)` (Mongo), `hasMemoryDuplicate(english, excludeId)` (in-memory), `isDuplicateKeyError`;
+  - `updateWord`: əvvəlcə söz var mı yoxlanılır (404), sonra başqa sözdə eyni ad var mı (409). Sözün öz adını saxlaması və ya yalnız hərf böyüklüyünü dəyişməsi icazəlidir;
+  - Mongo `save` və `findByIdAndUpdate`-də 11000 xətası `DuplicateWordError`-a çevrilir (yarış halı), əvvəl 500 olardı.
+- **`routes/dictionary.ts`:** `PUT /words/:id` `DuplicateWordError` → 409. Əvvəl yalnız 404 tutulurdu, dublikat 500 olardı.
+- **`config/database.ts`:** qoşulmadan sonra `await Word.init()`.
+  - Bazada artıq hərf böyüklüyü ilə fərqlənən dublikatlar varsa, unique index qurula bilmir.
+  - Server çökmür (servis dublikatları yenə yoxlayır). Log-a aydın `error` yazılır: hansı sözləri silmək və serveri yenidən başlatmaq lazımdır.
+
+**Testlər (əvvəl yazıldı, köhnə kodda 10 test düşdü):**
+- `dictionaryService.test.ts`:
+  - hər iki rejimdə: başqa sözün adına dəyişmək → `DuplicateWordError`, data dəyişmir;
+  - hər iki rejimdə: öz adını saxlamaq və ya hərf böyüklüyünü dəyişmək icazəlidir;
+  - hər iki rejimdə: 404 dublikat yoxlamasından əvvəl gəlir;
+  - hər iki rejimdə: 3 paralel `add` → yalnız 1 söz saxlanır, qalanları `DuplicateWordError`;
+  - yalnız Mongo: index bazanın özündə işləyir (`Word.create` 11000);
+  - yalnız Mongo: yarış halında `updateWord`-dakı 11000 → `DuplicateWordError` (servisin `english` yoxlaması mock ilə ötürülür, `Word.exists` real qalır).
+- `routes.dictionary.test.ts`: `PUT` başqa sözün adı → 409.
+- `Word.model.test.ts`: `english_unique_ci` index-i və onun parametrləri.
+- `database.test.ts`: `connectDB` `Word.init()`-i çağırır; index qurulmasa server davam edir və log yazır; qoşulma alınmasa `init` çağırılmır.
+- **`database.indexes.test.ts` (yeni):** real ssenari. Bazada artıq `Apple` və `apple` var → `connectDB` qoşulur, xəbərdarlıq yazır, data əlçatan qalır. Vitest idarə olunmayan promise rejection-ları da tutur, yəni mongoose-un avtomatik index qurmasının prosesi çökərtmədiyi də yoxlanılır.
+- `tests/helpers/mongo.ts`: yeni `createMongoServer()`, MongoDB-ni mongoose-u qoşmadan qaldırır.
+- `it.fails` testi normal testə çevrildi. **Artıq heç bir `it.fails` qalmayıb.**
+
+**Mutation yoxlaması:** `isDuplicateKeyError` müvəqqəti `false` edildi → məhz iki yarış testi düşdü (paralel `add`, yarış halında `update`). Kod bərpa olundu.
+
+**Yoxlama:** `npm test` → 360/360 (əvvəl 348), `npm run type-check` keçdi.
+
+**İstifadəçinin real bazası üçün:** bazada hərf böyüklüyü ilə fərqlənən dublikatlar varsa, server başlayanda log-da "Word indexes could not be built..." görünəcək. Yoxlamaq üçün (yalnız oxuyur, `start.sh` ilə qalxan MongoDB):
+```bash
+mongosh --port 27018 language_learning --eval 'db.words.aggregate([{ $group: { _id: { $toLower: "$english" }, n: { $sum: 1 }, words: { $push: "$english" } } }, { $match: { n: { $gt: 1 } } }])'
+```
+Real bazada heç bir şey işə salınmadı və dəyişdirilmədi.
+
+**#13 üçün qeyd:** `english_unique_ci` collation index-i sayəsində `lookupSavedSenses` və dublikat yoxlaması regex əvəzinə `find({ english }).collation({ locale: 'en', strength: 2 })` ilə index-dən istifadə edə bilər.
+
 ## 2026-10-02 — #4: vaxtından əvvəl təkrar öyrənmə cədvəlini artıq dəyişmir
 
 Branch: `fix/srs-early-review` (`main`-dən). Commit-lər: `6698e9b` (`fix:` + testlər), `e4d610f` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi. Merge-dən sonra `main`-də frontend və backend type-check, həmçinin 348 backend testi keçdi. Sonra `main` GitHub-a push olundu, `fix/srs-early-review` lokalda silindi (heç vaxt push olunmamışdı). Yalnız `main` qaldı.

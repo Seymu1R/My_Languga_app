@@ -131,7 +131,7 @@ Bütün cavablar `{ success, ..., error? }` formatındadır. Validasiya xətası
 | GET | `/api/dictionary/words` | Bütün sözlər (`?page=&limit=` ilə səhifələmə, limit ≤ 100) |
 | GET | `/api/dictionary/words/learnings` | Öyrənilən və təkrar vaxtı çatmış sözlər |
 | POST | `/api/dictionary/words` | Söz əlavə et (dublikat → 409) |
-| PUT | `/api/dictionary/words/:id` | Sözü yenilə |
+| PUT | `/api/dictionary/words/:id` | Sözü yenilə (başqa mövcud sözün adı → 409) |
 | PATCH | `/api/dictionary/words/:id/learning-status` | Flashcard nəticəsi: `{ known: boolean }` |
 | DELETE | `/api/dictionary/words/:id` | Sözü və onun şəklini sil |
 | POST | `/api/dictionary/upload-image` | Şəkil yüklə (`multipart`, sahə: `image`; JPEG/PNG/WebP/GIF, ≤ 5MB; səhv tip → 400, böyük fayl → 413) |

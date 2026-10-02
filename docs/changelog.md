@@ -4,6 +4,25 @@
 
 ---
 
+## 2026-10-02 — #16: qlobal yükləmə vəziyyəti yalnız mətn generasiyası üçündür
+
+Branch: `fix/loading-state` (`fix/learnings-page`-dən açılıb, çünki #15 hələ `main`-də deyil; hər ikisi ardıcıl fast-forward ilə birləşə bilər). Commit-lər: `7d49a1e` (`fix:`), ardınca `docs:`. Hələ `main`-ə birləşdirilməyib.
+
+**Problem:** `AppContext`-də bir ümumi `isLoading` var idi. Onu iki iş işlədirdi:
+- `HomePage.handleGenerateText` (oxu mətni generasiyası);
+- `InteractiveText.handleSaveWord` (klik edilən sözün lüğətə saxlanması).
+Söz saxlanarkən ana səhifədəki "Generate Text" düyməsi bloklanır və "Generating Text..." göstərirdi, halbuki mətn generasiya olunmurdu.
+
+**Həll:**
+- `InteractiveText.handleSaveWord` qlobal state-ə artıq toxunmur. Saxlama vəziyyətini modal özü göstərir (`WordDefinitionModal` → `isSubmitting`, "Adding..."). `try/finally` lazım olmadı: xəta əvvəlki kimi modala ötürülür.
+- Qlobal sahə adını işinə görə aldı: `isLoading` → `isGeneratingText`, `SET_LOADING` → `SET_GENERATING_TEXT`, `actions.setLoading` → `actions.setGeneratingText` (`types/index.ts`, `context/AppContext.tsx`, `pages/HomePage.tsx`). Belə ki, yeni yükləmələr onu təsadüfən işlətməsin.
+- `DictionaryPage` və `LearningsPage` onsuz da lokal `isLoading` işlədirdi, dəyişmədi.
+- `CLAUDE.md`: Frontend bölməsinə qayda əlavə olundu.
+
+**Yoxlama:** frontend testləri yoxdur. Frontend type-check və `npm run build` keçdi. Köhnə `isLoading`/`setLoading`/`SET_LOADING` qlobal istifadəsi qalmadığı grep ilə yoxlanıldı. Brauzerdə yoxlanılmayıb.
+
+---
+
 ## 2026-10-02 — #15: flashcard cavabı saxlanmasa xəta göstərilir, "Review Again" təkrarsızdır
 
 Branch: `fix/learnings-page` (`main`-dən). Commit-lər: `e8f6521` (`fix:`), ardınca `docs:`. Hələ `main`-ə birləşdirilməyib.

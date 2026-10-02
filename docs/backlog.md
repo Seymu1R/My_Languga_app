@@ -23,7 +23,7 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 | 13 | 🟡 Orta | RAG layer 1 regex index işlətmir (full scan) | **bağlanıb** (2026-10-02) |
 | 14 | 🟡 Orta | `cleanWord` apostrof/tireni silir, əyri dırnaqları saxlayır | **bağlanıb** (2026-10-02, testsiz) |
 | 15 | 🟡 Orta | Flashcard status xətası udulur; "Review Again" dublikatlarla | **bağlanıb** (2026-10-02, testsiz) |
-| 16 | 🟡 Orta | Bir ümumi `isLoading` hər şeyə təsir edir | açıq |
+| 16 | 🟡 Orta | Bir ümumi `isLoading` hər şeyə təsir edir | **bağlanıb** (2026-10-02, testsiz) |
 | 17 | 🟡 Orta | Zod sxemləri handler-lərlə uyğun deyil | açıq |
 | 18 | 🟢 Aşağı | Autentifikasiya yoxdur | açıq |
 | 19 | 🟢 Aşağı | ~~Test yoxdur~~, lint sınıqdır | qismən (backend testləri 2026-10-02) |
@@ -140,7 +140,8 @@ Həll: xəta kartın üstündə göstərilir və kart yerində qalır; "Review A
 - `handleSwipeResult` `updateLearningStatus` xətasını yalnız `console`-a yazır.
 - "Review Again" növbədəki təkrarlanan sözlərlə birlikdə başlayır.
 
-### 16. Ümumi `isLoading`
+### 16. Ümumi `isLoading` — **bağlanıb**
+Həll: qlobal sahə `isGeneratingText` adlandırıldı və yalnız mətn generasiyası üçündür; söz saxlanması onu artıq dəyişmir (modalın `isSubmitting`-i var). Bax: changelog "#16". İlkin təsvir:
 Söz saxlanarkən "Generate Text" düyməsi "Generating Text..." göstərir (`AppContext` → `isLoading`).
 
 ### 17. Sxem uyğunsuzluqları

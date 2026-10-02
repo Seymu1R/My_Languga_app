@@ -6,7 +6,7 @@
 
 ## 2026-10-02 — #13: `english` üzrə axtarışlar regex əvəzinə collation ilə index-dən keçir
 
-Branch: `perf/rag-collation-lookup` (`main`-dən). Commit-lər: `178befb` (`perf:` + testlər), ardınca `docs:`. Hələ `main`-ə birləşdirilməyib.
+Branch: `perf/rag-collation-lookup` (`main`-dən). Commit-lər: `178befb` (`perf:` + testlər), `f1957fe` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi. Merge-dən sonra `main`-də frontend və backend type-check, həmçinin 436 backend testi keçdi. Sonra `main` GitHub-a push olundu, `perf/rag-collation-lookup` lokalda silindi (heç vaxt push olunmamışdı). Yalnız `main` qaldı.
 
 **Problem:** `english` üzrə iki sorğu hərf böyüklüyünü nəzərə almamaq üçün `^word$` + `i` regex işlədirdi:
 - `aiContentService.lookupSavedSenses` (tərcümədə RAG layer 1, hər söz klikində);

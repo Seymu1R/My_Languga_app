@@ -118,7 +118,6 @@ export const aiService = {
   async translateWord(
     word: string,
     targetLanguage: string,
-    languageCode: string,
     aiToken?: string,
     provider?: string,
     model?: string,
@@ -127,7 +126,6 @@ export const aiService = {
     const response = await api.post('/ai/translate-word', {
       word,
       targetLanguage,
-      languageCode,
       aiToken,
       provider,
       model,

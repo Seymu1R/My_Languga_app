@@ -83,15 +83,8 @@ aiRouter.post('/validate-key', validate(validateKeySchema), async (req: Request,
 
 aiRouter.post('/translate-word', validate(translateWordSchema), async (req: Request, res: Response<TranslateResponse>) => {
   try {
-    const { word, targetLanguage, languageCode, contextSentence, aiToken, provider, model }: TranslateWordBody = req.body;
-    logger.info({ word, targetLanguage, languageCode, provider }, 'Translation request');
-
-    if (!aiToken || !provider) {
-      return res.status(400).json({
-        success: false,
-        error: 'AI token and provider are required for translation'
-      });
-    }
+    const { word, targetLanguage, contextSentence, aiToken, provider, model }: TranslateWordBody = req.body;
+    logger.info({ word, targetLanguage, provider }, 'Translation request');
 
     const result = await aiContentService.translateWord(
       { provider, apiToken: aiToken, model },
@@ -117,13 +110,6 @@ aiRouter.post('/pronunciation', validate(pronunciationSchema), async (req: Reque
     const { word, aiToken, provider, model }: PronunciationBody = req.body;
     logger.info({ word, provider }, 'Pronunciation request');
 
-    if (!aiToken || !provider) {
-      return res.status(400).json({
-        success: false,
-        error: 'AI token and provider are required for pronunciation'
-      });
-    }
-
     const result = await aiContentService.getPronunciation(
       { provider, apiToken: aiToken, model },
       word,
@@ -147,13 +133,6 @@ aiRouter.post('/example-sentences', validate(exampleSentencesSchema), async (req
   try {
     const { word, level, aiToken, provider, model }: ExampleSentencesBody = req.body;
     logger.info({ word, level, provider }, 'Example sentences request');
-
-    if (!aiToken || !provider) {
-      return res.status(400).json({
-        success: false,
-        error: 'AI token and provider are required for generating example sentences'
-      });
-    }
 
     const result = await aiContentService.generateExampleSentences(
       { provider, apiToken: aiToken, model },

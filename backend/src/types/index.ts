@@ -28,25 +28,24 @@ export interface ValidateKeyBody {
 export interface TranslateWordBody {
   word: string;
   targetLanguage: string;
-  languageCode: string;
   contextSentence?: string;
-  aiToken?: string;
-  provider?: AIProvider;
+  aiToken: string;
+  provider: AIProvider;
   model?: string;
 }
 
 export interface PronunciationBody {
   word: string;
-  aiToken?: string;
-  provider?: AIProvider;
+  aiToken: string;
+  provider: AIProvider;
   model?: string;
 }
 
 export interface ExampleSentencesBody {
   word: string;
-  level?: string;
-  aiToken?: string;
-  provider?: AIProvider;
+  level?: ProficiencyLevel;
+  aiToken: string;
+  provider: AIProvider;
   model?: string;
 }
 

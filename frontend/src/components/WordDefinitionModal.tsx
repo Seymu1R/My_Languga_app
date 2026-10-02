@@ -86,7 +86,6 @@ const WordDefinitionModal = ({
     const aiProvider = state.aiProvider;
     const aiModel = state.aiModel || undefined;
     const nativeLanguage = state.nativeLanguage;
-    const nativeLanguageCode = state.nativeLanguageCode;
     const selectedLevel = state.selectedLevel;
 
     const fetchTranslation = async () => {
@@ -95,7 +94,6 @@ const WordDefinitionModal = ({
         const response = await aiService.translateWord(
           word,
           nativeLanguage,
-          nativeLanguageCode,
           aiToken,
           aiProvider,
           aiModel,
@@ -161,7 +159,7 @@ const WordDefinitionModal = ({
     return () => {
       isStale = true;
     };
-  }, [isOpen, word, contextSentence, state.isAiReady, state.aiToken, state.aiProvider, state.aiModel, state.nativeLanguage, state.nativeLanguageCode, state.selectedLevel]);
+  }, [isOpen, word, contextSentence, state.isAiReady, state.aiToken, state.aiProvider, state.aiModel, state.nativeLanguage, state.selectedLevel]);
 
   const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

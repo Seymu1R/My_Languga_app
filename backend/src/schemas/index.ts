@@ -15,6 +15,14 @@ export const PROFICIENCY_LEVELS = [
 // Klik edilən söz — trim() uzunluq yoxlamasından əvvəl, əks halda "   " keçir (#28, #27 ilə eyni)
 const wordSchema = z.string().trim().min(1, 'word is required').max(200);
 
+// Söz üzərində işləyən AI endpoint-ləri istifadəçinin açarı olmadan işləyə bilməz —
+// əvvəl optional idi və handler-lər ayrıca yoxlayırdı (#17)
+const aiCredentials = {
+  aiToken: z.string().min(1, 'aiToken is required'),
+  provider: z.enum(AI_PROVIDERS),
+  model: z.string().optional(),
+};
+
 export const generateTextSchema = z.object({
   level: z.enum(PROFICIENCY_LEVELS),
   apiToken: z.string().min(1, 'apiToken is required'),
@@ -30,29 +38,24 @@ export const validateKeySchema = z.object({
   model: z.string().optional(),
 });
 
+// languageCode heç yerdə işlənmirdi və artıq qəbul olunmur — göndərilsə atılır (#17)
 export const translateWordSchema = z.object({
   word: wordSchema,
   targetLanguage: z.string().min(1, 'targetLanguage is required'),
-  languageCode: z.string().min(2).max(10),
   contextSentence: z.string().max(1000).optional(),
-  aiToken: z.string().optional(),
-  provider: z.enum(AI_PROVIDERS).optional(),
-  model: z.string().optional(),
+  ...aiCredentials,
 });
 
 export const pronunciationSchema = z.object({
   word: wordSchema,
-  aiToken: z.string().optional(),
-  provider: z.enum(AI_PROVIDERS).optional(),
-  model: z.string().optional(),
+  ...aiCredentials,
 });
 
+// level prompta birbaşa yazılır — sərbəst mətn əvəzinə yalnız məlum səviyyələr (#17)
 export const exampleSentencesSchema = z.object({
   word: wordSchema,
-  level: z.string().optional(),
-  aiToken: z.string().optional(),
-  provider: z.enum(AI_PROVIDERS).optional(),
-  model: z.string().optional(),
+  level: z.enum(PROFICIENCY_LEVELS).optional(),
+  ...aiCredentials,
 });
 
 

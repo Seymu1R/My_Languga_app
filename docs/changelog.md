@@ -4,6 +4,18 @@
 
 ---
 
+## 2026-10-02 — GitHub-a push
+
+İstifadəçinin istəyi ilə `origin`-ə (https://github.com/Seymu1R/My_Languga_app) push olundu:
+- **`main`:** `e4671f9..298c70f`, 19 commit, fast-forward. `--force` lazım olmadı: remote-da yeni commit yox idi.
+- **`fix/body-parser-errors` (#26):** yeni remote branch, upstream qoşuldu. Hələ `main`-ə birləşdirilməyib.
+
+`main`-ə birləşdirilmiş 5 köhnə branch push edilmədi, çünki onların commit-ləri `main` ilə gedir.
+
+Push-dan əvvəl göndəriləcək diff (39 fayl) `.env`/secret fayllarına və real açar formasına (`sk-…`, `AIza…`, 20+ simvol) görə yoxlandı, heç nə tapılmadı.
+
+Commit müəllifi bu repoda `Seymu1R <seymuram@code.edu.az>`-dir (`.git/config`, qlobal ayarı üstələyir). İstifadəçi bunun düzgün olduğunu təsdiqlədi.
+
 ## 2026-10-02 — #26: səhv və ya çox böyük request body artıq 500 yox, 400/413 qaytarır
 
 Branch: `fix/body-parser-errors` (`main`-dən). Commit-lər: `b1589d3` (`fix:` + testlər), sonra `docs:`.

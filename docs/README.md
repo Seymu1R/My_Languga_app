@@ -35,17 +35,13 @@ ona görə hər sessiyanın əvvəlində avtomatik oxunur. Ətraflı fayllar laz
   - #4 və #10 üçün `it.fails` testləri var.
 - Kök `README.md` Azərbaycan dilindədir. Funksiya, env, port və ya endpoint dəyişəndə onu da yenilə.
 - Təklif olunan növbəti iş: `it.fails` testi hazır olan backend bug-ları: **#4**, **#10**. Sonra **#3** (Mongo qoşulmasını gözləmək). Testlərlə tez bağlana bilənlər: **#4**, **#10**, **#26**, **#27**.
-- Git: `fix/upload-path-traversal` branch-ı 2026-10-02-də `main`-ə **fast-forward** ilə birləşdirildi (`main` = `27df908`), merge commit-i yaranmadı. Push olunmayıb.
-  - Commit-lər (köhnədən yeniyə): #1 (`fix:`), sənədlər (`docs:`), #8 + #7 (`fix:`), refaktor (`refactor:`), testlər (`test:`), sənəd yeniləmələri (`docs:`).
-  - `fix/upload-path-traversal` branch-ı hələ silinməyib.
+- **Git / GitHub** (remote: `origin` = https://github.com/Seymu1R/My_Languga_app):
+  - 2026-10-02-də **push olundu**: `main` (`298c70f`-ə qədər, 19 commit) və `fix/body-parser-errors`. Push zamanı `--force` lazım olmadı; göndəriləcək commit-lər məxfi fayl və açarlara görə yoxlandı.
+  - `main`-ə fast-forward ilə birləşdirilib (merge commit-i yoxdur): `fix/upload-path-traversal` (#1, #7, #8, testlər), `fix/ai-error-messages` (#2, #5), `fix/word-modal-stale-responses` (#6), `fix/whitespace-only-words` (#27), `fix/whitespace-only-ai-word` (#28).
+  - Bu 5 branch lokalda qalıb, silinməyib və push edilmədi: commit-ləri `main`-dədir.
+  - **Cari branch:** `fix/body-parser-errors` (#26): `b1589d3` (`fix:` + testlər), `84c42e7` (`docs:`). Push olunub, `main`-ə birləşdirilməyib.
   - Növbəti iş üçün `main`-dən yeni branch açılır.
-- `fix/ai-error-messages` (#2 + #5) 2026-10-02-də `main`-ə fast-forward ilə birləşdirildi (`30c2add` `fix:`, `abcfeb6` `docs:`). Push olunmayıb. Branch silinməyib.
-- `fix/word-modal-stale-responses` (#6) 2026-10-02-də `main`-ə fast-forward ilə birləşdirildi (`d1a5c42` `fix:`, `b17dab9` `docs:`). Push olunmayıb. Branch silinməyib.
-- `fix/whitespace-only-words` (#27) 2026-10-02-də `main`-ə fast-forward ilə birləşdirildi (`fcfdaf7` `fix:` + testlər, `7381174` `docs:`). Push olunmayıb. Branch silinməyib.
-- `fix/whitespace-only-ai-word` (#28) 2026-10-02-də `main`-ə fast-forward ilə birləşdirildi (`85fb0a3` `fix:` + testlər, `ec7ba53` `docs:`). Push olunmayıb. Branch silinməyib.
-- **Cari branch:** `fix/body-parser-errors` (#26). Commit olunub: `b1589d3` (`fix:`, testlərlə birlikdə) və sənədlər (`docs:`). `main`-ə birləşdirilməyib, push olunmayıb.
 - Frontend testləri: istifadəçi 2026-10-02-də sonraya saxladı. Frontend dəyişiklikləri hələlik type-check və build ilə yoxlanılır, bu da changelog-da açıq yazılır.
-  - Commit yalnız istifadəçi istəyəndə edilir. İstifadəçi ayrı-ayrı commit-lərə üstünlük verir: kod `fix:`/`feat:`, testlər `test:`, sənədlər `docs:`.
 
 ## İş qaydaları
 
@@ -61,5 +57,9 @@ Hər dəyişiklikdən sonra:
    - route-lar supertest ilə yoxlanılır: 2xx, 400, 404/409, 500;
    - bug fix: əvvəlcə bug-ı göstərən test yazılır. `it.fails` testi varsa, `.fails` silinir;
    - "hazırdır" deməzdən əvvəl `npm test` və `npm run type-check` keçməlidir. Changelog-da hansı testlərin əlavə olunduğu yazılır.
+7. **Git:** commit, merge və push yalnız istifadəçi istəyəndə edilir.
+   - Hər iş `main`-dən ayrıca branch-da aparılır; `main`-ə `--ff-only` ilə birləşdirilir.
+   - Commit-lər ayrı-ayrıdır: kod `fix:`/`feat:` (bug fix öz testləri ilə birlikdə), `refactor:`, `test:`, `docs:`.
+   - Push-dan əvvəl göndəriləcək diff məxfi fayl və açarlara görə yoxlanılır.
 
 Bu sənədlər istifadəçi ilə Azərbaycan dilində yazılır.

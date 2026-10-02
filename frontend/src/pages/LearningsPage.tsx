@@ -4,6 +4,10 @@ import { dictionaryService, getErrorMessage } from '../services/api';
 import Flashcard from '../components/Flashcard';
 import { Link } from 'react-router-dom';
 
+// "Don't Know" cavabı sözü növbənin sonuna yenidən əlavə edir, ona görə növbədə eyni söz
+// bir neçə dəfə ola bilər. "Review Again" hər sözü bir dəfə göstərməlidir (#15)
+const uniqueById = (words: Word[]) => [...new Map(words.map((word) => [word.id, word])).values()];
+
 const LearningsPage = () => {
   const [queue, setQueue] = useState<Word[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -12,6 +16,7 @@ const LearningsPage = () => {
   const [retryCount, setRetryCount] = useState(0);
   const [learnedCount, setLearnedCount] = useState(0);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadLearningWords = async () => {
@@ -36,6 +41,7 @@ const LearningsPage = () => {
     setQueue(shuffled);
     setCurrentIndex(0);
     setLearnedCount(0);
+    setStatusError(null);
   };
 
   const currentWord = queue[currentIndex];
@@ -47,10 +53,14 @@ const LearningsPage = () => {
 
     setIsUpdatingStatus(true);
 
+    // Cavab serverdə saxlanmayıbsa kart yerində qalır və istifadəçi səbəbi görür — əvvəl xəta
+    // yalnız konsola yazılırdı, növbəti karta isə səssizcə keçilirdi (#15)
     try {
       await dictionaryService.updateLearningStatus(currentWord.id, known);
+      setStatusError(null);
     } catch (error) {
-      console.error('Failed to update learning status:', error);
+      setStatusError(getErrorMessage(error, 'Your answer could not be saved. Please try again.'));
+      return;
     } finally {
       setIsUpdatingStatus(false);
     }
@@ -132,7 +142,7 @@ const LearningsPage = () => {
           You reviewed {learnedCount} words successfully. Keep up the great work!
         </p>
         <div className="flex justify-center gap-4">
-          <button onClick={() => initQueue(queue)} className="btn-primary">
+          <button onClick={() => initQueue(uniqueById(queue))} className="btn-primary">
             Review Again
           </button>
           <Link to="/dictionary" className="btn-secondary">
@@ -165,6 +175,12 @@ const LearningsPage = () => {
           ></div>
         </div>
       </div>
+
+      {statusError && (
+        <div role="alert" className="max-w-md mx-auto w-full mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {statusError}
+        </div>
+      )}
 
       {/* Flashcard Area */}
       <div className="flex-1 flex justify-center mt-2 perspective-1000 relative">

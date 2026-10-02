@@ -40,9 +40,8 @@ ona görə hər sessiyanın əvvəlində avtomatik oxunur. Ətraflı fayllar laz
 - Kritik maddə qalmayıb. Təklif olunan növbəti iş: **#9** (açar yoxlaması bahadır), **#12** (timeout), **#13** (`english_unique_ci` index-i artıq var). Testlərlə tez bağlana bilənlər: **#4**, **#10**, **#26**, **#27**.
 - **Git / GitHub** (remote: `origin` = https://github.com/Seymu1R/My_Languga_app):
   - Lokalda və GitHub-da yalnız **`main`** branch-ı var. İstifadəçinin istəyi ilə 2026-10-02-də bütün iş `main`-ə birləşdirildi, `main` push olundu, digər branch-lar (lokal 6, remote 1) silindi.
-  - Bütün işlər `main`-dədir və push olunub: #1, #2, #4, #5, #6, #7, #8, #10, #21, #25, #26, #27, #28, backend testləri və sənədlər. Hamısı fast-forward ilə birləşdirildi, merge commit-i yoxdur.
+  - Bütün işlər `main`-dədir və push olunub: #1, #2, #3, #4, #5, #6, #7, #8, #10, #21, #25, #26, #27, #28, backend testləri və sənədlər. Hamısı fast-forward ilə birləşdirildi, merge commit-i yoxdur.
   - Növbəti iş üçün `main`-dən yeni branch açılır (bax: İş qaydaları, 7).
-  - **Cari branch:** `fix/storage-mode` (#3). Commit olunub: `ec75b51` (`fix:`, testlərlə birlikdə) və sənədlər (`docs:`). `main`-ə birləşdirilməyib, push olunmayıb.
 - Frontend testləri: istifadəçi 2026-10-02-də sonraya saxladı. Frontend dəyişiklikləri hələlik type-check və build ilə yoxlanılır, bu da changelog-da açıq yazılır.
 
 ## İş qaydaları

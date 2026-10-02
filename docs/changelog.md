@@ -6,7 +6,7 @@
 
 ## 2026-10-02 — #3: saxlama rejimi açılışda seçilir, MongoDB qopanda data səssizcə itmir
 
-Branch: `fix/storage-mode` (`main`-dən). Commit-lər: `ec75b51` (`fix:` + testlər), sonra `docs:`.
+Branch: `fix/storage-mode` (`main`-dən). Commit-lər: `ec75b51` (`fix:` + testlər), `e339d4f` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi. Merge-dən sonra `main`-də frontend və backend type-check, həmçinin 375 backend testi keçdi. Sonra `main` GitHub-a push olundu, `fix/storage-mode` lokalda silindi (heç vaxt push olunmamışdı). Yalnız `main` qaldı.
 
 **Problem:** `dictionaryService` hər sorğuda **həmin anki** `mongoose.connection.readyState`-ə baxıb MongoDB ilə in-memory arasında seçim edirdi.
 1. `server.ts` `connectDB()`-ni gözləmədən portu açırdı. İlk sorğular in-memory-yə yazılır və itirdi. Testdə təsdiqləndi: "running" logu "MongoDB connected"-dən əvvəl gəlirdi.

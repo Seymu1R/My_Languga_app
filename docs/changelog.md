@@ -6,7 +6,7 @@
 
 ## 2026-10-02 — #10: söz adları redaktədə və eyni anda gələn sorğularda da unikal qalır
 
-Branch: `fix/duplicate-words` (`main`-dən). Commit-lər: `062a5a2` (`fix:` + testlər), sonra `docs:`.
+Branch: `fix/duplicate-words` (`main`-dən). Commit-lər: `062a5a2` (`fix:` + testlər), `b45477e` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi. Merge-dən sonra `main`-də frontend və backend type-check, həmçinin 360 backend testi keçdi. Sonra `main` GitHub-a push olundu, `fix/duplicate-words` lokalda silindi (heç vaxt push olunmamışdı). Yalnız `main` qaldı.
 
 **Problem:**
 1. `updateWord` dublikat yoxlamırdı: sözü başqa mövcud sözün adına (hərf böyüklüyündən asılı olmayaraq) dəyişmək mümkün idi.

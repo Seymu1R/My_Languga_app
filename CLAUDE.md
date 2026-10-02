@@ -78,7 +78,7 @@ There are no server-side AI keys. The user's provider, key, and model are stored
 - checks the file's magic bytes after writing and deletes files that don't match;
 - maps multer errors to 400/413 instead of letting them reach the global 500 handler.
 
-`addWordSchema` accepts only `imageUrl` values of the form `/uploads/<file>`. Deleting a word also deletes its local image. On the frontend, `resolveAssetUrl` prefixes relative paths with `API_ORIGIN`.
+`addWordSchema` accepts only `imageUrl` values of the form `/uploads/<file>`. An image file is deleted only when no word references it any more (`deleteImageIfUnused`, checked in both storage modes): on `deleteWord`, for the old image when `updateWord` replaces it, and for the submitted image when `addWord`/`updateWord` fails (e.g. 409), since the frontend uploads before saving. If references cannot be checked (database down), the file is kept. On the frontend, `resolveAssetUrl` prefixes relative paths with `API_ORIGIN`.
 
 ### Frontend (`frontend/src`)
 React 18, react-router (`/`, `/dictionary`, `/learnings`), and Tailwind. Global state is one `useReducer` context (`AppContext`) whose reducer also writes to browser storage. All HTTP calls go through `services/api.ts`: an axios instance with a 30s timeout and an interceptor that turns every error into an `ApiError` with a user-facing message. In `catch` blocks, show `getErrorMessage(error, fallback)` (also in `services/api.ts`) instead of a hard-coded message, so the server's reason (invalid key, duplicate word, server down) reaches the user. Never put error text into a state that can be saved as data (see `translationError` in `WordDefinitionModal`). Frontend and backend types are separate copies, not a shared package.

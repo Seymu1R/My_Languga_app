@@ -14,7 +14,7 @@ ona görə hər sessiyanın əvvəlində avtomatik oxunur. Ətraflı fayllar laz
 
 ## Hazırkı vəziyyət (2026-10-02)
 
-- Backlog-da 28 tapıntı var. Bağlanıb:
+- Backlog-da 29 tapıntı var. Bağlanıb:
   - **#1**: path traversal ilə fayl silmə;
   - **#2** + **#5**: frontend serverin xəta mesajlarını göstərir, xəta mətni tərcümə kimi saxlanmır;
   - **#6**: söz modalında köhnəlmiş AI cavabları yeni sözə yazılmır. Testsizdir, frontend testləri yoxdur;
@@ -33,15 +33,17 @@ ona görə hər sessiyanın əvvəlində avtomatik oxunur. Ətraflı fayllar laz
   - **#13**: tərcümədə saxlanmış sözün axtarışı və dublikat yoxlaması regex əvəzinə collation ilə `english_unique_ci` index-indən keçir.
 
   Qismən:
+  - **#11**: uğursuz saxlama/redaktədə və şəkil dəyişəndə köhnə fayl silinir, başqa sözün şəkli toxunulmaz qalır; restart və "yüklənib, saxlanmayıb" halları qalır;
   - **#19**: backend testləri var, frontend testləri və lint yoxdur;
   - **#24**: kök README yenidən yazılıb, shuffle qalır.
 
   Qalanları açıqdır.
-- **Testlər:** `cd backend && npm test` (Vitest, 436 test, ~8 san; ən yavaşı `server.test.ts`). Hər backend dəyişikliyindən sonra işə sal.
+- **Testlər:** `cd backend && npm test` (Vitest, 461 test, ~8 san; ən yavaşı `server.test.ts`). Hər backend dəyişikliyindən sonra işə sal.
   - Hazırda heç bir `it.fails` testi yoxdur.
 - Kök `README.md` Azərbaycan dilindədir. Funksiya, env, port və ya endpoint dəyişəndə onu da yenilə.
-- Kritik maddə qalmayıb. Təklif olunan növbəti iş: **#11** (yetim şəkillər), **#14** (`cleanWord`), **#15** (flashcard status xətası udulur).
+- Kritik maddə qalmayıb. Təklif olunan növbəti iş: **#14** (`cleanWord`), **#15** (flashcard status xətası udulur), **#29** (`PUT` buraxılan sahələr, kiçik).
 - **Git / GitHub** (remote: `origin` = https://github.com/Seymu1R/My_Languga_app):
+  - **#11** `fix/orphan-images` branch-ında commit olunub (`48e6bdb` + `docs:`), hələ `main`-ə birləşdirilməyib.
   - Lokalda və GitHub-da yalnız **`main`** branch-ı var. İstifadəçinin istəyi ilə 2026-10-02-də bütün iş `main`-ə birləşdirildi, `main` push olundu, digər branch-lar (lokal 6, remote 1) silindi.
   - Bütün işlər `main`-dədir və push olunub: #1, #2, #3, #4, #5, #6, #7, #8, #9, #10, #12, #13, #21, #25, #26, #27, #28, backend testləri və sənədlər. Hamısı fast-forward ilə birləşdirildi, merge commit-i yoxdur.
   - Növbəti iş üçün `main`-dən yeni branch açılır (bax: İş qaydaları, 7).

@@ -18,7 +18,7 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 | 8 | 🟠 Yüksək | Yüklənən faylın tipi əslində yoxlanmır (html/svg) | **bağlanıb** (2026-10-02) |
 | 9 | 🟠 Yüksək | Açar yoxlaması tam mətn generasiya edir (pul, limit) | **bağlanıb** (2026-10-02) |
 | 10 | 🟡 Orta | Dublikat yoxlaması natamamdır (update, unique index) | **bağlanıb** (2026-10-02) |
-| 11 | 🟡 Orta | Yetim şəkil faylları | açıq |
+| 11 | 🟡 Orta | Yetim şəkil faylları | qismən (2026-10-02: uğursuz saxlama və redaktə) |
 | 12 | 🟡 Orta | dictionaryapi.dev fetch-də timeout yoxdur | **bağlanıb** (2026-10-02) |
 | 13 | 🟡 Orta | RAG layer 1 regex index işlətmir (full scan) | **bağlanıb** (2026-10-02) |
 | 14 | 🟡 Orta | `cleanWord` apostrof/tireni silir, əyri dırnaqları saxlayır | açıq |
@@ -36,6 +36,7 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 | 26 | 🟡 Orta | Səhv JSON və >10kb body 400/413 əvəzinə 500 qaytarır | **bağlanıb** (2026-10-02) |
 | 27 | 🟡 Orta | Yalnız boşluqdan ibarət `english`/`translation` validasiyadan keçir | **bağlanıb** (2026-10-02) |
 | 28 | 🟢 Aşağı | AI sxemlərində `word` yalnız boşluqdan ibarət ola bilər | **bağlanıb** (2026-10-02) |
+| 29 | 🟢 Aşağı | `PUT /words/:id` buraxılan sahələri rejimdən asılı olaraq fərqli işləyir | açıq |
 
 ## Təklif olunan iş sırası
 
@@ -106,10 +107,16 @@ Həll: `updateWord` dublikat yoxlaması, `english_unique_ci` unique index, 11000
 
 **Həll:** case-insensitive collation ilə unique index.
 
-### 11. Yetim fayllar
-- Yükləmədən sonra `addWord` uğursuz olsa (409), fayl diskdə qalır.
-- `updateWord` köhnə şəkli silmir.
+### 11. Yetim fayllar — **qismən**
+Bağlanıb (2026-10-02, bax: changelog "#11"): fayl yalnız heç bir söz ona istinad etmədikdə silinir (`deleteImageIfUnused`).
+- ~~Yükləmədən sonra `addWord` uğursuz olsa (409), fayl diskdə qalır.~~ İndi silinir (redaktə alınmasa da).
+- ~~`updateWord` köhnə şəkli silmir.~~ İndi silir.
+- Əlavə: `deleteWord` başqa sözün də işlətdiyi şəkli artıq silmir.
+
+Qalır:
 - In-memory rejimdə restart-dan sonra fayllar qalır.
+- Şəkil yüklənib, amma söz heç saxlanmasa (məsələn, brauzer yükləmə ilə saxlama arasında bağlanıb), fayl qalır.
+- Bunlar üçün avtomatik təmizləmə (açılışda istinadsız faylları silmək) qəsdən edilmədi: `uploads` qovluğu hər iki saxlama rejimi üçün ortaqdır (in-memory rejimdə MongoDB sözlərinin şəkillərini "yetim" görərdi), qovluq git-dədir (#22), istifadəçi faylını avtomatik silmək isə geri qaytarıla bilməz. Ehtiyac olsa, ayrıca əl ilə işlədilən skript (əvvəlcə yalnız siyahı) daha təhlükəsizdir.
 
 Ətraflı: [architecture/image-upload.md](architecture/image-upload.md).
 
@@ -194,3 +201,10 @@ Test: `schemas.test.ts` → `rejects whitespace-only english (#27)` (`it.fails`)
 Həll: ortaq `wordSchema` (`trim().min(1).max(200)`), bax: changelog "#28". İlkin təsvir:
 `translateWordSchema`, `pronunciationSchema` və `exampleSentencesSchema`-da `word: z.string().min(1).max(200)` boşluqları silmir, ona görə `"   "` qəbul olunur və AI-a göndərilir. Frontend klik edilən sözü təmizlədiyi üçün praktikada nadirdir, birbaşa API çağırışında isə mümkündür.
 **Həll:** #27 kimi `z.string().trim().min(1, ...)`. Testlər: `schemas.test.ts` və `routes.ai.test.ts`.
+
+### 29. `PUT /words/:id` buraxılan sahələr
+2026-10-02-də #11 üzərində işləyərkən tapıldı. `updateWord` bütün sahələri əvəz edir, amma buraxılan istəyə bağlı sahələrdə (`pronunciation`, `referenceSentence`, `imageUrl`) iki rejim fərqli davranır:
+- in-memory: `{ ...word, ...fields }` `undefined` dəyərləri də yazır, sahə sözdən **silinir**;
+- MongoDB: mongoose `undefined` sahələri yeniləmədən çıxarır, köhnə dəyər **qalır**.
+Frontend `PUT`-u hələ çağırmır, ona görə istifadəçi buna rast gəlmir. #11-in şəkil təmizləməsi hər iki halda düzgündür (faylın taleyi sözün həqiqi vəziyyətinə görə həll olunur).
+**Həll:** semantikanı seçmək (tam əvəz və ya qismən yeniləmə) və hər iki rejimi ona uyğunlaşdırmaq. Testi `dictionaryService.test.ts`-də hər iki rejimdə.

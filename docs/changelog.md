@@ -4,6 +4,44 @@
 
 ---
 
+## 2026-10-02 — #11 (qismən): saxlanmayan və əvəz olunan şəkillər diskdə qalmır
+
+Branch: `fix/orphan-images` (`main`-dən). Commit-lər: `48e6bdb` (`fix:` + testlər), ardınca `docs:`. Hələ `main`-ə birləşdirilməyib.
+
+**Problem:** frontend şəkli sözü saxlamadan **əvvəl** yükləyir (`upload-image`, sonra `POST /words`).
+- Söz saxlanmasa (məsələn, 409 dublikat), yüklənmiş fayl diskdə qalırdı. İstifadəçi təkrar cəhd edəndə fayl yenidən yüklənir, ona görə hər cəhd bir yetim fayl qoyurdu.
+- `updateWord` şəkli dəyişəndə köhnə fayl silinmirdi.
+- Əlavə tapıntı: `deleteWord` şəkli şərtsiz silirdi. Eyni `imageUrl` API ilə iki sözə verilibsə, birini silmək digərinin şəklini qırırdı.
+
+**Həll** (`services/dictionaryService.ts`, hər iki saxlama rejimində):
+- `deleteImageIfUnused(imageUrl)`: fayl yalnız heç bir söz ona istinad etmədikdə silinir (MongoDB-də `Word.exists({ imageUrl })`, in-memory-də massiv). Bazanı yoxlamaq mümkün deyilsə (MongoDB qopub, #3), fayl saxlanılır və `warn` loglanır. Silmənin özü əvvəlki kimi `deleteLocalImage`-dədir (#1 qoruması dəyişmədi).
+- `discardImageOnFailure(imageUrl, operation)`: `addWord`/`updateWord` uğursuz olsa (409, 404, digər xəta), sorğu ilə gələn şəkli `deleteImageIfUnused` ilə təmizləyir və xətanı olduğu kimi ötürür.
+- `updateWord`: uğurlu redaktədən sonra şəkil dəyişibsə və ya sözdən çıxıbsa, köhnə şəkil `deleteImageIfUnused`-dan keçir. MongoDB-də `Word.exists` əvəzinə `Word.findById(id, 'imageUrl')` (köhnə şəkli bilmək üçün).
+- `deleteWord`: `deleteLocalImage` → `deleteImageIfUnused`.
+- Frontend dəyişmədi: o, hər saxlama cəhdində faylı yenidən yükləyir (`selectedImageFile` qalır), ona görə uğursuz cəhddən sonra faylın silinməsi təhlükəsizdir.
+
+**Qalır** (ona görə status `qismən`):
+- in-memory rejimdə restart-dan sonra fayllar qalır;
+- şəkil yüklənib, söz heç saxlanmayıbsa (brauzer bağlanıb), fayl qalır.
+- Açılışda avtomatik təmizləmə qəsdən edilmədi: `uploads` hər iki rejim üçün ortaqdır, git-dədir (#22), istifadəçi faylını avtomatik silmək isə geri qaytarıla bilməz.
+
+**Yeni backlog maddəsi #29:** `PUT` buraxılan istəyə bağlı sahələri in-memory-də silir, MongoDB-də saxlayır (yoxlama skripti ilə təsdiqləndi). Frontend `PUT`-u çağırmır. #11-in təmizləməsi hər iki halda düzgündür, çünki faylın taleyi sözün həqiqi vəziyyətinə görə həll olunur.
+
+**Testlər** (əvvəl yazıldı; köhnə kodda 13 test düşdü, "saxla" testləri isə köhnə kodda da keçir, çünki o heç nə silmirdi — onlar artıq silmənin qarşısını alır):
+- `dictionaryService.test.ts`, hər iki rejimdə (`image cleanup (#11)`):
+  - dublikat `addWord` → yeni şəkil silinir; mövcud sözün öz şəkli ilə dublikat göndərilsə → şəkil qalır;
+  - `updateWord` yeni şəkillə → köhnə silinir, yeni qalır; eyni şəkil → qalır; köhnə şəkli başqa söz də işlədir → qalır;
+  - `updateWord` 409 → yeni şəkil silinir, digər sözün şəkli qalır; sözün öz şəkli ilə 409 → qalır; 404 → yeni şəkil silinir;
+  - `imageUrl`-siz `PUT`: fayl sözün həqiqətən ona istinad edib-etməməsinə görə qalır və ya silinir (#29 ilə əlaqəli);
+  - uğursuz `addWord` uploads xaricindəki fayla toxunmur (#1);
+  - `deleteWord`: ortaq şəkil birinci silmədə qalır, ikincidə silinir.
+- `dictionaryService.test.ts` (mongodb, #3 bölməsi): baza əlçatmazdırsa `addWord`/`updateWord` `StorageUnavailableError` atır, şəkil isə qalır.
+- `routes.dictionary.test.ts`: yüklə → dublikat (409) → fayl silinir; `PUT` ilə şəkli əvəz et → yalnız yeni fayl qalır.
+- Mutasiya: istinad yoxlaması söndürülsə 8 test düşür; yoxlama xətasında fayl silinsə baza-əlçatmaz testi düşür.
+- Nəticə: 461 test (436 + 25 yeni), `npm run type-check` təmiz.
+
+---
+
 ## 2026-10-02 — #13: `english` üzrə axtarışlar regex əvəzinə collation ilə index-dən keçir
 
 Branch: `perf/rag-collation-lookup` (`main`-dən). Commit-lər: `178befb` (`perf:` + testlər), `f1957fe` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi. Merge-dən sonra `main`-də frontend və backend type-check, həmçinin 436 backend testi keçdi. Sonra `main` GitHub-a push olundu, `perf/rag-collation-lookup` lokalda silindi (heç vaxt push olunmamışdı). Yalnız `main` qaldı.

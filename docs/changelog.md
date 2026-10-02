@@ -6,7 +6,7 @@
 
 ## 2026-10-02 — #11 (qismən): saxlanmayan və əvəz olunan şəkillər diskdə qalmır
 
-Branch: `fix/orphan-images` (`main`-dən). Commit-lər: `48e6bdb` (`fix:` + testlər), ardınca `docs:`. Hələ `main`-ə birləşdirilməyib.
+Branch: `fix/orphan-images` (`main`-dən). Commit-lər: `48e6bdb` (`fix:` + testlər), `e3603d3` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi. Merge-dən sonra `main`-də frontend və backend type-check, həmçinin 461 backend testi keçdi. Sonra `main` GitHub-a push olundu, `fix/orphan-images` lokalda silindi (heç vaxt push olunmamışdı). Yalnız `main` qaldı.
 
 **Problem:** frontend şəkli sözü saxlamadan **əvvəl** yükləyir (`upload-image`, sonra `POST /words`).
 - Söz saxlanmasa (məsələn, 409 dublikat), yüklənmiş fayl diskdə qalırdı. İstifadəçi təkrar cəhd edəndə fayl yenidən yüklənir, ona görə hər cəhd bir yetim fayl qoyurdu.

@@ -4,6 +4,43 @@
 
 ---
 
+## 2026-10-02 — #2 + #5: frontend serverin xəta mesajlarını göstərir, xəta mətni tərcümə kimi saxlanmır
+
+Branch: `fix/ai-error-messages` (`main`-dən). Commit-lər: `30c2add` (`fix:`), sonra `docs:`.
+
+**Problem:** axios interceptor (`services/api.ts`) hər HTTP xətasını serverin mesajı ilə `ApiError`-a çevirir. Lakin komponentlərin `catch` blokları bu mesajı atıb ümumi mətn göstərirdi. Bu, #2-nin özüdür:
+- `HomePage` → "Network error. Please check your connection.";
+- `AITokenModal` → `err.response`/`err.request` yoxlanılırdı. `ApiError`-da bunlar yoxdur, ona görə həmişə "Network error" çıxırdı, səhv açar olanda belə;
+- `WordDefinitionModal` → "Translation error".
+
+Əlaqəli problem (**#5**): tərcümə xətası `aiTranslation` state-ində saxlanılırdı. Save düyməsi isə `translation.trim() || aiTranslation` götürürdü, yəni "Translation error" və "Translation not available" mətnləri tərcümə kimi saxlanırdı. Real xəta mesajını sadəcə göstərmək bu problemi daha da pisləşdirərdi, ona görə #5 #2 ilə birlikdə həll olundu.
+
+**Dəyişikliklər (yalnız frontend):**
+- `services/api.ts`: `getErrorMessage(error, fallback)`. `ApiError`-dursa onun mesajını, deyilsə fallback-i qaytarır.
+- `HomePage.tsx`, `AITokenModal.tsx`: `catch` → `getErrorMessage(...)`. `AITokenModal`-dan istifadə olunmayan `API_ORIGIN` importu silindi; "server işləmir" mesajını artıq interceptor verir.
+- `WordDefinitionModal.tsx`:
+  - yeni `translationError` state-i, `aiTranslation` yalnız real tərcümə saxlayır (#5);
+  - xəta tərcümə sahəsinin altında qırmızı mətnlə göstərilir: "... You can still enter your own translation below.";
+  - söz saxlanmasa (məsələn, 409 "Word already exists in dictionary"), xəta modalın içində `formError` kimi göstərilir;
+  - `onSave` tipi `Promise<void>` oldu;
+  - şəkil yükləmə xətası da `getErrorMessage` istifadə edir.
+- `InteractiveText.tsx`: `handleSaveWord` xətanı artıq udmur, modal onu göstərir. Əvvəl xəta qlobal state-ə yazılırdı və modalın arxasında, səhifədə görünürdü.
+- `DictionaryPage.tsx` (yükləmə, silmə), `LearningsPage.tsx` (yükləmə): eyni kökdən gələn ümumi mesajlar `getErrorMessage` ilə əvəz olundu.
+- Toxunulmadı:
+  - tələffüz və nümunə cümlələrin xətaları: bunlar könüllüdür və əvvəlki kimi səssizcə boş qalır;
+  - `LearningsPage`-də status yeniləmə xətası: #15-in mövzusudur.
+
+**Yoxlama:**
+- `cd frontend && npx tsc --noEmit` və `vite build` keçdi. Köhnə ümumi mesajların heç biri kodda qalmayıb.
+- Test backend-i (7098) və frontend-i (5199) ilə serverin komponentlərə gələn real cavabları yoxlanıldı:
+  - saxta OpenAI açarı ilə `generate-text` → 400 "AI text generation failed: Invalid OpenAI API key...";
+  - `translate-word` → 502 "Unable to translate "bank". Invalid OpenAI API key...";
+  - dublikat söz → 409 "Word already exists in dictionary".
+
+  Interceptor 400, 502 və 409-da `error` mətnini `ApiError.message`-ə qoyur.
+- Backend dəyişmədi, backend testləri 317/317 keçir.
+- **Brauzerdə yoxlanılmadı:** Claude in Chrome extension-u qoşulu deyildi. Frontend-də avtomatik test yoxdur (#19). UI davranışı type-check və kod analizi ilə yoxlanıldı.
+
 ## 2026-10-02 — İş qaydası: hər backend funksiyası testlə birlikdə yazılır
 
 İstifadəçinin tələbi: bundan sonra yazılan və ya dəyişdirilən **hər backend funksiyası** üçün test yazılmalıdır, eyni dəyişiklikdə.

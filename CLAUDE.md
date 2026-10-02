@@ -73,7 +73,7 @@ There are no server-side AI keys. The user's provider, key, and model are stored
 `addWordSchema` accepts only `imageUrl` values of the form `/uploads/<file>`. Deleting a word also deletes its local image. On the frontend, `resolveAssetUrl` prefixes relative paths with `API_ORIGIN`.
 
 ### Frontend (`frontend/src`)
-React 18, react-router (`/`, `/dictionary`, `/learnings`), and Tailwind. Global state is one `useReducer` context (`AppContext`) whose reducer also writes to browser storage. All HTTP calls go through `services/api.ts`: an axios instance with a 30s timeout and an interceptor that turns every error into an `ApiError` with a user-facing message. Frontend and backend types are separate copies, not a shared package.
+React 18, react-router (`/`, `/dictionary`, `/learnings`), and Tailwind. Global state is one `useReducer` context (`AppContext`) whose reducer also writes to browser storage. All HTTP calls go through `services/api.ts`: an axios instance with a 30s timeout and an interceptor that turns every error into an `ApiError` with a user-facing message. In `catch` blocks, show `getErrorMessage(error, fallback)` (also in `services/api.ts`) instead of a hard-coded message, so the server's reason (invalid key, duplicate word, server down) reaches the user. Never put error text into a state that can be saved as data (see `translationError` in `WordDefinitionModal`). Frontend and backend types are separate copies, not a shared package.
 
 ### Tests (`backend/tests`)
 - **Tools:** Vitest 3 + supertest. Vitest 5 needs `@types/node` 22+, which the project does not use yet.

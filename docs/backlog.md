@@ -9,10 +9,10 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 | ID | Ciddilik | Qısa təsvir | Status |
 |---|---|---|---|
 | 1 | 🔴 Kritik | Path traversal ilə ixtiyari faylın silinməsi | **bağlanıb** (2026-10-02) |
-| 2 | 🔴 Kritik | AI xəta mesajları istifadəçiyə çatmır ("Network error") | açıq |
+| 2 | 🔴 Kritik | AI xəta mesajları istifadəçiyə çatmır ("Network error") | **bağlanıb** (2026-10-02) |
 | 3 | 🔴 Kritik | MongoDB qoşulması gözlənilmir, yazılar in-memory-yə düşür | açıq |
 | 4 | 🟠 Yüksək | SRS: interval vaxtı çatmadan böyüyür | açıq (`it.fails` testi var) |
-| 5 | 🟠 Yüksək | "Translation not available" tərcümə kimi saxlanır | açıq |
+| 5 | 🟠 Yüksək | "Translation not available" tərcümə kimi saxlanır | **bağlanıb** (2026-10-02) |
 | 6 | 🟠 Yüksək | Modalda race condition: köhnə AI cavabları yeni sözə yazılır | açıq |
 | 7 | 🟠 Yüksək | Multer xətaları 500 qaytarır (400/413 əvəzinə) | **bağlanıb** (2026-10-02) |
 | 8 | 🟠 Yüksək | Yüklənən faylın tipi əslində yoxlanmır (html/svg) | **bağlanıb** (2026-10-02) |
@@ -39,7 +39,7 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 ## Təklif olunan iş sırası
 
 1. Təhlükəsizlik: ~~#1~~, ~~#8~~
-2. İstifadəçinin gördüyü buglar: #2, #5, #6, ~~#7~~
+2. İstifadəçinin gördüyü buglar: ~~#2~~, ~~#5~~, #6, ~~#7~~
 3. Data bütövlüyü: #3, #4, #10, #27, #26
 4. Səmərəlilik: #9, #12, #13
 5. İnfrastruktur: ~~backend testləri~~, frontend testləri, lint, `.gitignore`
@@ -53,7 +53,8 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 `dictionaryService.ts` → `deleteLocalImage` yalnız `startsWith('/uploads/')` yoxlayırdı. `path.join` isə `../` hissələrini açırdı. `addWordSchema` `imageUrl`-ə istənilən sətri qəbul edirdi.
 Həll: [changelog.md](changelog.md), "2026-10-02 — #1" qeydi.
 
-### 2. AI xəta mesajları itir
+### 2. AI xəta mesajları itir — **bağlanıb**
+Həll: [changelog.md](changelog.md), "2026-10-02 — #2 + #5" qeydi. İlkin təsvir:
 Backend AI xətasında 400/502 qaytarır, axios interceptor (`frontend/src/services/api.ts`) `ApiError` atır. Ona görə `response.success === false` budağı heç vaxt işləmir.
 - `HomePage.tsx` → `handleGenerateText` `catch`-də həmişə "Network error" göstərir.
 - `AITokenModal.tsx` → `handleSubmit` `catch`-də `err.response` və `err.request`-i yoxlayır, amma `ApiError`-da bunlar yoxdur.
@@ -69,7 +70,8 @@ Backend AI xətasında 400/502 qaytarır, axios interceptor (`frontend/src/servi
 `dictionaryService.ts` → `computeNextInterval`: status `known` olanda hər "Know" cavabı intervalı ×4 artırır, review vaxtının çatıb-çatmamasından asılı olmayaraq. "Review Again"-dən sonra yenə "Know" demək 7 günü dərhal 28 günə qaldırır.
 **Həll:** intervalı yalnız `nextReviewDate <= now` olanda böyütmək.
 
-### 5. Səhv tərcümə saxlanır
+### 5. Səhv tərcümə saxlanır — **bağlanıb**
+Həll: `translationError` ayrı state-dir, bax: changelog "#2 + #5". İlkin təsvir:
 `WordDefinitionModal.tsx`: uğursuzluqda `aiTranslation = "Translation not available"`. `handleSubmit` isə `translation.trim() || aiTranslation` götürür.
 **Həll:** xəta mesajını ayrıca state-də saxlamaq.
 

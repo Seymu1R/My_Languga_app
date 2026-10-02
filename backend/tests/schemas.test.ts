@@ -110,9 +110,21 @@ describe('addWordSchema', () => {
     expect(addWordSchema.safeParse({ ...valid, ...override }).success).toBe(false);
   });
 
-  // #27: min(1) trim-dən ƏVVƏL yoxlanılır — yalnız boşluqdan ibarət söz boş sətrə çevrilib keçir
-  it.fails('rejects whitespace-only english (#27)', () => {
-    expect(addWordSchema.safeParse({ english: '   ', translation: 'alma' }).success).toBe(false);
+  // #27: boşluqlar uzunluq yoxlamasından ƏVVƏL silinməlidir
+  it.each([
+    ['english', { english: '   ', translation: 'alma' }],
+    ['english with tabs and newlines', { english: '\t\n ', translation: 'alma' }],
+    ['translation', { english: 'apple', translation: '   ' }],
+  ])('rejects whitespace-only %s (#27)', (_name, body) => {
+    const result = addWordSchema.safeParse(body);
+
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0].message).toMatch(/is required$/);
+  });
+
+  it('applies the length limit to the trimmed value (#27)', () => {
+    const padded = `  ${'x'.repeat(300)}  `;
+    expect(addWordSchema.safeParse({ english: padded, translation: 'alma' }).success).toBe(true);
   });
 
   describe('imageUrl', () => {

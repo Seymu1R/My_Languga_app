@@ -124,6 +124,14 @@ describe('POST /api/dictionary/words', () => {
     expect(res.body.details).toEqual(expect.arrayContaining([expect.stringMatching(/^english: /)]));
   });
 
+  it('rejects a whitespace-only word with 400 and stores nothing (#27)', async () => {
+    const res = await api().post('/api/dictionary/words').send({ english: '   ', translation: 'alma' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.details).toEqual(['english: english is required']);
+    expect((await api().get('/api/dictionary/words')).body.words).toEqual([]);
+  });
+
   it('rejects a path traversal imageUrl (#1)', async () => {
     const res = await addWord('apple', { imageUrl: '/uploads/../../../etc/passwd' });
     expect(res.status).toBe(400);
@@ -159,6 +167,15 @@ describe('PUT /api/dictionary/words/:id', () => {
     const { body } = await addWord('apple');
     const res = await api().put(`/api/dictionary/words/${body.word.id}`).send({ english: 'a' });
     expect(res.status).toBe(400);
+  });
+
+  it('rejects renaming a word to whitespace only (#27)', async () => {
+    const { body } = await addWord('apple');
+
+    const res = await api().put(`/api/dictionary/words/${body.word.id}`).send({ english: 'apple', translation: '  ' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.details).toEqual(['translation: translation is required']);
   });
 });
 

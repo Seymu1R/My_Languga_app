@@ -49,16 +49,10 @@ export const exampleSentencesSchema = z.object({
 // ─── Dictionary schemas ───────────────────────────────────────────────────────
 
 export const addWordSchema = z.object({
-  english: z
-    .string()
-    .min(1, 'english is required')
-    .max(300)
-    .transform((s) => s.trim()),
-  translation: z
-    .string()
-    .min(1, 'translation is required')
-    .max(500)
-    .transform((s) => s.trim()),
+  // trim() uzunluq yoxlamalarından əvvəl gəlməlidir — əks halda "   " min(1)-i keçib
+  // boş sətrə çevrilir (#27)
+  english: z.string().trim().min(1, 'english is required').max(300),
+  translation: z.string().trim().min(1, 'translation is required').max(500),
   pronunciation: z.string().max(200).optional(),
   referenceSentence: z.string().max(1000).optional(),
   // Yalnız /upload-image endpoint-inin qaytardığı formata icazə ver.

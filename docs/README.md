@@ -29,6 +29,10 @@ Yeni sessiya (və ya başqa kompüter) buradan başlayır.
   | #19 (qismən) | frontend testləri (istifadəçi sonraya saxlayıb) və sınıq lint (Biome 1.x config + Biome 2.4; ESLint config yoxdur) | orta |
   | #11 (qismən) | restart və "yüklənib, saxlanmayıb" yetim şəkilləri; avtomatik təmizləmə qəsdən edilmədi | qərar tələb edir |
   | #18 | autentifikasiya yoxdur; lokal istifadə üçün qəbul edilir | böyük |
+  | #30 | yeni funksiya: Ollama provider (lokal/öz serverdə model, açarsız, ünvan env-dən) | orta |
+  | #31 | prod üçün: lüğət hamı üçün ortaqdır, `userId` yoxdur (#18-dən sonra) | böyük |
+
+  Prod-a (çox istifadəçiyə) çıxış ardıcıllığı: #18 → #31 → istəyə görə #30.
 
 - **Brauzerdə yoxlanılmayıb** (frontend testləri yoxdur, yalnız type-check + build): #2, #5, #6, #9 (açar modalı), #14, #15, #16. Qısa əl yoxlaması faydalı olar. #9 real provider açarı ilə də yoxlanılmayıb (xüsusilə Gemini/Grok-un 1 tokenlik limitə cavabı).
 - **İstifadəçinin iş axını** (hər maddə üçün təkrarlanır):
@@ -67,7 +71,7 @@ Kod və sənədlər GitHub-dadır, amma bəzi şeylər **git-də deyil** və əl
 
 ## Hazırkı vəziyyət (2026-10-02)
 
-- Backlog-da 29 tapıntı var. Bağlanıb:
+- Backlog-da 31 maddə var. Bağlanıb:
   - **#1**: path traversal ilə fayl silmə;
   - **#2** + **#5**: frontend serverin xəta mesajlarını göstərir, xəta mətni tərcümə kimi saxlanmır;
   - **#6**: söz modalında köhnəlmiş AI cavabları yeni sözə yazılmır. Testsizdir, frontend testləri yoxdur;

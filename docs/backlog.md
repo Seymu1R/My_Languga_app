@@ -37,6 +37,8 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 | 27 | 🟡 Orta | Yalnız boşluqdan ibarət `english`/`translation` validasiyadan keçir | **bağlanıb** (2026-10-02) |
 | 28 | 🟢 Aşağı | AI sxemlərində `word` yalnız boşluqdan ibarət ola bilər | **bağlanıb** (2026-10-02) |
 | 29 | 🟢 Aşağı | `PUT /words/:id` buraxılan sahələri rejimdən asılı olaraq fərqli işləyir | açıq |
+| 30 | 🟢 Yeni funksiya | Lokal/öz serverdə işləyən model (Ollama) provider kimi | açıq |
+| 31 | 🟡 Prod üçün | Lüğət bütün istifadəçilər üçün ortaqdır (`userId` yoxdur) | açıq |
 
 ## Təklif olunan iş sırası
 
@@ -46,6 +48,7 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 4. Səmərəlilik: ~~#9~~, ~~#12~~, ~~#13~~
 5. İnfrastruktur: ~~backend testləri~~, frontend testləri, lint, `.gitignore`
 6. Refaktor: `aiService` təkrarları, ortaq tiplər
+7. Prod-a çıxış (çox istifadəçi): #18 (autentifikasiya) → #31 (hər istifadəçinin öz lüğəti) → #30 (öz modelimiz, istəyə görə)
 
 ---
 
@@ -213,3 +216,19 @@ Həll: ortaq `wordSchema` (`trim().min(1).max(200)`), bax: changelog "#28". İlk
 - MongoDB: mongoose `undefined` sahələri yeniləmədən çıxarır, köhnə dəyər **qalır**.
 Frontend `PUT`-u hələ çağırmır, ona görə istifadəçi buna rast gəlmir. #11-in şəkil təmizləməsi hər iki halda düzgündür (faylın taleyi sözün həqiqi vəziyyətinə görə həll olunur).
 **Həll:** semantikanı seçmək (tam əvəz və ya qismən yeniləmə) və hər iki rejimi ona uyğunlaşdırmaq. Testi `dictionaryService.test.ts`-də hər iki rejimdə.
+
+### 30. Ollama provider (lokal və ya öz serverdə model)
+2026-10-02-də istifadəçinin istəyi ilə əlavə olundu: pulsuz bulud limitləri bitəndə və ya internetsiz işləmək üçün açıq model (train etmədən, hazır model).
+- Ollama OpenAI-uyğun API verir (`http://localhost:11434/v1`), ona görə Grok/DeepSeek/Mistral kimi OpenAI SDK + `baseURL` ilə qoşulur.
+- **Ünvan serverin env-indən gəlir** (`OLLAMA_BASE_URL`), sorğudan **yox**: istifadəçinin göndərdiyi URL-ə sorğu atmaq SSRF olardı. Env verilməyibsə provider söndürülüb (siyahıda görünmür, sorğu 400).
+- Açar tələb olunmur: `aiCredentials` (#17) və açar validator-ları bu provider üçün istisna; `validate-key` (#9) modelin mövcudluğunu yoxlayır.
+- Yavaşlıq: CPU-da 500 tokenlik oxu mətni on saniyələrlə–dəqiqədən çox çəkə bilər; frontend axios timeout-u (30 san) bu provider üçün artırılmalıdır.
+- Keyfiyyət: kiçik modellər (3–8B) ingiliscə mətn və nümunə cümlələrdə yaxşı, azərbaycanca tərcümədə zəif, IPA-da etibarsızdır. Əlavə təklif: tələffüzü dictionaryapi.dev-in hazır `phonetic` sahəsindən götürmək (pulsuz, dəqiq), AI-ı yalnız ehtiyat kimi.
+- Toxunulan yerlər: `CLAUDE.md`-dəki "Adding a provider" siyahısı (5 yer) + env + frontend timeout. Testlər: `aiService` (baseURL, açarsız), sxemlər, route-lar, env yoxdursa söndürülmə.
+- İstifadəçinin kompüteri (2026-10-02): i7-12700H, 16 GB RAM, ayrıca GPU yoxdur → 3–4B modellər (Gemma 3 4B, Qwen2.5 3B) rahat, 7–8B yavaş.
+- Prod-da: bütün istifadəçilər üçün öz serverimizdə model = GPU server xərci və mütləq #18 + istifadəçi başına limit (bizim hesablama gücümüzdür). Kiçik istifadəçi sayında bulud API-dən baha başa gəlir.
+
+### 31. Lüğət bütün istifadəçilər üçün ortaqdır
+2026-10-02-də prod müzakirəsində tapıldı. `Word` modelində `userId` yoxdur: tətbiq bir nəfər üçün qurulub. Bir neçə istifadəçi eyni serveri işlətsə, hamı eyni lüğəti görür, biri digərinin sözlərini silə bilər, `english_unique_ci` isə iki fərqli istifadəçinin eyni sözü saxlamasına imkan vermir.
+**Həll** (#18-dən sonra): `Word.userId`, bütün sorğularda `userId` filtri (hər iki saxlama rejimində), unique index `{ userId, english }` (eyni collation ilə), şəkillərin istinad yoxlaması (#11) da istifadəçi daxilində. Mövcud sözlər üçün miqrasiya (ilk istifadəçiyə bağlamaq).
+

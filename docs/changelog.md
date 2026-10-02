@@ -4,6 +4,16 @@
 
 ---
 
+## 2026-10-02 — Backlog: #30 (Ollama provider) və #31 (ortaq lüğət)
+
+Branch: `docs/backlog-30` (`main`-dən), istifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi, push olundu, branch silindi. Kod dəyişmədi.
+
+- **#30** istifadəçinin istəyi ilə: lokal və ya öz serverdə hazır açıq model (Ollama, train etmədən). Dizayn qeydləri: OpenAI-uyğun API + `baseURL`; ünvan yalnız server env-indən (`OLLAMA_BASE_URL`, SSRF-in qarşısını almaq üçün); açarsız; frontend timeout-u; kiçik modellərin tərcümə/IPA zəifliyi və tələffüzü dictionaryapi.dev-dən götürmək təklifi; istifadəçinin kompüterinə uyğun model ölçüləri.
+- **#31** prod müzakirəsində tapıldı: `Word`-də `userId` yoxdur, lüğət bütün istifadəçilər üçün ortaqdır. Çox istifadəçili prod üçün #18-dən sonra lazımdır.
+- `backlog.md`: "Təklif olunan iş sırası"na 7-ci bənd (prod: #18 → #31 → #30). `docs/README.md`: "Harada qaldıq" cədvəli və maddə sayı (31).
+
+---
+
 ## 2026-10-02 — Sessiyanın sonu: "Harada qaldıq" və "Başqa kompüterdə davam etmək"
 
 Branch: `docs/handoff` (`main`-dən). İstifadəçi başqa kompüterdən davam etmək istədi.

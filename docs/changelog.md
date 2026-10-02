@@ -6,7 +6,7 @@
 
 ## 2026-10-02 — #22: `.gitignore` tamamlandı, yüklənmiş şəkillər git-dən çıxarıldı, `@types/mongoose` silindi
 
-Branch: `chore/gitignore` (`main`-dən). Commit-lər: `2eda5da` (`chore:` `.gitignore` + şəkillər), `f76738b` (`chore(deps):`), ardınca `docs:`. Hələ `main`-ə birləşdirilməyib.
+Branch: `chore/gitignore` (`main`-dən). Commit-lər: `2eda5da` (`chore:` `.gitignore` + şəkillər), `f76738b` (`chore(deps):`), `6d3dacf` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi. Merge-dən sonra `main`-də frontend və backend type-check, həmçinin 483 backend testi keçdi. Sonra `main` GitHub-a push olundu, `chore/gitignore` lokalda silindi (heç vaxt push olunmamışdı). Yalnız `main` qaldı.
 
 **Problem:**
 - `backend/uploads/`-dəki 2 şəkil (`1773770091190-854503861.jpg`, `1776240421133-768147316.png`) commit olunmuşdu. Bunlar istifadəçinin runtime datasıdır, kod deyil; hər yeni yükləmə də `git status`-da görünürdü.
@@ -15,7 +15,11 @@ Branch: `chore/gitignore` (`main`-dən). Commit-lər: `2eda5da` (`chore:` `.giti
 
 **Həll:**
 - `.gitignore`: `.idea/` və `backend/uploads/` əlavə olundu. Qovluğun özünü saxlamağa ehtiyac yoxdur: `middleware/upload.ts` onu yoxdursa yaradır.
-- `git rm --cached` ilə 2 şəkil git izləməsindən çıxarıldı. **Fayllar diskdə qalır** (istifadəçinin bazasındakı sözlər onlara istinad edə bilər). Onlar git tarixçəsində qalır. Qeyd: repo-nu başqa yerdə klonlayıb bu commit-i `pull` edən nüsxədə bu iki fayl silinər (orada `uploads/`-in özü ignore olunduğu üçün yeni yükləmələrə təsir etmir).
+- `git rm --cached` ilə 2 şəkil git izləməsindən çıxarıldı. **Fayllar diskdə qalır** (istifadəçinin bazasındakı sözlər onlara istinad edə bilər). Onlar git tarixçəsində qalır. **Diqqət — faylları izləmədən çıxaran commit diskdən də silir:** `main` hələ bu faylları izləyərkən ona keçib bu commit-i (fast-forward, `pull`) tətbiq edən **hər** nüsxədə iki şəkil diskdən silinir. Bu, merge zamanı bu repo-nun özündə də baş verdi: `main`-ə keçəndən sonra fast-forward faylları sildi. Dərhal tarixçədən bərpa olundu və məzmunun eyni olduğu yoxlanıldı (`git hash-object` = tarixçədəki blob; ölçülər 162485 və 47936 bayt). Başqa nüsxədə bərpa:
+  ```bash
+  git restore --source=d15b0cb --worktree -- backend/uploads/1773770091190-854503861.jpg backend/uploads/1776240421133-768147316.png
+  ```
+  Bərpa olunan fayllar ignore olunur, yenidən commit olunmur.
 - `backend`: `npm uninstall @types/mongoose` (`package.json` və `package-lock.json`).
 - `README.md`: layihə strukturunda `uploads/` "git-də saxlanmır" kimi qeyd olundu. `architecture/image-upload.md`: "#22: uploads git-dədir" zəif yeri silindi.
 

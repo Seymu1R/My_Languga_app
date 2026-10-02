@@ -34,13 +34,14 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 | 24 | 🟢 Aşağı | ~~README köhnədir~~, shuffle qeyri-bərabərdir | qismən (README 2026-10-02) |
 | 25 | 🟡 Orta | Logger `.env`-dən əvvəl yaradılırdı (`LOG_LEVEL`/`NODE_ENV` nəzərə alınmırdı) | **bağlanıb** (2026-10-02) |
 | 26 | 🟡 Orta | Səhv JSON və >10kb body 400/413 əvəzinə 500 qaytarır | açıq (`it.fails` testi var) |
-| 27 | 🟡 Orta | Yalnız boşluqdan ibarət `english`/`translation` validasiyadan keçir | açıq (`it.fails` testi var) |
+| 27 | 🟡 Orta | Yalnız boşluqdan ibarət `english`/`translation` validasiyadan keçir | **bağlanıb** (2026-10-02) |
+| 28 | 🟢 Aşağı | AI sxemlərində `word` yalnız boşluqdan ibarət ola bilər | açıq |
 
 ## Təklif olunan iş sırası
 
 1. Təhlükəsizlik: ~~#1~~, ~~#8~~
 2. İstifadəçinin gördüyü buglar: ~~#2~~, ~~#5~~, ~~#6~~, ~~#7~~
-3. Data bütövlüyü: #3, #4, #10, #27, #26
+3. Data bütövlüyü: #3, #4, #10, ~~#27~~, #26, #28
 4. Səmərəlilik: #9, #12, #13
 5. İnfrastruktur: ~~backend testləri~~, frontend testləri, lint, `.gitignore`
 6. Refaktor: `aiService` təkrarları, ortaq tiplər
@@ -175,7 +176,12 @@ Səhv JSON (`{"english":`) və 10kb-dan böyük body `express.json` tərəfində
 **Həll:** handler-də `err.status`/`err.type`-a baxmaq (`entity.parse.failed` → 400, `entity.too.large` → 413).
 Testlər: `app.test.ts` → `responds 400 for malformed JSON (#26)`, `responds 413 for a JSON body over 10kb (#26)` (`it.fails`).
 
-### 27. Boşluqdan ibarət söz validasiyadan keçir
+### 27. Boşluqdan ibarət söz validasiyadan keçir — **bağlanıb**
+Həll: `z.string().trim().min(1)...`, bax: changelog "#27". İlkin təsvir:
 `addWordSchema`: `z.string().min(1).max(300).transform(trim)` — `min(1)` trim-dən **əvvəl** yoxlanılır. `"   "` keçir və boş sətrə çevrilir. In-memory rejimdə boş söz saxlanılır, Mongo rejimində isə mongoose `required` xətası 500 verir.
 **Həll:** `z.string().trim().min(1).max(300)`. `translation` üçün də eyni.
 Test: `schemas.test.ts` → `rejects whitespace-only english (#27)` (`it.fails`).
+
+### 28. AI sxemlərində boşluqdan ibarət `word`
+`translateWordSchema`, `pronunciationSchema` və `exampleSentencesSchema`-da `word: z.string().min(1).max(200)` boşluqları silmir, ona görə `"   "` qəbul olunur və AI-a göndərilir. Frontend klik edilən sözü təmizlədiyi üçün praktikada nadirdir, birbaşa API çağırışında isə mümkündür.
+**Həll:** #27 kimi `z.string().trim().min(1, ...)`. Testlər: `schemas.test.ts` və `routes.ai.test.ts`.

@@ -4,6 +4,33 @@
 
 ---
 
+## 2026-10-02 — #27: yalnız boşluqdan ibarət söz və tərcümə rədd edilir
+
+Branch: `fix/whitespace-only-words` (`main`-dən). Commit-lər: `fcfdaf7` (`fix:` + testlər), sonra `docs:`.
+
+**Problem:** `addWordSchema`-da `english` və `translation` üçün qayda `z.string().min(1).max(N).transform(trim)` idi, yəni uzunluq trim-dən **əvvəl** yoxlanılırdı. Nəticələr:
+- `"   "` validasiyadan keçib boş sətrə çevrilirdi. In-memory rejimdə boş söz saxlanılırdı, Mongo rejimində mongoose `required` xətası 500 verirdi.
+- Uzunluq limiti kənar boşluqları da sayırdı.
+
+Eyni sxem `POST` və `PUT /api/dictionary/words` üçün işlənir.
+
+**Dəyişiklik:** `backend/src/schemas/index.ts` → `english: z.string().trim().min(1, ...).max(300)`, `translation: z.string().trim().min(1, ...).max(500)`.
+
+**Testlər (əvvəl yazıldı, köhnə kodda 6/6 düşdü):**
+- `schemas.test.ts`:
+  - `it.fails` testi normal testə çevrildi;
+  - boşluq, tab və yeni sətirdən ibarət `english`, eləcə də boşluqdan ibarət `translation` → "... is required";
+  - limit trim-dən sonrakı dəyərə tətbiq olunur (kənarları boşluqlu 300 simvol keçir).
+- `routes.dictionary.test.ts`:
+  - `POST` boşluqdan ibarət söz → 400, `details: ["english: english is required"]`, heç nə saxlanmır;
+  - `PUT` boşluqdan ibarət tərcümə → 400.
+
+**Yoxlama:** `npm test` → 322/322 (əvvəl 317; 1 `it.fails` 6 yeni testlə əvəzləndi), `npm run type-check` keçdi. Frontend dəyişmədi: o, tərcüməni onsuz da trim edir.
+
+**Commit qaydası dəqiqləşdirildi** (`CLAUDE.md` → Conventions): bug fix və onun testləri eyni commit-də olur. Ayrı olsaydılar, aralıq commit `npm test`-dən keçməzdi (`it.fails` "gözlənilmədən keçdi" və ya yeni test düşərdi).
+
+**Yeni tapıntı (#28, düzəldilmədi):** AI sxemlərində (`translateWordSchema`, `pronunciationSchema`, `exampleSentencesSchema`) `word` də `z.string().min(1)`-dir, `"   "` qəbul edir.
+
 ## 2026-10-02 — #6: söz modalında köhnəlmiş AI cavabları artıq yeni sözə yazılmır
 
 Branch: `fix/word-modal-stale-responses` (`main`-dən). Commit-lər: `d1a5c42` (`fix:`), `b17dab9` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi. Merge-dən sonra `main`-də frontend və backend type-check, həmçinin 317 backend testi keçdi. Push olunmayıb.

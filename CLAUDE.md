@@ -92,4 +92,4 @@ React 18, react-router (`/`, `/dictionary`, `/learnings`), and Tailwind. Global 
   For a bug fix, write the failing test first; if an `it.fails` test exists for it, remove `.fails`. Do not report backend work as done until `npm test` and `npm run type-check` pass, and list the added tests in the changelog entry.
 - Code comments are often written in Azerbaijani. Match the language of the comments around your edit.
 - Backend logging uses `logger` (pino) with a context object first: `logger.info({ word, provider }, 'msg')`. Do not use `console.*`.
-- Commits follow Conventional Commits (`feat:`, `fix:`, `test:`, `docs:`, `perf:`, ...). Keep code, tests, and docs in separate commits.
+- Commits follow Conventional Commits (`feat:`, `fix:`, `test:`, `docs:`, `perf:`, ...). Keep code, tests, and docs in separate commits, with one exception: a bug fix ships in the same commit as its tests (including an `it.fails` → `it` change), so that every commit passes `npm test`.

@@ -22,17 +22,18 @@ ona görə hər sessiyanın əvvəlində avtomatik oxunur. Ətraflı fayllar laz
   - **#8**: şəkil tipi və magic bytes yoxlanılır;
   - **#21**: `express.static(uploadPath)`;
   - **#25**: logger artıq `.env`-dən sonra yaradılır;
-  - **#27**: yalnız boşluqdan ibarət söz və tərcümə rədd edilir.
+  - **#27**: yalnız boşluqdan ibarət söz və tərcümə rədd edilir;
+  - **#28**: AI endpoint-ləri də yalnız boşluqdan ibarət sözü rədd edir.
 
   Qismən:
   - **#19**: backend testləri var, frontend testləri və lint yoxdur;
   - **#24**: kök README yenidən yazılıb, shuffle qalır.
 
   Qalanları açıqdır.
-- **Testlər:** `cd backend && npm test` (Vitest, 322 test, ~2–3 san). Hər backend dəyişikliyindən sonra işə sal.
+- **Testlər:** `cd backend && npm test` (Vitest, 340 test, ~2–3 san). Hər backend dəyişikliyindən sonra işə sal.
   - #4, #10 və #26 üçün `it.fails` testləri var.
 - Kök `README.md` Azərbaycan dilindədir. Funksiya, env, port və ya endpoint dəyişəndə onu da yenilə.
-- Təklif olunan növbəti iş: `it.fails` testi hazır olan backend bug-ları: **#26**, **#4**, **#10**. Sonra **#3** (Mongo qoşulmasını gözləmək). **#28** kiçikdir, #27-nin davamıdır. Testlərlə tez bağlana bilənlər: **#4**, **#10**, **#26**, **#27**.
+- Təklif olunan növbəti iş: `it.fails` testi hazır olan backend bug-ları: **#26**, **#4**, **#10**. Sonra **#3** (Mongo qoşulmasını gözləmək). Testlərlə tez bağlana bilənlər: **#4**, **#10**, **#26**, **#27**.
 - Git: `fix/upload-path-traversal` branch-ı 2026-10-02-də `main`-ə **fast-forward** ilə birləşdirildi (`main` = `27df908`), merge commit-i yaranmadı. Push olunmayıb.
   - Commit-lər (köhnədən yeniyə): #1 (`fix:`), sənədlər (`docs:`), #8 + #7 (`fix:`), refaktor (`refactor:`), testlər (`test:`), sənəd yeniləmələri (`docs:`).
   - `fix/upload-path-traversal` branch-ı hələ silinməyib.
@@ -40,6 +41,7 @@ ona görə hər sessiyanın əvvəlində avtomatik oxunur. Ətraflı fayllar laz
 - `fix/ai-error-messages` (#2 + #5) 2026-10-02-də `main`-ə fast-forward ilə birləşdirildi (`30c2add` `fix:`, `abcfeb6` `docs:`). Push olunmayıb. Branch silinməyib.
 - `fix/word-modal-stale-responses` (#6) 2026-10-02-də `main`-ə fast-forward ilə birləşdirildi (`d1a5c42` `fix:`, `b17dab9` `docs:`). Push olunmayıb. Branch silinməyib.
 - `fix/whitespace-only-words` (#27) 2026-10-02-də `main`-ə fast-forward ilə birləşdirildi (`fcfdaf7` `fix:` + testlər, `7381174` `docs:`). Push olunmayıb. Branch silinməyib.
+- **Cari branch:** `fix/whitespace-only-ai-word` (#28). Commit olunub: `85fb0a3` (`fix:`, testlərlə birlikdə) və sənədlər (`docs:`). `main`-ə birləşdirilməyib, push olunmayıb.
 - Frontend testləri: istifadəçi 2026-10-02-də sonraya saxladı. Frontend dəyişiklikləri hələlik type-check və build ilə yoxlanılır, bu da changelog-da açıq yazılır.
   - Commit yalnız istifadəçi istəyəndə edilir. İstifadəçi ayrı-ayrı commit-lərə üstünlük verir: kod `fix:`/`feat:`, testlər `test:`, sənədlər `docs:`.
 

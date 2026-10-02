@@ -4,6 +4,31 @@
 
 ---
 
+## 2026-10-02 — #28: AI endpoint-ləri yalnız boşluqdan ibarət sözü rədd edir
+
+Branch: `fix/whitespace-only-ai-word` (`main`-dən). Commit-lər: `85fb0a3` (`fix:` + testlər), sonra `docs:`.
+
+**Problem:** `translateWordSchema`, `pronunciationSchema` və `exampleSentencesSchema`-da `word: z.string().min(1).max(200)` boşluqları silmirdi. Nəticədə `"   "` qəbul olunub AI-a göndərilirdi (#27 ilə eyni səbəb), kənar boşluqlar da sözlə birlikdə AI-a gedirdi.
+
+**Dəyişiklik:** `backend/src/schemas/index.ts`. Ortaq `wordSchema = z.string().trim().min(1, 'word is required').max(200)` yaradıldı və üç sxemdə istifadə olunur. Nəticədə servislərə artıq trim olunmuş söz çatır.
+
+**Testlər (əvvəl yazıldı, köhnə kodda 18/18 düşdü):**
+- `schemas.test.ts`, hər üç sxem üçün:
+  - boşluqdan və tab/yeni sətirdən ibarət söz → "word is required";
+  - söz trim olunur;
+  - limit trim-dən sonrakı dəyərə tətbiq olunur.
+- `routes.ai.test.ts`, hər üç endpoint üçün:
+  - boşluqdan ibarət söz → 400 `["word: word is required"]` və AI servisi **çağırılmır**;
+  - `"  bank "` → servisə `"bank"` ötürülür.
+
+**Yoxlama:** `npm test` → 340/340 (əvvəl 322), `npm run type-check` keçdi.
+
+**Toxunulmadı:** `targetLanguage` və `generateTextSchema.apiToken` də trim-siz `min(1)`-dir.
+- Boşluqdan ibarət açarı `AIService` onsuz da "API key is required" ilə rədd edir.
+- `targetLanguage` frontend-də sabit siyahıdan gəlir.
+
+Ona görə ayrıca backlog maddəsi açılmadı.
+
 ## 2026-10-02 — #27: yalnız boşluqdan ibarət söz və tərcümə rədd edilir
 
 Branch: `fix/whitespace-only-words` (`main`-dən). Commit-lər: `fcfdaf7` (`fix:` + testlər), `7381174` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi. Merge-dən sonra `main`-də frontend və backend type-check, həmçinin 322 backend testi keçdi. Push olunmayıb.

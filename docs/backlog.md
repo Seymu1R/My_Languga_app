@@ -35,13 +35,13 @@ Statuslar: `açıq`, `qismən`, `bağlanıb`. Fayl istinadları funksiya adı il
 | 25 | 🟡 Orta | Logger `.env`-dən əvvəl yaradılırdı (`LOG_LEVEL`/`NODE_ENV` nəzərə alınmırdı) | **bağlanıb** (2026-10-02) |
 | 26 | 🟡 Orta | Səhv JSON və >10kb body 400/413 əvəzinə 500 qaytarır | açıq (`it.fails` testi var) |
 | 27 | 🟡 Orta | Yalnız boşluqdan ibarət `english`/`translation` validasiyadan keçir | **bağlanıb** (2026-10-02) |
-| 28 | 🟢 Aşağı | AI sxemlərində `word` yalnız boşluqdan ibarət ola bilər | açıq |
+| 28 | 🟢 Aşağı | AI sxemlərində `word` yalnız boşluqdan ibarət ola bilər | **bağlanıb** (2026-10-02) |
 
 ## Təklif olunan iş sırası
 
 1. Təhlükəsizlik: ~~#1~~, ~~#8~~
 2. İstifadəçinin gördüyü buglar: ~~#2~~, ~~#5~~, ~~#6~~, ~~#7~~
-3. Data bütövlüyü: #3, #4, #10, ~~#27~~, #26, #28
+3. Data bütövlüyü: #3, #4, #10, ~~#27~~, #26, ~~#28~~
 4. Səmərəlilik: #9, #12, #13
 5. İnfrastruktur: ~~backend testləri~~, frontend testləri, lint, `.gitignore`
 6. Refaktor: `aiService` təkrarları, ortaq tiplər
@@ -182,6 +182,7 @@ Həll: `z.string().trim().min(1)...`, bax: changelog "#27". İlkin təsvir:
 **Həll:** `z.string().trim().min(1).max(300)`. `translation` üçün də eyni.
 Test: `schemas.test.ts` → `rejects whitespace-only english (#27)` (`it.fails`).
 
-### 28. AI sxemlərində boşluqdan ibarət `word`
+### 28. AI sxemlərində boşluqdan ibarət `word` — **bağlanıb**
+Həll: ortaq `wordSchema` (`trim().min(1).max(200)`), bax: changelog "#28". İlkin təsvir:
 `translateWordSchema`, `pronunciationSchema` və `exampleSentencesSchema`-da `word: z.string().min(1).max(200)` boşluqları silmir, ona görə `"   "` qəbul olunur və AI-a göndərilir. Frontend klik edilən sözü təmizlədiyi üçün praktikada nadirdir, birbaşa API çağırışında isə mümkündür.
 **Həll:** #27 kimi `z.string().trim().min(1, ...)`. Testlər: `schemas.test.ts` və `routes.ai.test.ts`.

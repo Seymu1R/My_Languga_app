@@ -6,7 +6,7 @@
 
 ## 2026-10-02 — #12: dictionaryapi.dev sorğusuna 3 saniyəlik timeout
 
-Branch: `fix/dictionary-fetch-timeout` (`main`-dən). Commit-lər: `8cac18b` (`fix:` + testlər), ardınca `docs:`. Hələ `main`-ə birləşdirilməyib.
+Branch: `fix/dictionary-fetch-timeout` (`main`-dən). Commit-lər: `8cac18b` (`fix:` + testlər), `e21d657` (`docs:`). İstifadəçinin istəyi ilə `main`-ə `--ff-only` ilə birləşdirildi. Merge-dən sonra `main`-də frontend və backend type-check, həmçinin 430 backend testi keçdi. Sonra `main` GitHub-a push olundu, `fix/dictionary-fetch-timeout` lokalda silindi (heç vaxt push olunmamışdı). Yalnız `main` qaldı.
 
 **Problem:** tərcümədə RAG layer 2 (`aiContentService.lookupDictionaryDefinitions`) `api.dictionaryapi.dev`-ə timeout-suz `fetch` edirdi. Bu API cavab verməsə və ya body-ni yarımçıq göndərsə, tərcümə sorğusu AI-a heç çatmadan asılı qalırdı. Frontend 30 saniyədən sonra "timeout" görürdü. Halbuki təriflər tərcümə üçün sadəcə əlavə məlumatdır.
 
